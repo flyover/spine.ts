@@ -1,0 +1,146 @@
+
+alien.png
+size: 2048,1024
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+back_foot
+  rotate: false
+  xy: 2029, 1011
+  size: 16, 11
+  orig: 16, 11
+  offset: 0, 0
+  index: -1
+back_shin
+  rotate: false
+  xy: 1855, 672
+  size: 42, 48
+  orig: 42, 48
+  offset: 0, 0
+  index: -1
+back_thigh
+  rotate: false
+  xy: 571, 121
+  size: 47, 47
+  orig: 47, 47
+  offset: 0, 0
+  index: -1
+backarmor
+  rotate: true
+  xy: 2, 6
+  size: 162, 182
+  orig: 162, 182
+  offset: 0, 0
+  index: -1
+blown_up_nck
+  rotate: false
+  xy: 186, 64
+  size: 153, 104
+  orig: 153, 104
+  offset: 0, 0
+  index: -1
+body
+  rotate: true
+  xy: 1567, 515
+  size: 196, 235
+  orig: 196, 235
+  offset: 0, 0
+  index: -1
+burst01
+  rotate: false
+  xy: 1567, 713
+  size: 286, 309
+  orig: 286, 309
+  offset: 0, 0
+  index: -1
+burst02
+  rotate: false
+  xy: 1254, 661
+  size: 311, 361
+  orig: 311, 361
+  offset: 0, 0
+  index: -1
+front_foot
+  rotate: true
+  xy: 1553, 640
+  size: 19, 12
+  orig: 19, 12
+  offset: 0, 0
+  index: -1
+front_lower_arm
+  rotate: true
+  xy: 341, 58
+  size: 110, 125
+  orig: 110, 125
+  offset: 0, 0
+  index: -1
+front_shin
+  rotate: false
+  xy: 1804, 655
+  size: 49, 56
+  orig: 49, 56
+  offset: 0, 0
+  index: -1
+front_thigh
+  rotate: false
+  xy: 274, 2
+  size: 54, 54
+  orig: 54, 54
+  offset: 0, 0
+  index: -1
+front_upper_arm
+  rotate: false
+  xy: 1855, 722
+  size: 113, 55
+  orig: 113, 55
+  offset: 0, 0
+  index: -1
+head
+  rotate: false
+  xy: 1254, 387
+  size: 297, 272
+  orig: 297, 272
+  offset: 0, 0
+  index: -1
+lower_back_arm
+  rotate: false
+  xy: 468, 77
+  size: 101, 91
+  orig: 101, 91
+  offset: 0, 0
+  index: -1
+metaljaw
+  rotate: true
+  xy: 1855, 779
+  size: 243, 172
+  orig: 243, 172
+  offset: 0, 0
+  index: -1
+splat01
+  rotate: false
+  xy: 738, 519
+  size: 514, 503
+  orig: 514, 503
+  offset: 0, 0
+  index: -1
+splat02
+  rotate: false
+  xy: 2, 511
+  size: 734, 511
+  orig: 734, 511
+  offset: 0, 0
+  index: -1
+splat03
+  rotate: false
+  xy: 2, 170
+  size: 723, 339
+  orig: 723, 339
+  offset: 0, 0
+  index: -1
+upper_back_arm
+  rotate: true
+  xy: 186, 2
+  size: 60, 86
+  orig: 60, 86
+  offset: 0, 0
+  index: -1
