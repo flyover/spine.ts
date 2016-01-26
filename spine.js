@@ -1,11 +1,40 @@
+/**
+ * Copyright (c) Flyover Games, LLC
+ *
+ * Isaac Burns isaacburns@gmail.com
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software
+ * without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to
+ * whom the Software is furnished to do so, subject to the
+ * following conditions:
+ *
+ * The above copyright notice and this permission notice shall
+ * be included in all copies or substantial portions of the
+ * Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+ * KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+ * WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+ * PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 System.register([], function(exports_1) {
-    "use strict";
     var __extends = (this && this.__extends) || function (d, b) {
         for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
-    var Color, Curve, Angle, Vector, Position, Rotation, Scale, Flip, Space, Bone, Ikc, Slot, Attachment, RegionAttachment, BoundingBoxAttachment, MeshAttachment, SkinnedMeshAttachment, SkinSlot, Skin, Event, Keyframe, BoneKeyframe, TranslateKeyframe, RotateKeyframe, ScaleKeyframe, FlipXKeyframe, FlipYKeyframe, AnimBone, SlotKeyframe, ColorKeyframe, AttachmentKeyframe, AnimSlot, EventKeyframe, SlotOffset, OrderKeyframe, IkcKeyframe, AnimIkc, FfdKeyframe, FfdAttachment, FfdSlot, AnimFfd, Animation, Skeleton, Data, Pose;
+    var Color, Curve, Angle, Vector, Position, Rotation, Scale, Space, Bone, Ikc, Slot, Attachment, RegionAttachment, BoundingBoxAttachment, MeshAttachment, SkinnedMeshAttachment, SkinSlot, Skin, Event, Keyframe, BoneKeyframe, TranslateKeyframe, RotateKeyframe, ScaleKeyframe, AnimBone, SlotKeyframe, ColorKeyframe, AttachmentKeyframe, AnimSlot, EventKeyframe, SlotOffset, OrderKeyframe, IkcKeyframe, AnimIkc, FfdKeyframe, FfdAttachment, FfdSlot, AnimFfd, Animation, Skeleton, Data, Pose;
+    /**
+     * A TypeScript API for the Spine JSON animation data format.
+     */
     function loadBool(json, key, def) {
         var value = json[key];
         switch (typeof (value)) {
@@ -65,8 +94,35 @@ System.register([], function(exports_1) {
         }
     }
     exports_1("saveString", saveString);
+    // from: http://github.com/arian/cubic-bezier
     function BezierCurve(x1, y1, x2, y2, epsilon) {
+        /*
+        function orig_curveX(t) {
+          const v = 1 - t;
+          return 3 * v * v * t * x1 + 3 * v * t * t * x2 + t * t * t;
+        }
+      
+        function orig_curveY(t) {
+          const v = 1 - t;
+          return 3 * v * v * t * y1 + 3 * v * t * t * y2 + t * t * t;
+        }
+      
+        function orig_derivativeCurveX(t) {
+          const v = 1 - t;
+          return 3 * (2 * (t - 1) * t + v * v) * x1 + 3 * (- t * t * t + 2 * v * t) * x2;
+        }
+        */
         if (epsilon === void 0) { epsilon = 1e-6; }
+        /*
+      
+        B(t) = P0*(1-t)^3 + 3*P1*(1-t)^2*t + 3*P2*(1-t)*t^2 + P3*t^3
+        B'(t) = P0 - 3*(P0 - P1)*t + 3*(P0 - 2*P1 + P2)*t^2 - (P0 - 3*P1 + 3*P2 - P3)*t^3
+      
+        if P0:(0,0) and P3:(1,1)
+        B(t) = 3*P1*(1-t)^2*t + 3*P2*(1-t)*t^2 + t^3
+        B'(t) = 3*P1*t - 3*(2*P1 - P2)*t^2 + (3*P1 - 3*P2 + 1)*t^3
+      
+        */
         function curveX(t) {
             var t2 = t * t;
             var t3 = t2 * t;
@@ -92,6 +148,7 @@ System.register([], function(exports_1) {
         return function (percent) {
             var x = percent;
             var t0, t1, t2, x2, d2, i;
+            // First try a few iterations of Newton"s method -- normally very fast.
             for (t2 = x, i = 0; i < 8; ++i) {
                 x2 = curveX(t2) - x;
                 if (Math.abs(x2) < epsilon)
@@ -106,6 +163,7 @@ System.register([], function(exports_1) {
                 return curveY(t0);
             if (t2 > t1)
                 return curveY(t1);
+            // Fallback to the bisection method for reliability.
             while (t0 < t1) {
                 x2 = curveX(t2);
                 if (Math.abs(x2 - x) < epsilon)
@@ -116,9 +174,11 @@ System.register([], function(exports_1) {
                     t1 = t2;
                 t2 = (t1 - t0) * 0.5 + t0;
             }
+            // Failure
             return curveY(t2);
         };
     }
+    // from: spine-libgdx/src/com/esotericsoftware/spine/Animation.java
     function StepBezierCurve(cx1, cy1, cx2, cy2) {
         var bezierSegments = 10;
         var subdiv_step = 1 / bezierSegments;
@@ -163,7 +223,7 @@ System.register([], function(exports_1) {
                 x += dfx;
                 y += dfy;
             }
-            return y + (1 - y) * (percent - x) / (1 - x);
+            return y + (1 - y) * (percent - x) / (1 - x); // Last point is 1,1.
         };
     }
     exports_1("StepBezierCurve", StepBezierCurve);
@@ -243,28 +303,32 @@ System.register([], function(exports_1) {
                     return "rgba(" + (color.r * 255).toFixed(0) + "," + (color.g * 255).toFixed(0) + "," + (color.b * 255).toFixed(0) + "," + color.a + ")";
                 };
                 return Color;
-            }());
+            })();
             exports_1("Color", Color);
             Curve = (function () {
                 function Curve() {
                     this.evaluate = function (t) { return t; };
                 }
                 Curve.prototype.load = function (json) {
+                    // default: linear
                     this.evaluate = function (t) { return t; };
                     if ((typeof (json) === "string") && (json === "stepped")) {
+                        // stepped
                         this.evaluate = function (t) { return 0; };
                     }
                     else if ((typeof (json) === "object") && (typeof (json.length) === "number") && (json.length === 4)) {
+                        // bezier
                         var x1 = loadFloat(json, 0, 0);
                         var y1 = loadFloat(json, 1, 0);
                         var x2 = loadFloat(json, 2, 1);
                         var y2 = loadFloat(json, 3, 1);
+                        // curve.evaluate = BezierCurve(x1, y1, x2, y2);
                         this.evaluate = StepBezierCurve(x1, y1, x2, y2);
                     }
                     return this;
                 };
                 return Curve;
-            }());
+            })();
             exports_1("Curve", Curve);
             Angle = (function () {
                 function Angle(rad) {
@@ -290,7 +354,7 @@ System.register([], function(exports_1) {
                 Angle.prototype.selfIdentity = function () { this.rad = 0.0; return this; };
                 Angle.prototype.copy = function (other) { this.rad = other.rad; return this; };
                 return Angle;
-            }());
+            })();
             Vector = (function () {
                 function Vector(x, y) {
                     if (x === void 0) { x = 0.0; }
@@ -326,6 +390,7 @@ System.register([], function(exports_1) {
                     return Vector.add(this, other, out);
                 };
                 Vector.prototype.selfAdd = function (other) {
+                    // return Vector.add(this, other, this);
                     this.x += other.x;
                     this.y += other.y;
                     return this;
@@ -344,7 +409,7 @@ System.register([], function(exports_1) {
                     return Vector.tween(this, other, pct, this);
                 };
                 return Vector;
-            }());
+            })();
             exports_1("Vector", Vector);
             Position = (function (_super) {
                 __extends(Position, _super);
@@ -352,7 +417,7 @@ System.register([], function(exports_1) {
                     _super.call(this, 0.0, 0.0);
                 }
                 return Position;
-            }(Vector));
+            })(Vector);
             exports_1("Position", Position);
             Rotation = (function (_super) {
                 __extends(Rotation, _super);
@@ -360,7 +425,7 @@ System.register([], function(exports_1) {
                     _super.call(this, 0.0);
                 }
                 return Rotation;
-            }(Angle));
+            })(Angle);
             exports_1("Rotation", Rotation);
             Scale = (function (_super) {
                 __extends(Scale, _super);
@@ -373,28 +438,18 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return Scale;
-            }(Vector));
+            })(Vector);
             exports_1("Scale", Scale);
-            Flip = (function (_super) {
-                __extends(Flip, _super);
-                function Flip() {
-                    _super.call(this, 1.0, 1.0);
-                }
-                return Flip;
-            }(Vector));
-            exports_1("Flip", Flip);
             Space = (function () {
                 function Space() {
                     this.position = new Position();
                     this.rotation = new Rotation();
                     this.scale = new Scale();
-                    this.flip = new Flip();
                 }
                 Space.prototype.copy = function (other) {
                     this.position.copy(other.position);
                     this.rotation.copy(other.rotation);
                     this.scale.copy(other.scale);
-                    this.flip.copy(other.flip);
                     return this;
                 };
                 Space.prototype.load = function (json) {
@@ -403,8 +458,6 @@ System.register([], function(exports_1) {
                     this.rotation.deg = loadFloat(json, "rotation", 0);
                     this.scale.x = loadFloat(json, "scaleX", 1);
                     this.scale.y = loadFloat(json, "scaleY", 1);
-                    this.flip.x = loadBool(json, "flipX", false) ? -1 : 1;
-                    this.flip.y = loadBool(json, "flipY", false) ? -1 : 1;
                     return this;
                 };
                 Space.equal = function (a, b, epsilon) {
@@ -424,12 +477,6 @@ System.register([], function(exports_1) {
                     if (Math.abs(a.scale.y - b.scale.y) > epsilon) {
                         return false;
                     }
-                    if (Math.abs(a.flip.x - b.flip.x) > epsilon) {
-                        return false;
-                    }
-                    if (Math.abs(a.flip.y - b.flip.y) > epsilon) {
-                        return false;
-                    }
                     return true;
                 };
                 Space.identity = function (out) {
@@ -439,14 +486,12 @@ System.register([], function(exports_1) {
                     out.rotation.rad = 0;
                     out.scale.x = 1;
                     out.scale.y = 1;
-                    out.flip.x = 1;
-                    out.flip.y = 1;
                     return out;
                 };
                 Space.translate = function (space, x, y) {
-                    x *= space.scale.x * space.flip.x;
-                    y *= space.scale.y * space.flip.y;
-                    var rad = space.rotation.rad * space.flip.x * space.flip.y;
+                    x *= space.scale.x;
+                    y *= space.scale.y;
+                    var rad = space.rotation.rad;
                     var c = Math.cos(rad);
                     var s = Math.sin(rad);
                     var tx = c * x - s * y;
@@ -465,15 +510,12 @@ System.register([], function(exports_1) {
                     space.scale.y *= y;
                     return space;
                 };
-                Space.flip = function (space, x, y) {
-                    space.flip.x *= x ? -1 : 1;
-                    space.flip.y *= y ? -1 : 1;
-                    return space;
-                };
                 Space.invert = function (space, out) {
                     if (out === void 0) { out = new Space(); }
-                    var inv_flip_x = space.flip.x;
-                    var inv_flip_y = space.flip.y;
+                    // invert
+                    // out.sca = space.sca.inv();
+                    // out.rot = space.rot.inv();
+                    // out.pos = space.pos.neg().rotate(space.rot.inv()).mul(space.sca.inv());
                     var inv_scale_x = 1 / space.scale.x;
                     var inv_scale_y = 1 / space.scale.y;
                     var inv_rotation = -space.rotation.rad;
@@ -482,24 +524,26 @@ System.register([], function(exports_1) {
                     out.scale.x = inv_scale_x;
                     out.scale.y = inv_scale_y;
                     out.rotation.rad = inv_rotation;
-                    out.flip.x = inv_flip_x;
-                    out.flip.y = inv_flip_y;
                     var x = inv_x;
                     var y = inv_y;
-                    var rad = inv_rotation * inv_flip_x * inv_flip_y;
+                    var rad = inv_rotation;
                     var c = Math.cos(rad);
                     var s = Math.sin(rad);
                     var tx = c * x - s * y;
                     var ty = s * x + c * y;
-                    out.position.x = tx * inv_scale_x * inv_flip_x;
-                    out.position.y = ty * inv_scale_y * inv_flip_y;
+                    out.position.x = tx * inv_scale_x;
+                    out.position.y = ty * inv_scale_y;
                     return out;
                 };
                 Space.combine = function (a, b, out) {
                     if (out === void 0) { out = new Space(); }
-                    var x = b.position.x * a.scale.x * a.flip.x;
-                    var y = b.position.y * a.scale.y * a.flip.y;
-                    var rad = a.rotation.rad * a.flip.x * a.flip.y;
+                    // combine
+                    // out.pos = b.pos.mul(a.sca).rotate(a.rot).add(a.pos);
+                    // out.rot = b.rot.mul(a.rot);
+                    // out.sca = b.sca.mul(a.sca);
+                    var x = b.position.x * a.scale.x;
+                    var y = b.position.y * a.scale.y;
+                    var rad = a.rotation.rad;
                     var c = Math.cos(rad);
                     var s = Math.sin(rad);
                     var tx = c * x - s * y;
@@ -509,33 +553,33 @@ System.register([], function(exports_1) {
                     out.rotation.rad = wrapAngleRadians(b.rotation.rad + a.rotation.rad);
                     out.scale.x = b.scale.x * a.scale.x;
                     out.scale.y = b.scale.y * a.scale.y;
-                    out.flip.x = b.flip.x * a.flip.x;
-                    out.flip.y = b.flip.y * a.flip.y;
                     return out;
                 };
                 Space.extract = function (ab, a, out) {
                     if (out === void 0) { out = new Space(); }
-                    out.flip.x = ab.flip.x * a.flip.x;
-                    out.flip.y = ab.flip.y * a.flip.y;
+                    // extract
+                    // out.sca = ab.sca.mul(a.sca.inv());
+                    // out.rot = ab.rot.mul(a.rot.inv());
+                    // out.pos = ab.pos.add(a.pos.neg()).rotate(a.rot.inv()).mul(a.sca.inv());
                     out.scale.x = ab.scale.x / a.scale.x;
                     out.scale.y = ab.scale.y / a.scale.y;
                     out.rotation.rad = wrapAngleRadians(ab.rotation.rad - a.rotation.rad);
                     var x = ab.position.x - a.position.x;
                     var y = ab.position.y - a.position.y;
-                    var rad = -a.rotation.rad * a.flip.x * a.flip.y;
+                    var rad = -a.rotation.rad;
                     var c = Math.cos(rad);
                     var s = Math.sin(rad);
                     var tx = c * x - s * y;
                     var ty = s * x + c * y;
-                    out.position.x = tx / (a.scale.x * a.flip.x);
-                    out.position.y = ty / (a.scale.y * a.flip.y);
+                    out.position.x = tx / a.scale.x;
+                    out.position.y = ty / a.scale.y;
                     return out;
                 };
                 Space.transform = function (space, v, out) {
                     if (out === void 0) { out = new Vector(); }
-                    var x = v.x * space.scale.x * space.flip.x;
-                    var y = v.y * space.scale.y * space.flip.y;
-                    var rad = space.rotation.rad * space.flip.x * space.flip.y;
+                    var x = v.x * space.scale.x;
+                    var y = v.y * space.scale.y;
+                    var rad = space.rotation.rad;
                     var c = Math.cos(rad);
                     var s = Math.sin(rad);
                     var tx = c * x - s * y;
@@ -548,13 +592,13 @@ System.register([], function(exports_1) {
                     if (out === void 0) { out = new Vector(); }
                     var x = v.x - space.position.x;
                     var y = v.y - space.position.y;
-                    var rad = -space.rotation.rad * space.flip.x * space.flip.y;
+                    var rad = -space.rotation.rad;
                     var c = Math.cos(rad);
                     var s = Math.sin(rad);
                     var tx = c * x - s * y;
                     var ty = s * x + c * y;
-                    out.x = tx / (space.scale.x * space.flip.x);
-                    out.y = ty / (space.scale.y * space.flip.y);
+                    out.x = tx / space.scale.x;
+                    out.y = ty / space.scale.y;
                     return out;
                 };
                 Space.tween = function (a, b, t, out) {
@@ -567,7 +611,7 @@ System.register([], function(exports_1) {
                     return out;
                 };
                 return Space;
-            }());
+            })();
             exports_1("Space", Space);
             Bone = (function () {
                 function Bone() {
@@ -600,12 +644,13 @@ System.register([], function(exports_1) {
                     var parent_bone = bones[bone.parent_key];
                     if (parent_bone) {
                         Bone.flatten(parent_bone, bones);
+                        // Space.combine(parent_bone.world_space, bone.local_space, bone.world_space);
                         var a = parent_bone.world_space;
                         var b = bone.local_space;
                         var out = bone.world_space;
-                        var x = b.position.x * a.scale.x * a.flip.x;
-                        var y = b.position.y * a.scale.y * a.flip.y;
-                        var rad = a.rotation.rad * a.flip.x * a.flip.y;
+                        var x = b.position.x * a.scale.x;
+                        var y = b.position.y * a.scale.y;
+                        var rad = a.rotation.rad;
                         var c = Math.cos(rad);
                         var s = Math.sin(rad);
                         var tx = c * x - s * y;
@@ -626,8 +671,6 @@ System.register([], function(exports_1) {
                             out.scale.x = b.scale.x;
                             out.scale.y = b.scale.y;
                         }
-                        out.flip.x = b.flip.x * a.flip.x;
-                        out.flip.y = b.flip.y * a.flip.y;
                     }
                     else {
                         bone.world_space.copy(bone.local_space);
@@ -635,7 +678,7 @@ System.register([], function(exports_1) {
                     return bone;
                 };
                 return Bone;
-            }());
+            })();
             exports_1("Bone", Bone);
             Ikc = (function () {
                 function Ikc() {
@@ -654,7 +697,7 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return Ikc;
-            }());
+            })();
             exports_1("Ikc", Ikc);
             Slot = (function () {
                 function Slot() {
@@ -678,7 +721,7 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return Slot;
-            }());
+            })();
             exports_1("Slot", Slot);
             Attachment = (function () {
                 function Attachment(type) {
@@ -697,7 +740,7 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return Attachment;
-            }());
+            })();
             exports_1("Attachment", Attachment);
             RegionAttachment = (function (_super) {
                 __extends(RegionAttachment, _super);
@@ -715,13 +758,13 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return RegionAttachment;
-            }(Attachment));
+            })(Attachment);
             exports_1("RegionAttachment", RegionAttachment);
             BoundingBoxAttachment = (function (_super) {
                 __extends(BoundingBoxAttachment, _super);
                 function BoundingBoxAttachment() {
                     _super.call(this, "boundingbox");
-                    this.vertices = [];
+                    this.vertices = []; /// The x/y pairs that make up the vertices of the polygon.
                 }
                 BoundingBoxAttachment.prototype.load = function (json) {
                     _super.prototype.load.call(this, json);
@@ -729,7 +772,7 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return BoundingBoxAttachment;
-            }(Attachment));
+            })(Attachment);
             exports_1("BoundingBoxAttachment", BoundingBoxAttachment);
             MeshAttachment = (function (_super) {
                 __extends(MeshAttachment, _super);
@@ -753,7 +796,7 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return MeshAttachment;
-            }(Attachment));
+            })(Attachment);
             exports_1("MeshAttachment", MeshAttachment);
             SkinnedMeshAttachment = (function (_super) {
                 __extends(SkinnedMeshAttachment, _super);
@@ -777,7 +820,7 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return SkinnedMeshAttachment;
-            }(Attachment));
+            })(Attachment);
             exports_1("SkinnedMeshAttachment", SkinnedMeshAttachment);
             SkinSlot = (function () {
                 function SkinSlot() {
@@ -808,7 +851,7 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return SkinSlot;
-            }());
+            })();
             exports_1("SkinSlot", SkinSlot);
             Skin = (function () {
                 function Skin() {
@@ -836,7 +879,7 @@ System.register([], function(exports_1) {
                     });
                 };
                 return Skin;
-            }());
+            })();
             exports_1("Skin", Skin);
             Event = (function () {
                 function Event() {
@@ -866,7 +909,7 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return Event;
-            }());
+            })();
             exports_1("Event", Event);
             Keyframe = (function () {
                 function Keyframe() {
@@ -877,11 +920,11 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 Keyframe.prototype.load = function (json) {
-                    this.time = 1000 * loadFloat(json, "time", 0);
+                    this.time = 1000 * loadFloat(json, "time", 0); // convert to ms
                     return this;
                 };
                 Keyframe.prototype.save = function (json) {
-                    saveFloat(json, "time", this.time / 1000, 0);
+                    saveFloat(json, "time", this.time / 1000, 0); // convert to s
                     return this;
                 };
                 Keyframe.find = function (array, time) {
@@ -921,7 +964,7 @@ System.register([], function(exports_1) {
                     return a.time - b.time;
                 };
                 return Keyframe;
-            }());
+            })();
             exports_1("Keyframe", Keyframe);
             BoneKeyframe = (function (_super) {
                 __extends(BoneKeyframe, _super);
@@ -935,7 +978,7 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return BoneKeyframe;
-            }(Keyframe));
+            })(Keyframe);
             exports_1("BoneKeyframe", BoneKeyframe);
             TranslateKeyframe = (function (_super) {
                 __extends(TranslateKeyframe, _super);
@@ -950,7 +993,7 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return TranslateKeyframe;
-            }(BoneKeyframe));
+            })(BoneKeyframe);
             exports_1("TranslateKeyframe", TranslateKeyframe);
             RotateKeyframe = (function (_super) {
                 __extends(RotateKeyframe, _super);
@@ -964,7 +1007,7 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return RotateKeyframe;
-            }(BoneKeyframe));
+            })(BoneKeyframe);
             exports_1("RotateKeyframe", RotateKeyframe);
             ScaleKeyframe = (function (_super) {
                 __extends(ScaleKeyframe, _super);
@@ -979,36 +1022,8 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return ScaleKeyframe;
-            }(BoneKeyframe));
+            })(BoneKeyframe);
             exports_1("ScaleKeyframe", ScaleKeyframe);
-            FlipXKeyframe = (function (_super) {
-                __extends(FlipXKeyframe, _super);
-                function FlipXKeyframe() {
-                    _super.apply(this, arguments);
-                    this.flip_x = 1;
-                }
-                FlipXKeyframe.prototype.load = function (json) {
-                    _super.prototype.load.call(this, json);
-                    this.flip_x = loadBool(json, "x", false) ? -1 : 1;
-                    return this;
-                };
-                return FlipXKeyframe;
-            }(BoneKeyframe));
-            exports_1("FlipXKeyframe", FlipXKeyframe);
-            FlipYKeyframe = (function (_super) {
-                __extends(FlipYKeyframe, _super);
-                function FlipYKeyframe() {
-                    _super.apply(this, arguments);
-                    this.flip_y = 1;
-                }
-                FlipYKeyframe.prototype.load = function (json) {
-                    _super.prototype.load.call(this, json);
-                    this.flip_y = loadBool(json, "y", false) ? -1 : 1;
-                    return this;
-                };
-                return FlipYKeyframe;
-            }(BoneKeyframe));
-            exports_1("FlipYKeyframe", FlipYKeyframe);
             AnimBone = (function () {
                 function AnimBone() {
                     this.min_time = 0;
@@ -1021,8 +1036,6 @@ System.register([], function(exports_1) {
                     this.translate_keyframes = null;
                     this.rotate_keyframes = null;
                     this.scale_keyframes = null;
-                    this.flip_x_keyframes = null;
-                    this.flip_y_keyframes = null;
                     Object.keys(json).forEach(function (key) {
                         switch (key) {
                             case "translate":
@@ -1055,26 +1068,6 @@ System.register([], function(exports_1) {
                                 });
                                 _this.scale_keyframes = _this.scale_keyframes.sort(Keyframe.compare);
                                 break;
-                            case "flipX":
-                                _this.flip_x_keyframes = [];
-                                json[key].forEach(function (flip_json) {
-                                    var flip_x_keyframe = new FlipXKeyframe().load(flip_json);
-                                    _this.flip_x_keyframes.push(flip_x_keyframe);
-                                    _this.min_time = Math.min(_this.min_time, flip_x_keyframe.time);
-                                    _this.max_time = Math.max(_this.max_time, flip_x_keyframe.time);
-                                });
-                                _this.flip_x_keyframes = _this.flip_x_keyframes.sort(Keyframe.compare);
-                                break;
-                            case "flipY":
-                                _this.flip_y_keyframes = [];
-                                json[key].forEach(function (flip_json) {
-                                    var flip_y_keyframe = new FlipYKeyframe().load(flip_json);
-                                    _this.flip_y_keyframes.push(flip_y_keyframe);
-                                    _this.min_time = Math.min(_this.min_time, flip_y_keyframe.time);
-                                    _this.max_time = Math.max(_this.max_time, flip_y_keyframe.time);
-                                });
-                                _this.flip_y_keyframes = _this.flip_y_keyframes.sort(Keyframe.compare);
-                                break;
                             default:
                                 console.log("TODO: AnimBone::load", key);
                                 break;
@@ -1083,7 +1076,7 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return AnimBone;
-            }());
+            })();
             exports_1("AnimBone", AnimBone);
             SlotKeyframe = (function (_super) {
                 __extends(SlotKeyframe, _super);
@@ -1091,7 +1084,7 @@ System.register([], function(exports_1) {
                     _super.apply(this, arguments);
                 }
                 return SlotKeyframe;
-            }(Keyframe));
+            })(Keyframe);
             exports_1("SlotKeyframe", SlotKeyframe);
             ColorKeyframe = (function (_super) {
                 __extends(ColorKeyframe, _super);
@@ -1107,7 +1100,7 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return ColorKeyframe;
-            }(SlotKeyframe));
+            })(SlotKeyframe);
             exports_1("ColorKeyframe", ColorKeyframe);
             AttachmentKeyframe = (function (_super) {
                 __extends(AttachmentKeyframe, _super);
@@ -1121,7 +1114,7 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return AttachmentKeyframe;
-            }(SlotKeyframe));
+            })(SlotKeyframe);
             exports_1("AttachmentKeyframe", AttachmentKeyframe);
             AnimSlot = (function () {
                 function AnimSlot() {
@@ -1164,7 +1157,7 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return AnimSlot;
-            }());
+            })();
             exports_1("AnimSlot", AnimSlot);
             EventKeyframe = (function (_super) {
                 __extends(EventKeyframe, _super);
@@ -1190,7 +1183,7 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return EventKeyframe;
-            }(Keyframe));
+            })(Keyframe);
             exports_1("EventKeyframe", EventKeyframe);
             SlotOffset = (function () {
                 function SlotOffset() {
@@ -1203,7 +1196,7 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return SlotOffset;
-            }());
+            })();
             exports_1("SlotOffset", SlotOffset);
             OrderKeyframe = (function (_super) {
                 __extends(OrderKeyframe, _super);
@@ -1227,7 +1220,7 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return OrderKeyframe;
-            }(Keyframe));
+            })(Keyframe);
             exports_1("OrderKeyframe", OrderKeyframe);
             IkcKeyframe = (function (_super) {
                 __extends(IkcKeyframe, _super);
@@ -1245,7 +1238,7 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return IkcKeyframe;
-            }(Keyframe));
+            })(Keyframe);
             exports_1("IkcKeyframe", IkcKeyframe);
             AnimIkc = (function () {
                 function AnimIkc() {
@@ -1267,7 +1260,7 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return AnimIkc;
-            }());
+            })();
             exports_1("AnimIkc", AnimIkc);
             FfdKeyframe = (function (_super) {
                 __extends(FfdKeyframe, _super);
@@ -1284,7 +1277,7 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return FfdKeyframe;
-            }(Keyframe));
+            })(Keyframe);
             exports_1("FfdKeyframe", FfdKeyframe);
             FfdAttachment = (function () {
                 function FfdAttachment() {
@@ -1306,7 +1299,7 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return FfdAttachment;
-            }());
+            })();
             exports_1("FfdAttachment", FfdAttachment);
             FfdSlot = (function () {
                 function FfdSlot() {
@@ -1328,7 +1321,7 @@ System.register([], function(exports_1) {
                     });
                 };
                 return FfdSlot;
-            }());
+            })();
             exports_1("FfdSlot", FfdSlot);
             AnimFfd = (function () {
                 function AnimFfd() {
@@ -1362,7 +1355,7 @@ System.register([], function(exports_1) {
                     });
                 };
                 return AnimFfd;
-            }());
+            })();
             exports_1("AnimFfd", AnimFfd);
             Animation = (function () {
                 function Animation() {
@@ -1445,7 +1438,7 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return Animation;
-            }());
+            })();
             exports_1("Animation", Animation);
             Skeleton = (function () {
                 function Skeleton() {
@@ -1464,7 +1457,7 @@ System.register([], function(exports_1) {
                     return this;
                 };
                 return Skeleton;
-            }());
+            })();
             exports_1("Skeleton", Skeleton);
             Data = (function () {
                 function Data() {
@@ -1615,7 +1608,7 @@ System.register([], function(exports_1) {
                     });
                 };
                 return Data;
-            }());
+            })();
             exports_1("Data", Data);
             Pose = (function () {
                 function Pose(data) {
@@ -1726,8 +1719,8 @@ System.register([], function(exports_1) {
                     var anim = data && data.anims[pose.anim_key];
                     var prev_time = pose.time;
                     var elapsed_time = pose.elapsed_time;
-                    pose.time = pose.time + pose.elapsed_time;
-                    pose.elapsed_time = 0;
+                    pose.time = pose.time + pose.elapsed_time; // accumulate elapsed time
+                    pose.elapsed_time = 0; // reset elapsed time for next strike
                     var wrapped_min = false;
                     var wrapped_max = false;
                     if (anim) {
@@ -1740,7 +1733,9 @@ System.register([], function(exports_1) {
                     data.bone_keys.forEach(function (bone_key) {
                         var data_bone = data.bones[bone_key];
                         var pose_bone = pose.bones[bone_key] || (pose.bones[bone_key] = new Bone());
+                        // start with a copy of the data bone
                         pose_bone.copy(data_bone);
+                        // tween anim bone if keyframes are available
                         var anim_bone = anim && anim.bones[bone_key];
                         if (anim_bone) {
                             keyframe_index = Keyframe.find(anim_bone.translate_keyframes, time);
@@ -1783,19 +1778,10 @@ System.register([], function(exports_1) {
                                     pose_bone.local_space.scale.y += scale_keyframe0.scale.y - 1;
                                 }
                             }
-                            keyframe_index = Keyframe.find(anim_bone.flip_x_keyframes, time);
-                            if (keyframe_index !== -1) {
-                                var flip_x_keyframe0 = anim_bone.flip_x_keyframes[keyframe_index];
-                                pose_bone.local_space.flip.x = flip_x_keyframe0.flip_x;
-                            }
-                            keyframe_index = Keyframe.find(anim_bone.flip_y_keyframes, time);
-                            if (keyframe_index !== -1) {
-                                var flip_y_keyframe0 = anim_bone.flip_y_keyframes[keyframe_index];
-                                pose_bone.local_space.flip.y = flip_y_keyframe0.flip_y;
-                            }
                         }
                     });
                     pose.bone_keys = data.bone_keys;
+                    // ik constraints
                     data.ikc_keys.forEach(function (ikc_key) {
                         function clamp(n, lo, hi) { return (n < lo) ? lo : ((n > hi) ? hi : n); }
                         var ikc = data.ikcs[ikc_key];
@@ -1814,6 +1800,7 @@ System.register([], function(exports_1) {
                                 else {
                                     ikc_mix = ikc_keyframe0.mix;
                                 }
+                                // no tweening ik bend direction
                                 ikc_bend_positive = ikc_keyframe0.bend_positive;
                             }
                         }
@@ -1851,7 +1838,7 @@ System.register([], function(exports_1) {
                                     position.x = target_x;
                                     position.y = target_y;
                                     Bone.flatten(parent_parent, pose.bones);
-                                    Space.untransform(parent_parent.world_space, position, position);
+                                    Space.untransform(parent_parent.world_space, position, position); // world to local
                                     target_x = (position.x - parent_1.local_space.position.x) * parent_parent.world_space.scale.x;
                                     target_y = (position.y - parent_1.local_space.position.y) * parent_parent.world_space.scale.y;
                                 }
@@ -1863,8 +1850,8 @@ System.register([], function(exports_1) {
                                 var child_parent = pose.bones[child.parent_key];
                                 if (child_parent !== parent_1) {
                                     Bone.flatten(child_parent, pose.bones);
-                                    Space.transform(child_parent.world_space, position, position);
-                                    Space.untransform(parent_1.world_space, position, position);
+                                    Space.transform(child_parent.world_space, position, position); // local to world
+                                    Space.untransform(parent_1.world_space, position, position); // world to local
                                 }
                                 var child_x = position.x * parent_1.world_space.scale.x;
                                 var child_y = position.y * parent_1.world_space.scale.y;
@@ -1897,7 +1884,9 @@ System.register([], function(exports_1) {
                     data.slot_keys.forEach(function (slot_key) {
                         var data_slot = data.slots[slot_key];
                         var pose_slot = pose.slots[slot_key] || (pose.slots[slot_key] = new Slot());
+                        // start with a copy of the data slot
                         pose_slot.copy(data_slot);
+                        // tween anim slot if keyframes are available
                         var anim_slot = anim && anim.slots[slot_key];
                         if (anim_slot) {
                             keyframe_index = Keyframe.find(anim_slot.color_keyframes, time);
@@ -1921,6 +1910,7 @@ System.register([], function(exports_1) {
                             keyframe_index = Keyframe.find(anim_slot.attachment_keyframes, time);
                             if (keyframe_index !== -1) {
                                 var attachment_keyframe0 = anim_slot.attachment_keyframes[keyframe_index];
+                                // no tweening attachments
                                 pose_slot.attachment_key = attachment_keyframe0.name;
                             }
                         }
@@ -1930,11 +1920,13 @@ System.register([], function(exports_1) {
                         keyframe_index = Keyframe.find(anim.order_keyframes, time);
                         if (keyframe_index !== -1) {
                             var order_keyframe = anim.order_keyframes[keyframe_index];
-                            pose.slot_keys = data.slot_keys.slice(0);
+                            pose.slot_keys = data.slot_keys.slice(0); // copy array before reordering
                             order_keyframe.slot_offsets.forEach(function (slot_offset) {
                                 var slot_index = pose.slot_keys.indexOf(slot_offset.slot_key);
                                 if (slot_index !== -1) {
+                                    // delete old position
                                     pose.slot_keys.splice(slot_index, 1);
+                                    // insert new position
                                     pose.slot_keys.splice(slot_index + slot_offset.offset, 0, slot_offset.slot_key);
                                 }
                             });
@@ -1955,6 +1947,11 @@ System.register([], function(exports_1) {
                         };
                         if (elapsed_time < 0) {
                             if (wrapped_min) {
+                                // min    prev_time           time      max
+                                //  |         |                |         |
+                                //  ----------x                o<---------
+                                // all events between min_time and prev_time, not including prev_time
+                                // all events between max_time and time
                                 anim.event_keyframes.forEach(function (event_keyframe) {
                                     if (((anim.min_time <= event_keyframe.time) && (event_keyframe.time < prev_time)) ||
                                         ((time <= event_keyframe.time) && (event_keyframe.time <= anim.max_time))) {
@@ -1963,6 +1960,10 @@ System.register([], function(exports_1) {
                                 });
                             }
                             else {
+                                // min       time          prev_time    max
+                                //  |         |                |         |
+                                //            o<---------------x
+                                // all events between time and prev_time, not including prev_time
                                 anim.event_keyframes.forEach(function (event_keyframe) {
                                     if ((time <= event_keyframe.time) && (event_keyframe.time < prev_time)) {
                                         add_event(event_keyframe);
@@ -1972,6 +1973,11 @@ System.register([], function(exports_1) {
                         }
                         else {
                             if (wrapped_max) {
+                                // min       time          prev_time    max
+                                //  |         |                |         |
+                                //  --------->o                x----------
+                                // all events between prev_time and max_time, not including prev_time
+                                // all events between min_time and time
                                 anim.event_keyframes.forEach(function (event_keyframe) {
                                     if (((anim.min_time <= event_keyframe.time) && (event_keyframe.time <= time)) ||
                                         ((prev_time < event_keyframe.time) && (event_keyframe.time <= anim.max_time))) {
@@ -1980,6 +1986,10 @@ System.register([], function(exports_1) {
                                 });
                             }
                             else {
+                                // min    prev_time           time      max
+                                //  |         |                |         |
+                                //            x--------------->o
+                                // all events between prev_time and time, not including prev_time
                                 anim.event_keyframes.forEach(function (event_keyframe) {
                                     if ((prev_time < event_keyframe.time) && (event_keyframe.time <= time)) {
                                         add_event(event_keyframe);
@@ -2010,7 +2020,7 @@ System.register([], function(exports_1) {
                     });
                 };
                 return Pose;
-            }());
+            })();
             exports_1("Pose", Pose);
         }
     }

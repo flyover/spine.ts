@@ -386,22 +386,14 @@ export class Scale extends Vector {
   }
 }
 
-export class Flip extends Vector {
-  constructor() {
-    super(1.0, 1.0);
-  }
-}
-
 export class Space {
   public position: Position = new Position();
   public rotation: Rotation = new Rotation();
   public scale: Scale = new Scale();
-  public flip: Flip = new Flip();
   public copy(other: Space): Space {
     this.position.copy(other.position);
     this.rotation.copy(other.rotation);
     this.scale.copy(other.scale);
-    this.flip.copy(other.flip);
     return this;
   }
   public load(json: any): Space {
@@ -410,8 +402,6 @@ export class Space {
     this.rotation.deg = loadFloat(json, "rotation", 0);
     this.scale.x = loadFloat(json, "scaleX", 1);
     this.scale.y = loadFloat(json, "scaleY", 1);
-    this.flip.x = loadBool(json, "flipX", false) ? -1 : 1;
-    this.flip.y = loadBool(json, "flipY", false) ? -1 : 1;
     return this;
   }
   public static equal(a: Space, b: Space, epsilon: number = 1e-6): boolean {
@@ -420,8 +410,6 @@ export class Space {
     if (Math.abs(a.rotation.rad - b.rotation.rad) > epsilon) { return false; }
     if (Math.abs(a.scale.x - b.scale.x) > epsilon) { return false; }
     if (Math.abs(a.scale.y - b.scale.y) > epsilon) { return false; }
-    if (Math.abs(a.flip.x - b.flip.x) > epsilon) { return false; }
-    if (Math.abs(a.flip.y - b.flip.y) > epsilon) { return false; }
     return true;
   }
   public static identity(out: Space = new Space()): Space {
@@ -430,14 +418,12 @@ export class Space {
     out.rotation.rad = 0;
     out.scale.x = 1;
     out.scale.y = 1;
-    out.flip.x = 1;
-    out.flip.y = 1;
     return out;
   }
   public static translate(space: Space, x: number, y: number): Space {
-    x *= space.scale.x * space.flip.x;
-    y *= space.scale.y * space.flip.y;
-    const rad: number = space.rotation.rad * space.flip.x * space.flip.y;
+    x *= space.scale.x;
+    y *= space.scale.y;
+    const rad: number = space.rotation.rad;
     const c: number = Math.cos(rad);
     const s: number = Math.sin(rad);
     const tx: number = c * x - s * y;
@@ -456,18 +442,11 @@ export class Space {
     space.scale.y *= y;
     return space;
   }
-  public static flip(space: Space, x: boolean, y: boolean): Space {
-    space.flip.x *= x ? -1 : 1;
-    space.flip.y *= y ? -1 : 1;
-    return space;
-  }
   public static invert(space: Space, out: Space = new Space()): Space {
     // invert
     // out.sca = space.sca.inv();
     // out.rot = space.rot.inv();
     // out.pos = space.pos.neg().rotate(space.rot.inv()).mul(space.sca.inv());
-    const inv_flip_x: number = space.flip.x;
-    const inv_flip_y: number = space.flip.y;
     const inv_scale_x: number = 1 / space.scale.x;
     const inv_scale_y: number = 1 / space.scale.y;
     const inv_rotation: number = -space.rotation.rad;
@@ -476,17 +455,15 @@ export class Space {
     out.scale.x = inv_scale_x;
     out.scale.y = inv_scale_y;
     out.rotation.rad = inv_rotation;
-    out.flip.x = inv_flip_x;
-    out.flip.y = inv_flip_y;
     const x: number = inv_x;
     const y: number = inv_y;
-    const rad: number = inv_rotation * inv_flip_x * inv_flip_y;
+    const rad: number = inv_rotation;
     const c: number = Math.cos(rad);
     const s: number = Math.sin(rad);
     const tx: number = c * x - s * y;
     const ty: number = s * x + c * y;
-    out.position.x = tx * inv_scale_x * inv_flip_x;
-    out.position.y = ty * inv_scale_y * inv_flip_y;
+    out.position.x = tx * inv_scale_x;
+    out.position.y = ty * inv_scale_y;
     return out;
   }
   public static combine(a: Space, b: Space, out: Space = new Space()): Space {
@@ -494,9 +471,9 @@ export class Space {
     // out.pos = b.pos.mul(a.sca).rotate(a.rot).add(a.pos);
     // out.rot = b.rot.mul(a.rot);
     // out.sca = b.sca.mul(a.sca);
-    const x: number = b.position.x * a.scale.x * a.flip.x;
-    const y: number = b.position.y * a.scale.y * a.flip.y;
-    const rad: number = a.rotation.rad * a.flip.x * a.flip.y;
+    const x: number = b.position.x * a.scale.x;
+    const y: number = b.position.y * a.scale.y;
+    const rad: number = a.rotation.rad;
     const c: number = Math.cos(rad);
     const s: number = Math.sin(rad);
     const tx: number = c * x - s * y;
@@ -506,8 +483,6 @@ export class Space {
     out.rotation.rad = wrapAngleRadians(b.rotation.rad + a.rotation.rad);
     out.scale.x = b.scale.x * a.scale.x;
     out.scale.y = b.scale.y * a.scale.y;
-    out.flip.x = b.flip.x * a.flip.x;
-    out.flip.y = b.flip.y * a.flip.y;
     return out;
   }
   public static extract(ab: Space, a: Space, out: Space = new Space()): Space {
@@ -515,26 +490,24 @@ export class Space {
     // out.sca = ab.sca.mul(a.sca.inv());
     // out.rot = ab.rot.mul(a.rot.inv());
     // out.pos = ab.pos.add(a.pos.neg()).rotate(a.rot.inv()).mul(a.sca.inv());
-    out.flip.x = ab.flip.x * a.flip.x;
-    out.flip.y = ab.flip.y * a.flip.y;
     out.scale.x = ab.scale.x / a.scale.x;
     out.scale.y = ab.scale.y / a.scale.y;
     out.rotation.rad = wrapAngleRadians(ab.rotation.rad - a.rotation.rad);
     const x: number = ab.position.x - a.position.x;
     const y: number = ab.position.y - a.position.y;
-    const rad: number = -a.rotation.rad * a.flip.x * a.flip.y;
+    const rad: number = -a.rotation.rad;
     const c: number = Math.cos(rad);
     const s: number = Math.sin(rad);
     const tx: number = c * x - s * y;
     const ty: number = s * x + c * y;
-    out.position.x = tx / (a.scale.x * a.flip.x);
-    out.position.y = ty / (a.scale.y * a.flip.y);
+    out.position.x = tx / a.scale.x;
+    out.position.y = ty / a.scale.y;
     return out;
   }
   public static transform(space: Space, v: Vector, out: Vector = new Vector()): Vector {
-    const x: number = v.x * space.scale.x * space.flip.x;
-    const y: number = v.y * space.scale.y * space.flip.y;
-    const rad: number = space.rotation.rad * space.flip.x * space.flip.y;
+    const x: number = v.x * space.scale.x;
+    const y: number = v.y * space.scale.y;
+    const rad: number = space.rotation.rad;
     const c: number = Math.cos(rad);
     const s: number = Math.sin(rad);
     const tx: number = c * x - s * y;
@@ -546,13 +519,13 @@ export class Space {
   public static untransform(space: Space, v: Vector, out: Vector = new Vector()): Vector {
     const x: number = v.x - space.position.x;
     const y: number = v.y - space.position.y;
-    const rad: number = -space.rotation.rad * space.flip.x * space.flip.y;
+    const rad: number = -space.rotation.rad;
     const c: number = Math.cos(rad);
     const s: number = Math.sin(rad);
     const tx: number = c * x - s * y;
     const ty: number = s * x + c * y;
-    out.x = tx / (space.scale.x * space.flip.x);
-    out.y = ty / (space.scale.y * space.flip.y);
+    out.x = tx / space.scale.x;
+    out.y = ty / space.scale.y;
     return out;
   }
   public static tween(a: Space, b: Space, t: number, out: Space = new Space()): Space {
@@ -598,9 +571,9 @@ export class Bone {
       const a: Space = parent_bone.world_space;
       const b: Space = bone.local_space;
       const out: Space = bone.world_space;
-      const x: number = b.position.x * a.scale.x * a.flip.x;
-      const y: number = b.position.y * a.scale.y * a.flip.y;
-      const rad: number = a.rotation.rad * a.flip.x * a.flip.y;
+      const x: number = b.position.x * a.scale.x;
+      const y: number = b.position.y * a.scale.y;
+      const rad: number = a.rotation.rad;
       const c: number = Math.cos(rad);
       const s: number = Math.sin(rad);
       const tx: number = c * x - s * y;
@@ -619,8 +592,6 @@ export class Bone {
         out.scale.x = b.scale.x;
         out.scale.y = b.scale.y;
       }
-      out.flip.x = b.flip.x * a.flip.x;
-      out.flip.y = b.flip.y * a.flip.y;
     } else {
       bone.world_space.copy(bone.local_space);
     }
@@ -903,40 +874,18 @@ export class ScaleKeyframe extends BoneKeyframe {
   }
 }
 
-export class FlipXKeyframe extends BoneKeyframe {
-  public flip_x: number = 1;
-  public load(json: any): FlipXKeyframe {
-    super.load(json);
-    this.flip_x = loadBool(json, "x", false) ? -1 : 1;
-    return this;
-  }
-}
-
-export class FlipYKeyframe extends BoneKeyframe {
-  public flip_y: number = 1;
-  public load(json: any): FlipYKeyframe {
-    super.load(json);
-    this.flip_y = loadBool(json, "y", false) ? -1 : 1;
-    return this;
-  }
-}
-
 export class AnimBone {
   public min_time: number = 0;
   public max_time: number = 0;
   public translate_keyframes: TranslateKeyframe[];
   public rotate_keyframes: RotateKeyframe[];
   public scale_keyframes: ScaleKeyframe[];
-  public flip_x_keyframes: FlipXKeyframe[];
-  public flip_y_keyframes: FlipYKeyframe[];
   public load(json: any): AnimBone {
     this.min_time = 0;
     this.max_time = 0;
     this.translate_keyframes = null;
     this.rotate_keyframes = null;
     this.scale_keyframes = null;
-    this.flip_x_keyframes = null;
-    this.flip_y_keyframes = null;
     Object.keys(json).forEach((key: string): void => {
       switch (key) {
         case "translate":
@@ -968,26 +917,6 @@ export class AnimBone {
             this.max_time = Math.max(this.max_time, scale_keyframe.time);
           });
           this.scale_keyframes = this.scale_keyframes.sort(Keyframe.compare);
-          break;
-        case "flipX":
-          this.flip_x_keyframes = [];
-          json[key].forEach((flip_json: any): void => {
-            const flip_x_keyframe: FlipXKeyframe = new FlipXKeyframe().load(flip_json);
-            this.flip_x_keyframes.push(flip_x_keyframe);
-            this.min_time = Math.min(this.min_time, flip_x_keyframe.time);
-            this.max_time = Math.max(this.max_time, flip_x_keyframe.time);
-          });
-          this.flip_x_keyframes = this.flip_x_keyframes.sort(Keyframe.compare);
-          break;
-        case "flipY":
-          this.flip_y_keyframes = [];
-          json[key].forEach((flip_json: any): void => {
-            const flip_y_keyframe: FlipYKeyframe = new FlipYKeyframe().load(flip_json);
-            this.flip_y_keyframes.push(flip_y_keyframe);
-            this.min_time = Math.min(this.min_time, flip_y_keyframe.time);
-            this.max_time = Math.max(this.max_time, flip_y_keyframe.time);
-          });
-          this.flip_y_keyframes = this.flip_y_keyframes.sort(Keyframe.compare);
           break;
         default:
           console.log("TODO: AnimBone::load", key);
@@ -1642,20 +1571,6 @@ export class Pose {
             pose_bone.local_space.scale.x += scale_keyframe0.scale.x - 1;
             pose_bone.local_space.scale.y += scale_keyframe0.scale.y - 1;
           }
-        }
-
-        keyframe_index = Keyframe.find(anim_bone.flip_x_keyframes, time);
-        if (keyframe_index !== -1) {
-          const flip_x_keyframe0: FlipXKeyframe = anim_bone.flip_x_keyframes[keyframe_index];
-          // no tweening bone flip x
-          pose_bone.local_space.flip.x = flip_x_keyframe0.flip_x;
-        }
-
-        keyframe_index = Keyframe.find(anim_bone.flip_y_keyframes, time);
-        if (keyframe_index !== -1) {
-          const flip_y_keyframe0: FlipYKeyframe = anim_bone.flip_y_keyframes[keyframe_index];
-          // no tweening bone flip y
-          pose_bone.local_space.flip.y = flip_y_keyframe0.flip_y;
         }
       }
     });
