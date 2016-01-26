@@ -452,8 +452,8 @@ export class RenderCtx2D {
 function ctxApplySpace(ctx: CanvasRenderingContext2D, space: spine.Space): void {
   if (space) {
     ctx.translate(space.position.x, space.position.y);
-    ctx.rotate(space.rotation.rad * space.flip.x * space.flip.y);
-    ctx.scale(space.scale.x * space.flip.x, space.scale.y * space.flip.y);
+    ctx.rotate(space.rotation.rad);
+    ctx.scale(space.scale.x, space.scale.y);
   }
 }
 

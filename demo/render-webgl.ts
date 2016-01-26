@@ -811,8 +811,8 @@ export function mat3x3Transform(m: Float32Array, v: Float32Array, out: Float32Ar
 export function mat3x3ApplySpace(m: Float32Array, space: spine.Space): Float32Array {
   if (space) {
     mat3x3Translate(m, space.position.x, space.position.y);
-    mat3x3Rotate(m, space.rotation.rad * space.flip.x * space.flip.y);
-    mat3x3Scale(m, space.scale.x * space.flip.x, space.scale.y * space.flip.y);
+    mat3x3Rotate(m, space.rotation.rad);
+    mat3x3Scale(m, space.scale.x, space.scale.y);
   }
   return m;
 }

@@ -1,4 +1,5 @@
 System.register(['../spine.ts', './render-webgl.ts'], function(exports_1) {
+    "use strict";
     var __extends = (this && this.__extends) || function (d, b) {
         for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
         function __() { this.constructor = d; }
@@ -9,8 +10,8 @@ System.register(['../spine.ts', './render-webgl.ts'], function(exports_1) {
     function ctxApplySpace(ctx, space) {
         if (space) {
             ctx.translate(space.position.x, space.position.y);
-            ctx.rotate(space.rotation.rad * space.flip.x * space.flip.y);
-            ctx.scale(space.scale.x * space.flip.x, space.scale.y * space.flip.y);
+            ctx.rotate(space.rotation.rad);
+            ctx.scale(space.scale.x, space.scale.y);
         }
     }
     function ctxApplyAtlasSitePosition(ctx, site) {
@@ -79,7 +80,6 @@ System.register(['../spine.ts', './render-webgl.ts'], function(exports_1) {
         render_webgl_ts_1.mat3x3Scale(site_texmatrix, image.width, image.height);
         render_webgl_ts_1.mat3x3ApplyAtlasPageTexcoord(site_texmatrix, page);
         render_webgl_ts_1.mat3x3ApplyAtlasSiteTexcoord(site_texmatrix, site);
-        // http://www.irrlicht3d.org/pivot/entry.php?id=1329
         for (var index = 0; index < triangles.length;) {
             var triangle0 = triangles[index++] * 2;
             var position0 = positions.subarray(triangle0, triangle0 + 2);
@@ -190,67 +190,64 @@ System.register(['../spine.ts', './render-webgl.ts'], function(exports_1) {
                 function BoneInfo() {
                 }
                 return BoneInfo;
-            })();
+            }());
             SkinInfo = (function () {
                 function SkinInfo() {
                     this.slot_info_map = {};
                 }
                 return SkinInfo;
-            })();
+            }());
             SlotInfo = (function () {
                 function SlotInfo() {
                     this.attachment_info_map = {};
                 }
                 return SlotInfo;
-            })();
+            }());
             AttachmentInfo = (function () {
                 function AttachmentInfo(type) {
                     this.type = type;
                 }
                 return AttachmentInfo;
-            })();
+            }());
             RegionAttachmentInfo = (function (_super) {
                 __extends(RegionAttachmentInfo, _super);
                 function RegionAttachmentInfo() {
                     _super.call(this, 'region');
                 }
                 return RegionAttachmentInfo;
-            })(AttachmentInfo);
+            }(AttachmentInfo));
             BoundingBoxAttachmentInfo = (function (_super) {
                 __extends(BoundingBoxAttachmentInfo, _super);
                 function BoundingBoxAttachmentInfo() {
                     _super.call(this, 'boundingbox');
                 }
                 return BoundingBoxAttachmentInfo;
-            })(AttachmentInfo);
+            }(AttachmentInfo));
             MeshAttachmentInfo = (function (_super) {
                 __extends(MeshAttachmentInfo, _super);
                 function MeshAttachmentInfo() {
                     _super.call(this, 'mesh');
                 }
                 return MeshAttachmentInfo;
-            })(AttachmentInfo);
+            }(AttachmentInfo));
             SkinnedMeshAttachmentInfo = (function (_super) {
                 __extends(SkinnedMeshAttachmentInfo, _super);
                 function SkinnedMeshAttachmentInfo() {
                     _super.call(this, 'skinnedmesh');
                 }
                 return SkinnedMeshAttachmentInfo;
-            })(AttachmentInfo);
+            }(AttachmentInfo));
             RenderCtx2D = (function () {
                 function RenderCtx2D(ctx) {
                     this.images = {};
                     this.skin_info_map = {};
-                    this.region_vertex_position = new Float32Array([-1, -1, 1, -1, 1, 1, -1, 1]); // [ x, y ]
-                    this.region_vertex_texcoord = new Float32Array([0, 1, 1, 1, 1, 0, 0, 0]); // [ u, v ]
-                    this.region_vertex_triangle = new Uint16Array([0, 1, 2, 0, 2, 3]); // [ i0, i1, i2 ]
+                    this.region_vertex_position = new Float32Array([-1, -1, 1, -1, 1, 1, -1, 1]);
+                    this.region_vertex_texcoord = new Float32Array([0, 1, 1, 1, 1, 0, 0, 0]);
+                    this.region_vertex_triangle = new Uint16Array([0, 1, 2, 0, 2, 3]);
                     this.ctx = ctx;
                 }
                 RenderCtx2D.prototype.dropData = function (spine_data, atlas_data) {
                     var render = this;
-                    for (var image_key in render.images) {
-                        delete render.images[image_key];
-                    }
                     render.images = {};
                     render.skin_info_map = {};
                 };
@@ -331,7 +328,6 @@ System.register(['../spine.ts', './render-webgl.ts'], function(exports_1) {
                                 var ffd_keyframes = ffd_attachment && ffd_attachment.ffd_keyframes;
                                 var ffd_keyframe_index = spine.Keyframe.find(ffd_keyframes, spine_pose.time);
                                 if (ffd_keyframe_index !== -1) {
-                                    // ffd
                                     var pct = 0;
                                     var ffd_keyframe0 = ffd_keyframes[ffd_keyframe_index];
                                     var ffd_keyframe1 = ffd_keyframes[ffd_keyframe_index + 1];
@@ -359,7 +355,6 @@ System.register(['../spine.ts', './render-webgl.ts'], function(exports_1) {
                                 var ffd_keyframes = ffd_attachment && ffd_attachment.ffd_keyframes;
                                 var ffd_keyframe_index = spine.Keyframe.find(ffd_keyframes, spine_pose.time);
                                 if (ffd_keyframe_index !== -1) {
-                                    // ffd
                                     var pct = 0;
                                     var ffd_keyframe0 = ffd_keyframes[ffd_keyframe_index];
                                     var ffd_keyframe1 = ffd_keyframes[ffd_keyframe_index + 1];
@@ -400,7 +395,6 @@ System.register(['../spine.ts', './render-webgl.ts'], function(exports_1) {
                                     }
                                 }
                                 else {
-                                    // no ffd
                                     var vertex_blend_position = skinned_mesh_attachment_info.vertex_blend_position;
                                     var position = new spine.Vector();
                                     for (var vertex_index = 0, index = 0; vertex_index < skinned_mesh_attachment_info.vertex_count; ++vertex_index) {
@@ -449,7 +443,6 @@ System.register(['../spine.ts', './render-webgl.ts'], function(exports_1) {
                             return;
                         }
                         ctx.save();
-                        // slot.color.rgb
                         ctx.globalAlpha *= slot.color.a;
                         switch (slot.blend) {
                             default:
@@ -663,7 +656,7 @@ System.register(['../spine.ts', './render-webgl.ts'], function(exports_1) {
                     ctxDrawIkConstraints(ctx, spine_pose.data, spine_pose.data.bones);
                 };
                 return RenderCtx2D;
-            })();
+            }());
             exports_1("RenderCtx2D", RenderCtx2D);
         }
     }

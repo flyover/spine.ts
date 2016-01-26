@@ -103,7 +103,7 @@ export class Color {
   }
   public load(json: any): Color {
     const color: Color = this;
-     let rgba: number = 0xffffffff;
+    let rgba: number = 0xffffffff;
     switch (typeof(json)) {
       case "string": rgba = parseInt(json, 16); break;
       case "number": rgba = 0 | json; break;

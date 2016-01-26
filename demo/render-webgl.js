@@ -1,4 +1,5 @@
 System.register(['../spine.ts'], function(exports_1) {
+    "use strict";
     var __extends = (this && this.__extends) || function (d, b) {
         for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
         function __() { this.constructor = d; }
@@ -113,8 +114,8 @@ System.register(['../spine.ts'], function(exports_1) {
     function mat3x3ApplySpace(m, space) {
         if (space) {
             mat3x3Translate(m, space.position.x, space.position.y);
-            mat3x3Rotate(m, space.rotation.rad * space.flip.x * space.flip.y);
-            mat3x3Scale(m, space.scale.x * space.flip.x, space.scale.y * space.flip.y);
+            mat3x3Rotate(m, space.rotation.rad);
+            mat3x3Scale(m, space.scale.x, space.scale.y);
         }
         return m;
     }
@@ -130,12 +131,12 @@ System.register(['../spine.ts'], function(exports_1) {
         if (site) {
             mat3x3Translate(m, site.x, site.y);
             if (site.rotate === -1) {
-                mat3x3Translate(m, 0, site.w); // bottom-left corner
-                mat3x3RotateCosSin(m, 0, -1); // -90 degrees
+                mat3x3Translate(m, 0, site.w);
+                mat3x3RotateCosSin(m, 0, -1);
             }
             else if (site.rotate === 1) {
-                mat3x3Translate(m, site.h, 0); // top-right corner
-                mat3x3RotateCosSin(m, 0, 1); // 90 degrees
+                mat3x3Translate(m, site.h, 0);
+                mat3x3RotateCosSin(m, 0, 1);
             }
             mat3x3Scale(m, site.w, site.h);
         }
@@ -328,7 +329,7 @@ System.register(['../spine.ts'], function(exports_1) {
         if (count === void 0) { count = 0; }
         gl.bindBuffer(vertex.buffer_type, vertex.buffer);
         if (count > 0) {
-            var sizeof_vertex = vertex.type_array.BYTES_PER_ELEMENT * vertex.size; // in bytes
+            var sizeof_vertex = vertex.type_array.BYTES_PER_ELEMENT * vertex.size;
             var stride = sizeof_vertex * count;
             for (var index = 0; index < count; ++index) {
                 var offset = sizeof_vertex * index;
@@ -368,63 +369,63 @@ System.register(['../spine.ts'], function(exports_1) {
                 function glShader() {
                 }
                 return glShader;
-            })();
+            }());
             glVertex = (function () {
                 function glVertex() {
                 }
                 return glVertex;
-            })();
+            }());
             BoneInfo = (function () {
                 function BoneInfo() {
                 }
                 return BoneInfo;
-            })();
+            }());
             SkinInfo = (function () {
                 function SkinInfo() {
                     this.slot_info_map = {};
                 }
                 return SkinInfo;
-            })();
+            }());
             SlotInfo = (function () {
                 function SlotInfo() {
                     this.attachment_info_map = {};
                 }
                 return SlotInfo;
-            })();
+            }());
             AttachmentInfo = (function () {
                 function AttachmentInfo(type) {
                     this.type = type;
                 }
                 return AttachmentInfo;
-            })();
+            }());
             RegionAttachmentInfo = (function (_super) {
                 __extends(RegionAttachmentInfo, _super);
                 function RegionAttachmentInfo() {
                     _super.call(this, 'region');
                 }
                 return RegionAttachmentInfo;
-            })(AttachmentInfo);
+            }(AttachmentInfo));
             BoundingBoxAttachmentInfo = (function (_super) {
                 __extends(BoundingBoxAttachmentInfo, _super);
                 function BoundingBoxAttachmentInfo() {
                     _super.call(this, 'boundingbox');
                 }
                 return BoundingBoxAttachmentInfo;
-            })(AttachmentInfo);
+            }(AttachmentInfo));
             MeshAttachmentInfo = (function (_super) {
                 __extends(MeshAttachmentInfo, _super);
                 function MeshAttachmentInfo() {
                     _super.call(this, 'mesh');
                 }
                 return MeshAttachmentInfo;
-            })(AttachmentInfo);
+            }(AttachmentInfo));
             SkinnedMeshAttachmentInfo = (function (_super) {
                 __extends(SkinnedMeshAttachmentInfo, _super);
                 function SkinnedMeshAttachmentInfo() {
                     _super.call(this, 'skinnedmesh');
                 }
                 return SkinnedMeshAttachmentInfo;
-            })(AttachmentInfo);
+            }(AttachmentInfo));
             RenderWebGL = (function () {
                 function RenderWebGL(gl) {
                     this.bone_info_map = {};
@@ -482,11 +483,11 @@ System.register(['../spine.ts'], function(exports_1) {
                     ];
                     render.gl_mesh_shader = glMakeShader(gl, gl_mesh_shader_vs_src, gl_mesh_shader_fs_src);
                     render.gl_ffd_mesh_shader = glMakeShader(gl, gl_ffd_mesh_shader_vs_src, gl_mesh_shader_fs_src);
-                    render.gl_region_vertex_position = glMakeVertex(gl, new Float32Array([-1, -1, 1, -1, 1, 1, -1, 1]), 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW); // [ x, y ]
-                    render.gl_region_vertex_texcoord = glMakeVertex(gl, new Float32Array([0, 1, 1, 1, 1, 0, 0, 0]), 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW); // [ u, v ]
-                    render.gl_skin_shader_modelview_count = 16; // * mat3
+                    render.gl_region_vertex_position = glMakeVertex(gl, new Float32Array([-1, -1, 1, -1, 1, 1, -1, 1]), 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+                    render.gl_region_vertex_texcoord = glMakeVertex(gl, new Float32Array([0, 1, 1, 1, 1, 0, 0, 0]), 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+                    render.gl_skin_shader_modelview_count = 16;
                     render.gl_skin_shader_modelview_array = new Float32Array(9 * render.gl_skin_shader_modelview_count);
-                    render.gl_skin_shader_blenders_count = 8; // * vec2
+                    render.gl_skin_shader_blenders_count = 8;
                     var gl_skin_shader_vs_src = [
                         "precision mediump int;",
                         "precision mediump float;",
@@ -545,21 +546,21 @@ System.register(['../spine.ts'], function(exports_1) {
                     if (!gl) {
                         return;
                     }
-                    for (var image_key in render.gl_textures) {
+                    Object.keys(render.gl_textures).forEach(function (image_key) {
                         var gl_texture = render.gl_textures[image_key];
                         gl.deleteTexture(gl_texture);
                         delete render.gl_textures[image_key];
-                    }
+                    });
                     render.gl_textures = {};
-                    for (var bone_key in render.bone_info_map) {
+                    Object.keys(render.bone_info_map).forEach(function (bone_key) {
                         var bone_info = render.bone_info_map[bone_key];
-                    }
+                    });
                     render.bone_info_map = {};
-                    for (var skin_key in render.skin_info_map) {
+                    Object.keys(render.skin_info_map).forEach(function (skin_key) {
                         var skin_info = render.skin_info_map[skin_key];
-                        for (var slot_key in skin_info.slot_info_map) {
+                        Object.keys(skin_info.slot_info_map).forEach(function (slot_key) {
                             var slot_info = skin_info.slot_info_map[slot_key];
-                            for (var attachment_key in slot_info.attachment_info_map) {
+                            Object.keys(slot_info.attachment_info_map).forEach(function (attachment_key) {
                                 var attachment_info = slot_info.attachment_info_map[attachment_key];
                                 switch (attachment_info.type) {
                                     case 'mesh': {
@@ -567,12 +568,12 @@ System.register(['../spine.ts'], function(exports_1) {
                                         gl.deleteBuffer(mesh_attachment_info.gl_vertex_position.buffer);
                                         gl.deleteBuffer(mesh_attachment_info.gl_vertex_texcoord.buffer);
                                         gl.deleteBuffer(mesh_attachment_info.gl_vertex_triangle.buffer);
-                                        for (var anim_key in mesh_attachment_info.anim_ffd_attachments) {
+                                        Object.keys(mesh_attachment_info.anim_ffd_attachments).forEach(function (anim_key) {
                                             var anim_ffd_attachment = mesh_attachment_info.anim_ffd_attachments[anim_key];
                                             anim_ffd_attachment.ffd_keyframes.forEach(function (ffd_keyframe) {
                                                 gl.deleteBuffer(ffd_keyframe.gl_vertex.buffer);
                                             });
-                                        }
+                                        });
                                         break;
                                     }
                                     case 'skinnedmesh': {
@@ -581,21 +582,21 @@ System.register(['../spine.ts'], function(exports_1) {
                                         gl.deleteBuffer(skinned_mesh_attachment_info.gl_vertex_blenders.buffer);
                                         gl.deleteBuffer(skinned_mesh_attachment_info.gl_vertex_texcoord.buffer);
                                         gl.deleteBuffer(skinned_mesh_attachment_info.gl_vertex_triangle.buffer);
-                                        for (var anim_key in skinned_mesh_attachment_info.anim_ffd_attachments) {
+                                        Object.keys(skinned_mesh_attachment_info.anim_ffd_attachments).forEach(function (anim_key) {
                                             var anim_ffd_attachment = skinned_mesh_attachment_info.anim_ffd_attachments[anim_key];
                                             anim_ffd_attachment.ffd_keyframes.forEach(function (ffd_keyframe) {
                                                 gl.deleteBuffer(ffd_keyframe.gl_vertex.buffer);
                                             });
-                                        }
+                                        });
                                         break;
                                     }
                                     default:
                                         console.log("TODO", skin_key, slot_key, attachment_key, attachment_info.type);
                                         break;
                                 }
-                            }
-                        }
-                    }
+                            });
+                        });
+                    });
                     render.skin_info_map = {};
                 };
                 ;
@@ -649,12 +650,12 @@ System.register(['../spine.ts'], function(exports_1) {
                                     var skinned_mesh_attachment = attachment;
                                     var skinned_mesh_attachment_info = slot_info.attachment_info_map[attachment_key] = new SkinnedMeshAttachmentInfo();
                                     var vertex_count = skinned_mesh_attachment.uvs.length / 2;
-                                    var vertex_position = new Float32Array(2 * vertex_count); // [ x, y ]
-                                    var vertex_blenders = new Float32Array(2 * render.gl_skin_shader_blenders_count * vertex_count); // [ i, w ]
+                                    var vertex_position = new Float32Array(2 * vertex_count);
+                                    var vertex_blenders = new Float32Array(2 * render.gl_skin_shader_blenders_count * vertex_count);
                                     var vertex_texcoord = new Float32Array(skinned_mesh_attachment.uvs);
                                     var vertex_triangle = new Uint16Array(skinned_mesh_attachment.triangles);
                                     var blend_bone_index_array = skinned_mesh_attachment_info.blend_bone_index_array = [];
-                                    for (var vertex_index = 0, index = 0; vertex_index < vertex_count; ++vertex_index) {
+                                    var _loop_1 = function(vertex_index, index) {
                                         var blender_count = skinned_mesh_attachment.vertices[index++];
                                         var blender_array = [];
                                         for (var blender_index = 0; blender_index < blender_count; ++blender_index) {
@@ -664,9 +665,7 @@ System.register(['../spine.ts'], function(exports_1) {
                                             var weight = skinned_mesh_attachment.vertices[index++];
                                             blender_array.push({ position: new spine.Vector(x, y), bone_index: bone_index, weight: weight });
                                         }
-                                        // sort the blender array descending by weight
                                         blender_array = blender_array.sort(function (a, b) { return b.weight - a.weight; });
-                                        // clamp blender array and adjust weights
                                         if (blender_array.length > render.gl_skin_shader_blenders_count) {
                                             console.log("blend array length for", attachment_key, "is", blender_array.length, "so clamp to", render.gl_skin_shader_blenders_count);
                                             blender_array.length = render.gl_skin_shader_blenders_count;
@@ -679,7 +678,6 @@ System.register(['../spine.ts'], function(exports_1) {
                                         var blend_position = new spine.Vector();
                                         var vertex_blenders_offset = vertex_index * 2 * render.gl_skin_shader_blenders_count;
                                         blender_array.forEach(function (blend, index) {
-                                            // keep track of which bones are used for blending
                                             if (blend_bone_index_array.indexOf(blend.bone_index) === -1) {
                                                 blend_bone_index_array.push(blend.bone_index);
                                             }
@@ -688,7 +686,6 @@ System.register(['../spine.ts'], function(exports_1) {
                                             spine.Space.transform(bone.world_space, blend.position, blend_position);
                                             position_x += blend_position.x * blend.weight;
                                             position_y += blend_position.y * blend.weight;
-                                            // index into gl_skin_shader_modelview_array, not spine_pose.data.bone_keys
                                             vertex_blenders[vertex_blenders_offset++] = blend_bone_index_array.indexOf(blend.bone_index);
                                             vertex_blenders[vertex_blenders_offset++] = blend.weight;
                                         });
@@ -698,6 +695,9 @@ System.register(['../spine.ts'], function(exports_1) {
                                         if (blend_bone_index_array.length > render.gl_skin_shader_modelview_count) {
                                             console.log("blend bone index array length for", attachment_key, "is", blend_bone_index_array.length, "greater than", render.gl_skin_shader_modelview_count);
                                         }
+                                    };
+                                    for (var vertex_index = 0, index = 0; vertex_index < vertex_count; ++vertex_index) {
+                                        _loop_1(vertex_index, index);
                                     }
                                     skinned_mesh_attachment_info.gl_vertex_position = glMakeVertex(gl, vertex_position, 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
                                     skinned_mesh_attachment_info.gl_vertex_blenders = glMakeVertex(gl, vertex_blenders, 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
@@ -746,7 +746,6 @@ System.register(['../spine.ts'], function(exports_1) {
                         });
                     });
                     if (atlas_data) {
-                        // load atlas page images
                         atlas_data.pages.forEach(function (page) {
                             if (page.format !== 'RGBA8888') {
                                 throw new Error(page.format);
@@ -821,7 +820,6 @@ System.register(['../spine.ts'], function(exports_1) {
                         });
                     }
                     else {
-                        // load attachment images
                         spine_data.iterateSkins(function (skin_key, skin) {
                             skin.iterateAttachments(function (slot_key, skin_slot, attachment_key, attachment) {
                                 if (!attachment) {
@@ -941,7 +939,6 @@ System.register(['../spine.ts'], function(exports_1) {
                                 var ffd_keyframes = ffd_attachment && ffd_attachment.ffd_keyframes;
                                 var ffd_keyframe0_index = spine.Keyframe.find(ffd_keyframes, spine_pose.time);
                                 if (ffd_keyframe0_index !== -1) {
-                                    // ffd
                                     var pct = 0;
                                     var ffd_keyframe0 = ffd_keyframes[ffd_keyframe0_index];
                                     var ffd_keyframe1_index = ffd_keyframe0_index + 1;
@@ -984,7 +981,6 @@ System.register(['../spine.ts'], function(exports_1) {
                                     gl.useProgram(null);
                                 }
                                 else {
-                                    // no ffd
                                     var gl_shader = render.gl_mesh_shader;
                                     var gl_vertex_position = mesh_attachment_info.gl_vertex_position;
                                     var gl_vertex_texcoord = mesh_attachment_info.gl_vertex_texcoord;
@@ -1012,7 +1008,6 @@ System.register(['../spine.ts'], function(exports_1) {
                             case 'skinnedmesh': {
                                 var skinned_mesh_attachment = attachment;
                                 var skinned_mesh_attachment_info = slot_info.attachment_info_map[attachment_key];
-                                // update skin shader modelview array
                                 var blend_bone_index_array = skinned_mesh_attachment_info.blend_bone_index_array;
                                 for (var index = 0; index < blend_bone_index_array.length; ++index) {
                                     var bone_index = blend_bone_index_array[index];
@@ -1034,7 +1029,6 @@ System.register(['../spine.ts'], function(exports_1) {
                                 var ffd_keyframes = ffd_attachment && ffd_attachment.ffd_keyframes;
                                 var ffd_keyframe0_index = spine.Keyframe.find(ffd_keyframes, spine_pose.time);
                                 if (ffd_keyframe0_index !== -1) {
-                                    // ffd
                                     var pct = 0;
                                     var ffd_keyframe0 = ffd_keyframes[ffd_keyframe0_index];
                                     var ffd_keyframe1_index = ffd_keyframe0_index + 1;
@@ -1080,7 +1074,6 @@ System.register(['../spine.ts'], function(exports_1) {
                                     gl.useProgram(null);
                                 }
                                 else {
-                                    // no ffd
                                     var gl_shader = render.gl_skin_shader;
                                     var gl_vertex_position = skinned_mesh_attachment_info.gl_vertex_position;
                                     var gl_vertex_blenders = skinned_mesh_attachment_info.gl_vertex_blenders;
@@ -1115,7 +1108,7 @@ System.register(['../spine.ts'], function(exports_1) {
                     gl_color[3] = alpha;
                 };
                 return RenderWebGL;
-            })();
+            }());
             exports_1("RenderWebGL", RenderWebGL);
         }
     }
