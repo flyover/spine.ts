@@ -527,8 +527,8 @@ System.register([], function(exports_1) {
                     var s = Math.sin(rad);
                     var tx = c * x - s * y;
                     var ty = s * x + c * y;
-                    out.position.x = tx / a.scale.x * a.flip.x;
-                    out.position.y = ty / a.scale.y * a.flip.y;
+                    out.position.x = tx / (a.scale.x * a.flip.x);
+                    out.position.y = ty / (a.scale.y * a.flip.y);
                     return out;
                 };
                 Space.transform = function (space, v, out) {

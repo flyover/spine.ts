@@ -461,7 +461,7 @@ export class Space {
     space.flip.y *= y ? -1 : 1;
     return space;
   }
-  public static invert(space: Space, out: Space = new Space()) {
+  public static invert(space: Space, out: Space = new Space()): Space {
     // invert
     // out.sca = space.sca.inv();
     // out.rot = space.rot.inv();
@@ -527,11 +527,11 @@ export class Space {
     const s: number = Math.sin(rad);
     const tx: number = c * x - s * y;
     const ty: number = s * x + c * y;
-    out.position.x = tx / a.scale.x * a.flip.x;
-    out.position.y = ty / a.scale.y * a.flip.y;
+    out.position.x = tx / (a.scale.x * a.flip.x);
+    out.position.y = ty / (a.scale.y * a.flip.y);
     return out;
   }
-  public static transform(space: Space, v: Vector, out: Vector = new Vector()) {
+  public static transform(space: Space, v: Vector, out: Vector = new Vector()): Vector {
     const x: number = v.x * space.scale.x * space.flip.x;
     const y: number = v.y * space.scale.y * space.flip.y;
     const rad: number = space.rotation.rad * space.flip.x * space.flip.y;
@@ -543,7 +543,7 @@ export class Space {
     out.y = ty + space.position.y;
     return out;
   }
-  public static untransform(space: Space, v: Vector, out: Vector = new Vector()) {
+  public static untransform(space: Space, v: Vector, out: Vector = new Vector()): Vector {
     const x: number = v.x - space.position.x;
     const y: number = v.y - space.position.y;
     const rad: number = -space.rotation.rad * space.flip.x * space.flip.y;
@@ -555,7 +555,7 @@ export class Space {
     out.y = ty / (space.scale.y * space.flip.y);
     return out;
   }
-  public static tween(a: Space, b: Space, t: number, out: Space = new Space()) {
+  public static tween(a: Space, b: Space, t: number, out: Space = new Space()): Space {
     out.position.x = tween(a.position.x, b.position.x, t);
     out.position.y = tween(a.position.y, b.position.y, t);
     out.rotation.rad = tweenAngle(a.rotation.rad, b.rotation.rad, t);
@@ -568,8 +568,8 @@ export class Space {
 export class Bone {
   public parent_key: string = "";
   public length: number = 0;
-  public local_space = new Space();
-  public world_space = new Space();
+  public local_space: Space = new Space();
+  public world_space: Space = new Space();
   public inherit_rotation: boolean = true;
   public inherit_scale: boolean = true;
   public copy(other: Bone): Bone {
