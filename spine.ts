@@ -896,7 +896,7 @@ export class AnimBone {
             this.min_time = Math.min(this.min_time, translate_keyframe.time);
             this.max_time = Math.max(this.max_time, translate_keyframe.time);
           });
-          this.translate_keyframes = this.translate_keyframes.sort(Keyframe.compare);
+          this.translate_keyframes.sort(Keyframe.compare);
           break;
         case "rotate":
           this.rotate_keyframes = [];
@@ -906,7 +906,7 @@ export class AnimBone {
             this.min_time = Math.min(this.min_time, rotate_keyframe.time);
             this.max_time = Math.max(this.max_time, rotate_keyframe.time);
           });
-          this.rotate_keyframes = this.rotate_keyframes.sort(Keyframe.compare);
+          this.rotate_keyframes.sort(Keyframe.compare);
           break;
         case "scale":
           this.scale_keyframes = [];
@@ -916,7 +916,7 @@ export class AnimBone {
             this.min_time = Math.min(this.min_time, scale_keyframe.time);
             this.max_time = Math.max(this.max_time, scale_keyframe.time);
           });
-          this.scale_keyframes = this.scale_keyframes.sort(Keyframe.compare);
+          this.scale_keyframes.sort(Keyframe.compare);
           break;
         default:
           console.log("TODO: AnimBone::load", key);
@@ -969,7 +969,7 @@ export class AnimSlot {
             this.max_time = Math.max(this.max_time, color_keyframe.time);
             this.color_keyframes.push(color_keyframe);
           });
-          this.color_keyframes = this.color_keyframes.sort(Keyframe.compare);
+          this.color_keyframes.sort(Keyframe.compare);
           break;
         case "attachment":
           this.attachment_keyframes = [];
@@ -979,7 +979,7 @@ export class AnimSlot {
             this.max_time = Math.max(this.max_time, attachment_keyframe.time);
             this.attachment_keyframes.push(attachment_keyframe);
           });
-          this.attachment_keyframes = this.attachment_keyframes.sort(Keyframe.compare);
+          this.attachment_keyframes.sort(Keyframe.compare);
           break;
         default:
           console.log("TODO: AnimSlot::load", key);
@@ -1066,7 +1066,7 @@ export class AnimIkc {
       this.max_time = Math.max(this.max_time, ikc_keyframe.time);
       this.ikc_keyframes.push(ikc_keyframe);
     });
-    this.ikc_keyframes = this.ikc_keyframes.sort(Keyframe.compare);
+    this.ikc_keyframes.sort(Keyframe.compare);
     return this;
   }
 }
@@ -1098,7 +1098,7 @@ export class FfdAttachment {
       this.max_time = Math.max(this.max_time, ffd_keyframe.time);
       this.ffd_keyframes.push(ffd_keyframe);
     });
-    this.ffd_keyframes = this.ffd_keyframes.sort(Keyframe.compare);
+    this.ffd_keyframes.sort(Keyframe.compare);
     return this;
   }
 }
@@ -1199,7 +1199,7 @@ export class Animation {
             this.max_time = Math.max(this.max_time, event_keyframe.time);
             this.event_keyframes.push(event_keyframe);
           });
-          this.event_keyframes = this.event_keyframes.sort(Keyframe.compare);
+          this.event_keyframes.sort(Keyframe.compare);
           break;
         case "drawOrder":
         case "draworder":
@@ -1210,7 +1210,7 @@ export class Animation {
             this.max_time = Math.max(this.max_time, order_keyframe.time);
             this.order_keyframes.push(order_keyframe);
           });
-          this.order_keyframes = this.order_keyframes.sort(Keyframe.compare);
+          this.order_keyframes.sort(Keyframe.compare);
           break;
         case "ik":
           Object.keys(json[key]).forEach((ikc_key: string): void => {

@@ -968,7 +968,7 @@ System.register([], function(exports_1) {
                                     _this.min_time = Math.min(_this.min_time, translate_keyframe.time);
                                     _this.max_time = Math.max(_this.max_time, translate_keyframe.time);
                                 });
-                                _this.translate_keyframes = _this.translate_keyframes.sort(Keyframe.compare);
+                                _this.translate_keyframes.sort(Keyframe.compare);
                                 break;
                             case "rotate":
                                 _this.rotate_keyframes = [];
@@ -978,7 +978,7 @@ System.register([], function(exports_1) {
                                     _this.min_time = Math.min(_this.min_time, rotate_keyframe.time);
                                     _this.max_time = Math.max(_this.max_time, rotate_keyframe.time);
                                 });
-                                _this.rotate_keyframes = _this.rotate_keyframes.sort(Keyframe.compare);
+                                _this.rotate_keyframes.sort(Keyframe.compare);
                                 break;
                             case "scale":
                                 _this.scale_keyframes = [];
@@ -988,7 +988,7 @@ System.register([], function(exports_1) {
                                     _this.min_time = Math.min(_this.min_time, scale_keyframe.time);
                                     _this.max_time = Math.max(_this.max_time, scale_keyframe.time);
                                 });
-                                _this.scale_keyframes = _this.scale_keyframes.sort(Keyframe.compare);
+                                _this.scale_keyframes.sort(Keyframe.compare);
                                 break;
                             default:
                                 console.log("TODO: AnimBone::load", key);
@@ -1059,7 +1059,7 @@ System.register([], function(exports_1) {
                                     _this.max_time = Math.max(_this.max_time, color_keyframe.time);
                                     _this.color_keyframes.push(color_keyframe);
                                 });
-                                _this.color_keyframes = _this.color_keyframes.sort(Keyframe.compare);
+                                _this.color_keyframes.sort(Keyframe.compare);
                                 break;
                             case "attachment":
                                 _this.attachment_keyframes = [];
@@ -1069,7 +1069,7 @@ System.register([], function(exports_1) {
                                     _this.max_time = Math.max(_this.max_time, attachment_keyframe.time);
                                     _this.attachment_keyframes.push(attachment_keyframe);
                                 });
-                                _this.attachment_keyframes = _this.attachment_keyframes.sort(Keyframe.compare);
+                                _this.attachment_keyframes.sort(Keyframe.compare);
                                 break;
                             default:
                                 console.log("TODO: AnimSlot::load", key);
@@ -1178,7 +1178,7 @@ System.register([], function(exports_1) {
                         _this.max_time = Math.max(_this.max_time, ikc_keyframe.time);
                         _this.ikc_keyframes.push(ikc_keyframe);
                     });
-                    this.ikc_keyframes = this.ikc_keyframes.sort(Keyframe.compare);
+                    this.ikc_keyframes.sort(Keyframe.compare);
                     return this;
                 };
                 return AnimIkc;
@@ -1217,7 +1217,7 @@ System.register([], function(exports_1) {
                         _this.max_time = Math.max(_this.max_time, ffd_keyframe.time);
                         _this.ffd_keyframes.push(ffd_keyframe);
                     });
-                    this.ffd_keyframes = this.ffd_keyframes.sort(Keyframe.compare);
+                    this.ffd_keyframes.sort(Keyframe.compare);
                     return this;
                 };
                 return FfdAttachment;
@@ -1322,7 +1322,7 @@ System.register([], function(exports_1) {
                                     _this.max_time = Math.max(_this.max_time, event_keyframe.time);
                                     _this.event_keyframes.push(event_keyframe);
                                 });
-                                _this.event_keyframes = _this.event_keyframes.sort(Keyframe.compare);
+                                _this.event_keyframes.sort(Keyframe.compare);
                                 break;
                             case "drawOrder":
                             case "draworder":
@@ -1333,7 +1333,7 @@ System.register([], function(exports_1) {
                                     _this.max_time = Math.max(_this.max_time, order_keyframe.time);
                                     _this.order_keyframes.push(order_keyframe);
                                 });
-                                _this.order_keyframes = _this.order_keyframes.sort(Keyframe.compare);
+                                _this.order_keyframes.sort(Keyframe.compare);
                                 break;
                             case "ik":
                                 Object.keys(json[key]).forEach(function (ikc_key) {
@@ -1439,26 +1439,26 @@ System.register([], function(exports_1) {
                                 });
                                 break;
                             case "skins":
-                                var json_skins = json[key];
-                                _this.skin_keys = Object.keys(json_skins);
+                                var json_skins_1 = json[key];
+                                _this.skin_keys = Object.keys(json_skins_1);
                                 _this.skin_keys.forEach(function (skin_key) {
-                                    var skin = _this.skins[skin_key] = new Skin().load(json_skins[skin_key]);
+                                    var skin = _this.skins[skin_key] = new Skin().load(json_skins_1[skin_key]);
                                     skin.name = skin.name || skin_key;
                                 });
                                 break;
                             case "events":
-                                var json_events = json[key];
-                                _this.event_keys = Object.keys(json_events);
+                                var json_events_1 = json[key];
+                                _this.event_keys = Object.keys(json_events_1);
                                 _this.event_keys.forEach(function (event_key) {
-                                    var event = _this.events[event_key] = new Event().load(json_events[event_key]);
+                                    var event = _this.events[event_key] = new Event().load(json_events_1[event_key]);
                                     event.name = event.name || event_key;
                                 });
                                 break;
                             case "animations":
-                                var json_animations = json[key];
-                                _this.anim_keys = Object.keys(json_animations);
+                                var json_animations_1 = json[key];
+                                _this.anim_keys = Object.keys(json_animations_1);
                                 _this.anim_keys.forEach(function (anim_key) {
-                                    var anim = _this.anims[anim_key] = new Animation().load(json_animations[anim_key]);
+                                    var anim = _this.anims[anim_key] = new Animation().load(json_animations_1[anim_key]);
                                     anim.name = anim.name || anim_key;
                                 });
                                 break;
@@ -1847,7 +1847,7 @@ System.register([], function(exports_1) {
                     }
                     pose.events.length = 0;
                     if (anim && anim.event_keyframes) {
-                        var add_event = function (event_keyframe) {
+                        var add_event_1 = function (event_keyframe) {
                             var pose_event = new Event();
                             var data_event = data.events[event_keyframe.name];
                             if (data_event) {
@@ -1863,14 +1863,14 @@ System.register([], function(exports_1) {
                                 anim.event_keyframes.forEach(function (event_keyframe) {
                                     if (((anim.min_time <= event_keyframe.time) && (event_keyframe.time < prev_time)) ||
                                         ((time <= event_keyframe.time) && (event_keyframe.time <= anim.max_time))) {
-                                        add_event(event_keyframe);
+                                        add_event_1(event_keyframe);
                                     }
                                 });
                             }
                             else {
                                 anim.event_keyframes.forEach(function (event_keyframe) {
                                     if ((time <= event_keyframe.time) && (event_keyframe.time < prev_time)) {
-                                        add_event(event_keyframe);
+                                        add_event_1(event_keyframe);
                                     }
                                 });
                             }
@@ -1880,14 +1880,14 @@ System.register([], function(exports_1) {
                                 anim.event_keyframes.forEach(function (event_keyframe) {
                                     if (((anim.min_time <= event_keyframe.time) && (event_keyframe.time <= time)) ||
                                         ((prev_time < event_keyframe.time) && (event_keyframe.time <= anim.max_time))) {
-                                        add_event(event_keyframe);
+                                        add_event_1(event_keyframe);
                                     }
                                 });
                             }
                             else {
                                 anim.event_keyframes.forEach(function (event_keyframe) {
                                     if ((prev_time < event_keyframe.time) && (event_keyframe.time <= time)) {
-                                        add_event(event_keyframe);
+                                        add_event_1(event_keyframe);
                                     }
                                 });
                             }
