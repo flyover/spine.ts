@@ -1,0 +1,27 @@
+{
+  "name": "spine.ts",
+  "version": "1.0.0",
+  "description": "spine.ts",
+  "main": "index.js",
+  "dependencies": {
+    "@types/systemjs": "^0.19.33",
+    "plugin-typescript": "^5.3.1",
+    "systemjs": "^0.20.0-rc.1",
+    "typescript": "^2.1.4"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/flyover/spine.ts.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/flyover/spine.ts/issues"
+  },
+  "homepage": "https://github.com/flyover/spine.ts#readme"
+}

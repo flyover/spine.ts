@@ -1,22 +1,14 @@
-System.register(['../spine.ts'], function(exports_1) {
-    "use strict";
-    var __extends = (this && this.__extends) || function (d, b) {
-        for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-    var spine;
-    var glShader, glVertex, BoneInfo, SkinInfo, SlotInfo, AttachmentInfo, RegionAttachmentInfo, BoundingBoxAttachmentInfo, MeshAttachmentInfo, SkinnedMeshAttachmentInfo, RenderWebGL;
+System.register(["../spine"], function (exports_1, context_1) {
+    var __moduleName = context_1 && context_1.id;
     function repeat(format, count) {
-        var array = [];
-        for (var index = 0; index < count; ++index) {
+        const array = [];
+        for (let index = 0; index < count; ++index) {
             array.push(format.replace(/{index}/g, index.toString()));
         }
         return array;
     }
-    function flatten(array, out) {
-        if (out === void 0) { out = []; }
-        array.forEach(function (value) {
+    function flatten(array, out = []) {
+        array.forEach((value) => {
             if (Array.isArray(value)) {
                 flatten(value, out);
             }
@@ -60,8 +52,8 @@ System.register(['../spine.ts'], function(exports_1) {
     }
     exports_1("mat3x3Copy", mat3x3Copy);
     function mat3x3Ortho(m, l, r, b, t) {
-        var lr = 1 / (l - r);
-        var bt = 1 / (b - t);
+        const lr = 1 / (l - r);
+        const bt = 1 / (b - t);
         m[0] *= -2 * lr;
         m[4] *= -2 * bt;
         m[6] += (l + r) * lr;
@@ -76,10 +68,10 @@ System.register(['../spine.ts'], function(exports_1) {
     }
     exports_1("mat3x3Translate", mat3x3Translate);
     function mat3x3RotateCosSin(m, c, s) {
-        var m0 = m[0];
-        var m1 = m[1];
-        var m3 = m[3];
-        var m4 = m[4];
+        const m0 = m[0];
+        const m1 = m[1];
+        const m3 = m[3];
+        const m4 = m[4];
         m[0] = m0 * c + m3 * s;
         m[1] = m1 * c + m4 * s;
         m[3] = m3 * c - m0 * s;
@@ -102,10 +94,10 @@ System.register(['../spine.ts'], function(exports_1) {
     }
     exports_1("mat3x3Scale", mat3x3Scale);
     function mat3x3Transform(m, v, out) {
-        var x = m[0] * v[0] + m[3] * v[1] + m[6];
-        var y = m[1] * v[0] + m[4] * v[1] + m[7];
-        var w = m[2] * v[0] + m[5] * v[1] + m[8];
-        var iw = (w) ? (1 / w) : (1);
+        const x = m[0] * v[0] + m[3] * v[1] + m[6];
+        const y = m[1] * v[0] + m[4] * v[1] + m[7];
+        const w = m[2] * v[0] + m[5] * v[1] + m[8];
+        const iw = (w) ? (1 / w) : (1);
         out[0] = x * iw;
         out[1] = y * iw;
         return out;
@@ -166,9 +158,9 @@ System.register(['../spine.ts'], function(exports_1) {
     }
     exports_1("mat4x4Copy", mat4x4Copy);
     function mat4x4Ortho(m, l, r, b, t, n, f) {
-        var lr = 1 / (l - r);
-        var bt = 1 / (b - t);
-        var nf = 1 / (n - f);
+        const lr = 1 / (l - r);
+        const bt = 1 / (b - t);
+        const nf = 1 / (n - f);
         m[0] = -2 * lr;
         m[5] = -2 * bt;
         m[10] = 2 * nf;
@@ -178,8 +170,7 @@ System.register(['../spine.ts'], function(exports_1) {
         return m;
     }
     exports_1("mat4x4Ortho", mat4x4Ortho);
-    function mat4x4Translate(m, x, y, z) {
-        if (z === void 0) { z = 0; }
+    function mat4x4Translate(m, x, y, z = 0) {
         m[12] += m[0] * x + m[4] * y + m[8] * z;
         m[13] += m[1] * x + m[5] * y + m[9] * z;
         m[14] += m[2] * x + m[6] * y + m[10] * z;
@@ -188,14 +179,14 @@ System.register(['../spine.ts'], function(exports_1) {
     }
     exports_1("mat4x4Translate", mat4x4Translate);
     function mat4x4RotateCosSinZ(m, c, s) {
-        var a_x = m[0];
-        var a_y = m[1];
-        var a_z = m[2];
-        var a_w = m[3];
-        var b_x = m[4];
-        var b_y = m[5];
-        var b_z = m[6];
-        var b_w = m[7];
+        const a_x = m[0];
+        const a_y = m[1];
+        const a_z = m[2];
+        const a_w = m[3];
+        const b_x = m[4];
+        const b_y = m[5];
+        const b_z = m[6];
+        const b_w = m[7];
         m[0] = a_x * c + b_x * s;
         m[1] = a_y * c + b_y * s;
         m[2] = a_z * c + b_z * s;
@@ -211,8 +202,7 @@ System.register(['../spine.ts'], function(exports_1) {
         return mat4x4RotateCosSinZ(m, Math.cos(angle), Math.sin(angle));
     }
     exports_1("mat4x4RotateZ", mat4x4RotateZ);
-    function mat4x4Scale(m, x, y, z) {
-        if (z === void 0) { z = 1; }
+    function mat4x4Scale(m, x, y, z = 1) {
         m[0] *= x;
         m[1] *= x;
         m[2] *= x;
@@ -228,13 +218,53 @@ System.register(['../spine.ts'], function(exports_1) {
         return m;
     }
     exports_1("mat4x4Scale", mat4x4Scale);
+    function mat4x4ApplySpace(m, space) {
+        if (space) {
+            mat4x4Translate(m, space.position.x, space.position.y);
+            mat4x4RotateZ(m, space.rotation.rad);
+            mat4x4Scale(m, space.scale.x, space.scale.y);
+        }
+        return m;
+    }
+    exports_1("mat4x4ApplySpace", mat4x4ApplySpace);
+    function mat4x4ApplyAtlasPageTexcoord(m, page) {
+        if (page) {
+            mat4x4Scale(m, 1 / page.w, 1 / page.h);
+        }
+        return m;
+    }
+    exports_1("mat4x4ApplyAtlasPageTexcoord", mat4x4ApplyAtlasPageTexcoord);
+    function mat4x4ApplyAtlasSiteTexcoord(m, site) {
+        if (site) {
+            mat4x4Translate(m, site.x, site.y);
+            if (site.rotate === -1) {
+                mat4x4Translate(m, 0, site.w);
+                mat4x4RotateCosSinZ(m, 0, -1);
+            }
+            else if (site.rotate === 1) {
+                mat4x4Translate(m, site.h, 0);
+                mat4x4RotateCosSinZ(m, 0, 1);
+            }
+            mat4x4Scale(m, site.w, site.h);
+        }
+        return m;
+    }
+    exports_1("mat4x4ApplyAtlasSiteTexcoord", mat4x4ApplyAtlasSiteTexcoord);
+    function mat4x4ApplyAtlasSitePosition(m, site) {
+        if (site) {
+            mat4x4Scale(m, 1 / site.original_w, 1 / site.original_h);
+            mat4x4Translate(m, 2 * site.offset_x - (site.original_w - site.w), (site.original_h - site.h) - 2 * site.offset_y);
+            mat4x4Scale(m, site.w, site.h);
+        }
+        return m;
+    }
+    exports_1("mat4x4ApplyAtlasSitePosition", mat4x4ApplyAtlasSitePosition);
     function glCompileShader(gl, src, type) {
-        src = flatten(src);
-        var shader = gl.createShader(type);
-        gl.shaderSource(shader, src.join('\n'));
+        let shader = gl.createShader(type);
+        gl.shaderSource(shader, src.join("\n"));
         gl.compileShader(shader);
         if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-            src.forEach(function (line, index) { console.log(index + 1, line); });
+            src.forEach((line, index) => { console.log(index + 1, line); });
             console.log(gl.getShaderInfoLog(shader));
             gl.deleteShader(shader);
             shader = null;
@@ -243,7 +273,7 @@ System.register(['../spine.ts'], function(exports_1) {
     }
     exports_1("glCompileShader", glCompileShader);
     function glLinkProgram(gl, vs, fs) {
-        var program = gl.createProgram();
+        let program = gl.createProgram();
         gl.attachShader(program, vs);
         gl.attachShader(program, fs);
         gl.linkProgram(program);
@@ -258,27 +288,38 @@ System.register(['../spine.ts'], function(exports_1) {
     }
     exports_1("glLinkProgram", glLinkProgram);
     function glGetUniforms(gl, program, uniforms) {
-        var count = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
-        for (var index = 0; index < count; ++index) {
-            var uniform = gl.getActiveUniform(program, index);
-            uniforms[uniform.name] = gl.getUniformLocation(program, uniform.name);
+        const count = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
+        for (let index = 0; index < count; ++index) {
+            const uniform = gl.getActiveUniform(program, index);
+            if (!uniform)
+                continue;
+            const uniform_location = gl.getUniformLocation(program, uniform.name);
+            if (!uniform_location)
+                continue;
+            uniforms[uniform.name] = uniform_location;
         }
         return uniforms;
     }
     exports_1("glGetUniforms", glGetUniforms);
     function glGetAttribs(gl, program, attribs) {
-        var count = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
-        for (var index = 0; index < count; ++index) {
-            var attrib = gl.getActiveAttrib(program, index);
+        const count = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
+        for (let index = 0; index < count; ++index) {
+            const attrib = gl.getActiveAttrib(program, index);
+            if (!attrib)
+                continue;
             attribs[attrib.name] = gl.getAttribLocation(program, attrib.name);
         }
         return attribs;
     }
     exports_1("glGetAttribs", glGetAttribs);
     function glMakeShader(gl, vs_src, fs_src) {
-        var shader = new glShader();
-        shader.vs_src = vs_src;
-        shader.fs_src = fs_src;
+        const shader = new RenderShader();
+        const header = [
+            "precision mediump int;",
+            "precision mediump float;"
+        ];
+        shader.vs_src = header.concat(flatten(vs_src));
+        shader.fs_src = header.concat(flatten(fs_src));
         shader.vs = glCompileShader(gl, shader.vs_src, gl.VERTEX_SHADER);
         shader.fs = glCompileShader(gl, shader.fs_src, gl.FRAGMENT_SHADER);
         shader.program = glLinkProgram(gl, shader.vs, shader.fs);
@@ -288,7 +329,7 @@ System.register(['../spine.ts'], function(exports_1) {
     }
     exports_1("glMakeShader", glMakeShader);
     function glMakeVertex(gl, type_array, size, buffer_type, buffer_draw) {
-        var vertex = new glVertex();
+        const vertex = new RenderVertex();
         if (type_array instanceof Float32Array) {
             vertex.type = gl.FLOAT;
         }
@@ -325,155 +366,87 @@ System.register(['../spine.ts'], function(exports_1) {
         return vertex;
     }
     exports_1("glMakeVertex", glMakeVertex);
-    function glSetupAttribute(gl, shader, format, vertex, count) {
-        if (count === void 0) { count = 0; }
+    function glSetupAttribute(gl, shader, format, vertex, count = 0) {
         gl.bindBuffer(vertex.buffer_type, vertex.buffer);
         if (count > 0) {
-            var sizeof_vertex = vertex.type_array.BYTES_PER_ELEMENT * vertex.size;
-            var stride = sizeof_vertex * count;
-            for (var index = 0; index < count; ++index) {
-                var offset = sizeof_vertex * index;
-                var attrib = shader.attribs[format.replace(/{index}/g, index.toString())];
+            const sizeof_vertex = vertex.type_array.BYTES_PER_ELEMENT * vertex.size;
+            const stride = sizeof_vertex * count;
+            for (let index = 0; index < count; ++index) {
+                const offset = sizeof_vertex * index;
+                const attrib = shader.attribs[format.replace(/{index}/g, index.toString())];
                 gl.vertexAttribPointer(attrib, vertex.size, vertex.type, false, stride, offset);
                 gl.enableVertexAttribArray(attrib);
             }
         }
         else {
-            var attrib = shader.attribs[format];
+            const attrib = shader.attribs[format];
             gl.vertexAttribPointer(attrib, vertex.size, vertex.type, false, 0, 0);
             gl.enableVertexAttribArray(attrib);
         }
     }
     exports_1("glSetupAttribute", glSetupAttribute);
-    function glResetAttribute(gl, shader, format, vertex, count) {
-        if (count === void 0) { count = 0; }
+    function glResetAttribute(gl, shader, format, vertex, count = 0) {
         if (count > 0) {
-            for (var index = 0; index < count; ++index) {
-                var attrib = shader.attribs[format.replace(/{index}/g, index.toString())];
+            for (let index = 0; index < count; ++index) {
+                const attrib = shader.attribs[format.replace(/{index}/g, index.toString())];
                 gl.disableVertexAttribArray(attrib);
             }
         }
         else {
-            var attrib = shader.attribs[format];
+            const attrib = shader.attribs[format];
             gl.disableVertexAttribArray(attrib);
         }
     }
     exports_1("glResetAttribute", glResetAttribute);
+    var Spine, RenderWebGL, RenderBone, RenderSkin, RenderSlot, RenderRegionAttachment, RenderMeshAttachment, RenderWeightedMeshAttachment, Blender, RenderFfdAttachment, RenderFfdKeyframe, RenderShader, RenderVertex, RenderTexture;
     return {
-        setters:[
-            function (spine_1) {
-                spine = spine_1;
-            }],
-        execute: function() {
-            glShader = (function () {
-                function glShader() {
-                }
-                return glShader;
-            }());
-            glVertex = (function () {
-                function glVertex() {
-                }
-                return glVertex;
-            }());
-            BoneInfo = (function () {
-                function BoneInfo() {
-                }
-                return BoneInfo;
-            }());
-            SkinInfo = (function () {
-                function SkinInfo() {
-                    this.slot_info_map = {};
-                }
-                return SkinInfo;
-            }());
-            SlotInfo = (function () {
-                function SlotInfo() {
-                    this.attachment_info_map = {};
-                }
-                return SlotInfo;
-            }());
-            AttachmentInfo = (function () {
-                function AttachmentInfo(type) {
-                    this.type = type;
-                }
-                return AttachmentInfo;
-            }());
-            RegionAttachmentInfo = (function (_super) {
-                __extends(RegionAttachmentInfo, _super);
-                function RegionAttachmentInfo() {
-                    _super.call(this, 'region');
-                }
-                return RegionAttachmentInfo;
-            }(AttachmentInfo));
-            BoundingBoxAttachmentInfo = (function (_super) {
-                __extends(BoundingBoxAttachmentInfo, _super);
-                function BoundingBoxAttachmentInfo() {
-                    _super.call(this, 'boundingbox');
-                }
-                return BoundingBoxAttachmentInfo;
-            }(AttachmentInfo));
-            MeshAttachmentInfo = (function (_super) {
-                __extends(MeshAttachmentInfo, _super);
-                function MeshAttachmentInfo() {
-                    _super.call(this, 'mesh');
-                }
-                return MeshAttachmentInfo;
-            }(AttachmentInfo));
-            SkinnedMeshAttachmentInfo = (function (_super) {
-                __extends(SkinnedMeshAttachmentInfo, _super);
-                function SkinnedMeshAttachmentInfo() {
-                    _super.call(this, 'skinnedmesh');
-                }
-                return SkinnedMeshAttachmentInfo;
-            }(AttachmentInfo));
-            RenderWebGL = (function () {
-                function RenderWebGL(gl) {
-                    this.bone_info_map = {};
-                    this.skin_info_map = {};
-                    this.gl_textures = {};
-                    this.gl_projection = mat4x4Identity(new Float32Array(16));
-                    this.gl_modelview = mat3x3Identity(new Float32Array(9));
-                    this.gl_tex_matrix = mat3x3Identity(new Float32Array(9));
-                    this.gl_color = vec4Identity(new Float32Array(4));
-                    var render = this;
-                    render.gl = gl;
-                    if (!gl) {
-                        return;
-                    }
-                    var gl_mesh_shader_vs_src = [
-                        "precision mediump int;",
-                        "precision mediump float;",
+        setters: [
+            function (Spine_1) {
+                Spine = Spine_1;
+            }
+        ],
+        execute: function () {
+            RenderWebGL = class RenderWebGL {
+                constructor(gl) {
+                    this.bone_map = {};
+                    this.skin_map = {};
+                    this.textures = {};
+                    this.projection = mat4x4Identity(new Float32Array(16));
+                    this.modelview = mat4x4Identity(new Float32Array(16));
+                    this.texmatrix = mat3x3Identity(new Float32Array(9));
+                    this.color = vec4Identity(new Float32Array(4));
+                    this.skin_shader_modelview_count = 16;
+                    this.skin_shader_modelview_array = new Float32Array(16 * this.skin_shader_modelview_count);
+                    this.skin_shader_blenders_count = 8;
+                    this.gl = gl;
+                    const mesh_shader_vs_src = [
                         "uniform mat4 uProjection;",
-                        "uniform mat3 uModelview;",
+                        "uniform mat4 uModelview;",
                         "uniform mat3 uTexMatrix;",
-                        "attribute vec2 aVertexPosition;",
-                        "attribute vec2 aVertexTexCoord;",
+                        "attribute vec2 aPosition;",
+                        "attribute vec2 aTexCoord;",
                         "varying vec3 vTexCoord;",
                         "void main(void) {",
-                        " vTexCoord = uTexMatrix * vec3(aVertexTexCoord, 1.0);",
-                        " gl_Position = uProjection * vec4(uModelview * vec3(aVertexPosition, 1.0), 1.0);",
+                        " gl_Position = uProjection * uModelview * vec4(aPosition, 0.0, 1.0);",
+                        " vTexCoord = uTexMatrix * vec3(aTexCoord, 1.0);",
                         "}"
                     ];
-                    var gl_ffd_mesh_shader_vs_src = [
-                        "precision mediump int;",
-                        "precision mediump float;",
+                    const ffd_mesh_shader_vs_src = [
                         "uniform mat4 uProjection;",
-                        "uniform mat3 uModelview;",
+                        "uniform mat4 uModelview;",
                         "uniform mat3 uTexMatrix;",
                         "uniform float uMorphWeight;",
-                        "attribute vec2 aVertexPosition;",
-                        "attribute vec2 aVertexTexCoord;",
-                        "attribute vec2 aVertexMorph0Position;",
-                        "attribute vec2 aVertexMorph1Position;",
+                        "attribute vec2 aPosition;",
+                        "attribute vec2 aTexCoord;",
+                        "attribute vec2 aPositionMorph0;",
+                        "attribute vec2 aPositionMorph1;",
                         "varying vec3 vTexCoord;",
                         "void main(void) {",
-                        " vTexCoord = uTexMatrix * vec3(aVertexTexCoord, 1.0);",
-                        " gl_Position = uProjection * vec4(uModelview * vec3(aVertexPosition + mix(aVertexMorph0Position, aVertexMorph1Position, uMorphWeight), 1.0), 1.0);",
+                        " gl_Position = uProjection * uModelview * vec4(aPosition + mix(aPositionMorph0, aPositionMorph1, uMorphWeight), 0.0, 1.0);",
+                        " vTexCoord = uTexMatrix * vec3(aTexCoord, 1.0);",
                         "}"
                     ];
-                    var gl_mesh_shader_fs_src = [
-                        "precision mediump int;",
-                        "precision mediump float;",
+                    const mesh_shader_fs_src = [
                         "uniform sampler2D uSampler;",
                         "uniform vec4 uColor;",
                         "varying vec3 vTexCoord;",
@@ -481,55 +454,44 @@ System.register(['../spine.ts'], function(exports_1) {
                         " gl_FragColor = uColor * texture2D(uSampler, vTexCoord.st);",
                         "}"
                     ];
-                    render.gl_mesh_shader = glMakeShader(gl, gl_mesh_shader_vs_src, gl_mesh_shader_fs_src);
-                    render.gl_ffd_mesh_shader = glMakeShader(gl, gl_ffd_mesh_shader_vs_src, gl_mesh_shader_fs_src);
-                    render.gl_region_vertex_position = glMakeVertex(gl, new Float32Array([-1, -1, 1, -1, 1, 1, -1, 1]), 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-                    render.gl_region_vertex_texcoord = glMakeVertex(gl, new Float32Array([0, 1, 1, 1, 1, 0, 0, 0]), 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-                    render.gl_skin_shader_modelview_count = 16;
-                    render.gl_skin_shader_modelview_array = new Float32Array(9 * render.gl_skin_shader_modelview_count);
-                    render.gl_skin_shader_blenders_count = 8;
-                    var gl_skin_shader_vs_src = [
-                        "precision mediump int;",
-                        "precision mediump float;",
+                    this.mesh_shader = glMakeShader(gl, mesh_shader_vs_src, mesh_shader_fs_src);
+                    this.ffd_mesh_shader = glMakeShader(gl, ffd_mesh_shader_vs_src, mesh_shader_fs_src);
+                    const skin_shader_vs_src = [
                         "uniform mat4 uProjection;",
-                        "uniform mat3 uModelviewArray[" + render.gl_skin_shader_modelview_count + "];",
+                        "uniform mat4 uModelviewArray[" + this.skin_shader_modelview_count + "];",
                         "uniform mat3 uTexMatrix;",
-                        "attribute vec2 aVertexPosition;",
-                        repeat("attribute vec2 aVertexBlenders{index};", render.gl_skin_shader_blenders_count),
-                        "attribute vec2 aVertexTexCoord;",
+                        "attribute vec2 aPosition;",
+                        "attribute vec2 aTexCoord;",
+                        repeat("attribute vec2 aBlenders{index};", this.skin_shader_blenders_count),
                         "varying vec3 vTexCoord;",
                         "void main(void) {",
-                        " vTexCoord = uTexMatrix * vec3(aVertexTexCoord, 1.0);",
-                        " vec3 position = vec3(aVertexPosition, 1.0);",
-                        " vec3 blendPosition = vec3(0.0);",
-                        repeat(" blendPosition += (uModelviewArray[int(aVertexBlenders{index}.x)] * position) * aVertexBlenders{index}.y;", render.gl_skin_shader_blenders_count),
-                        " gl_Position = uProjection * vec4(blendPosition, 1.0);",
+                        " vec4 position = vec4(aPosition, 0.0, 1.0);",
+                        " vec4 blendPosition = vec4(0.0);",
+                        repeat(" blendPosition += (uModelviewArray[int(aBlenders{index}.x)] * position) * aBlenders{index}.y;", this.skin_shader_blenders_count),
+                        " gl_Position = uProjection * vec4(blendPosition.xy, 0.0, 1.0);",
+                        " vTexCoord = uTexMatrix * vec3(aTexCoord, 1.0);",
                         "}"
                     ];
-                    var gl_ffd_skin_shader_vs_src = [
-                        "precision mediump int;",
-                        "precision mediump float;",
+                    const ffd_skin_shader_vs_src = [
                         "uniform mat4 uProjection;",
-                        "uniform mat3 uModelviewArray[" + render.gl_skin_shader_modelview_count + "];",
+                        "uniform mat4 uModelviewArray[" + this.skin_shader_modelview_count + "];",
                         "uniform mat3 uTexMatrix;",
                         "uniform float uMorphWeight;",
-                        "attribute vec2 aVertexPosition;",
-                        repeat("attribute vec2 aVertexBlenders{index};", render.gl_skin_shader_blenders_count),
-                        "attribute vec2 aVertexTexCoord;",
-                        "attribute vec2 aVertexMorph0Position;",
-                        "attribute vec2 aVertexMorph1Position;",
+                        "attribute vec2 aPosition;",
+                        "attribute vec2 aTexCoord;",
+                        "attribute vec2 aPositionMorph0;",
+                        "attribute vec2 aPositionMorph1;",
+                        repeat("attribute vec2 aBlenders{index};", this.skin_shader_blenders_count),
                         "varying vec3 vTexCoord;",
                         "void main(void) {",
-                        " vTexCoord = uTexMatrix * vec3(aVertexTexCoord, 1.0);",
-                        " vec3 position = vec3(aVertexPosition + mix(aVertexMorph0Position, aVertexMorph1Position, uMorphWeight), 1.0);",
-                        " vec3 blendPosition = vec3(0.0);",
-                        repeat(" blendPosition += (uModelviewArray[int(aVertexBlenders{index}.x)] * position) * aVertexBlenders{index}.y;", render.gl_skin_shader_blenders_count),
-                        " gl_Position = uProjection * vec4(blendPosition, 1.0);",
+                        " vec4 position = vec4(aPosition + mix(aPositionMorph0, aPositionMorph1, uMorphWeight), 0.0, 1.0);",
+                        " vec4 blendPosition = vec4(0.0);",
+                        repeat(" blendPosition += (uModelviewArray[int(aBlenders{index}.x)] * position) * aBlenders{index}.y;", this.skin_shader_blenders_count),
+                        " gl_Position = uProjection * vec4(blendPosition.xy, 0.0, 1.0);",
+                        " vTexCoord = uTexMatrix * vec3(aTexCoord, 1.0);",
                         "}"
                     ];
-                    var gl_skin_shader_fs_src = [
-                        "precision mediump int;",
-                        "precision mediump float;",
+                    const skin_shader_fs_src = [
                         "uniform sampler2D uSampler;",
                         "uniform vec4 uColor;",
                         "varying vec3 vTexCoord;",
@@ -537,579 +499,519 @@ System.register(['../spine.ts'], function(exports_1) {
                         " gl_FragColor = uColor * texture2D(uSampler, vTexCoord.st);",
                         "}"
                     ];
-                    render.gl_skin_shader = glMakeShader(gl, gl_skin_shader_vs_src, gl_skin_shader_fs_src);
-                    render.gl_ffd_skin_shader = glMakeShader(gl, gl_ffd_skin_shader_vs_src, gl_skin_shader_fs_src);
+                    this.skin_shader = glMakeShader(gl, skin_shader_vs_src, skin_shader_fs_src);
+                    this.ffd_skin_shader = glMakeShader(gl, ffd_skin_shader_vs_src, skin_shader_fs_src);
+                    this.region_vertex_position = glMakeVertex(gl, new Float32Array([-1, -1, 1, -1, 1, 1, -1, 1]), 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+                    this.region_vertex_texcoord = glMakeVertex(gl, new Float32Array([0, 1, 1, 1, 1, 0, 0, 0]), 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
                 }
-                RenderWebGL.prototype.dropData = function (spine_data, atlas_data) {
-                    var render = this;
-                    var gl = render.gl;
-                    if (!gl) {
-                        return;
-                    }
-                    Object.keys(render.gl_textures).forEach(function (image_key) {
-                        var gl_texture = render.gl_textures[image_key];
-                        gl.deleteTexture(gl_texture);
-                        delete render.gl_textures[image_key];
+                loadData(spine_data, atlas_data, images) {
+                    spine_data.iterateBones((bone_key, bone) => {
+                        const render_bone = this.bone_map[bone_key] = new RenderBone();
+                        Spine.Space.invert(bone.world_space, render_bone.setup_space);
                     });
-                    render.gl_textures = {};
-                    Object.keys(render.bone_info_map).forEach(function (bone_key) {
-                        var bone_info = render.bone_info_map[bone_key];
-                    });
-                    render.bone_info_map = {};
-                    Object.keys(render.skin_info_map).forEach(function (skin_key) {
-                        var skin_info = render.skin_info_map[skin_key];
-                        Object.keys(skin_info.slot_info_map).forEach(function (slot_key) {
-                            var slot_info = skin_info.slot_info_map[slot_key];
-                            Object.keys(slot_info.attachment_info_map).forEach(function (attachment_key) {
-                                var attachment_info = slot_info.attachment_info_map[attachment_key];
-                                switch (attachment_info.type) {
-                                    case 'mesh': {
-                                        var mesh_attachment_info = attachment_info;
-                                        gl.deleteBuffer(mesh_attachment_info.gl_vertex_position.buffer);
-                                        gl.deleteBuffer(mesh_attachment_info.gl_vertex_texcoord.buffer);
-                                        gl.deleteBuffer(mesh_attachment_info.gl_vertex_triangle.buffer);
-                                        Object.keys(mesh_attachment_info.anim_ffd_attachments).forEach(function (anim_key) {
-                                            var anim_ffd_attachment = mesh_attachment_info.anim_ffd_attachments[anim_key];
-                                            anim_ffd_attachment.ffd_keyframes.forEach(function (ffd_keyframe) {
-                                                gl.deleteBuffer(ffd_keyframe.gl_vertex.buffer);
-                                            });
-                                        });
-                                        break;
-                                    }
-                                    case 'skinnedmesh': {
-                                        var skinned_mesh_attachment_info = attachment_info;
-                                        gl.deleteBuffer(skinned_mesh_attachment_info.gl_vertex_position.buffer);
-                                        gl.deleteBuffer(skinned_mesh_attachment_info.gl_vertex_blenders.buffer);
-                                        gl.deleteBuffer(skinned_mesh_attachment_info.gl_vertex_texcoord.buffer);
-                                        gl.deleteBuffer(skinned_mesh_attachment_info.gl_vertex_triangle.buffer);
-                                        Object.keys(skinned_mesh_attachment_info.anim_ffd_attachments).forEach(function (anim_key) {
-                                            var anim_ffd_attachment = skinned_mesh_attachment_info.anim_ffd_attachments[anim_key];
-                                            anim_ffd_attachment.ffd_keyframes.forEach(function (ffd_keyframe) {
-                                                gl.deleteBuffer(ffd_keyframe.gl_vertex.buffer);
-                                            });
-                                        });
-                                        break;
-                                    }
-                                    default:
-                                        console.log("TODO", skin_key, slot_key, attachment_key, attachment_info.type);
-                                        break;
-                                }
-                            });
-                        });
-                    });
-                    render.skin_info_map = {};
-                };
-                ;
-                RenderWebGL.prototype.loadData = function (spine_data, atlas_data, images) {
-                    var render = this;
-                    var gl = render.gl;
-                    if (!gl) {
-                        return;
-                    }
-                    spine_data.iterateBones(function (bone_key, bone) {
-                        var bone_info = render.bone_info_map[bone_key] = new BoneInfo();
-                        bone_info.setup_space = spine.Space.invert(bone.world_space, new spine.Space());
-                    });
-                    spine_data.iterateSkins(function (skin_key, skin) {
-                        var skin_info = render.skin_info_map[skin_key] = new SkinInfo();
-                        skin.iterateAttachments(function (slot_key, skin_slot, attachment_key, attachment) {
+                    spine_data.iterateSkins((skin_key, skin) => {
+                        const render_skin = this.skin_map[skin_key] = new RenderSkin();
+                        skin.iterateAttachments((slot_key, skin_slot, attachment_key, attachment) => {
                             if (!attachment) {
                                 return;
                             }
-                            var slot_info = skin_info.slot_info_map[slot_key] = skin_info.slot_info_map[slot_key] || new SlotInfo();
+                            const render_slot = render_skin.slot_map[slot_key] || (render_skin.slot_map[slot_key] = new RenderSlot());
                             switch (attachment.type) {
-                                case 'mesh': {
-                                    var mesh_attachment = attachment;
-                                    var mesh_attachment_info = slot_info.attachment_info_map[attachment_key] = new MeshAttachmentInfo();
-                                    var vertex_count = mesh_attachment.vertices.length / 2;
-                                    var vertex_position = new Float32Array(mesh_attachment.vertices);
-                                    var vertex_texcoord = new Float32Array(mesh_attachment.uvs);
-                                    var vertex_triangle = new Uint16Array(mesh_attachment.triangles);
-                                    mesh_attachment_info.gl_vertex_position = glMakeVertex(gl, vertex_position, 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-                                    mesh_attachment_info.gl_vertex_texcoord = glMakeVertex(gl, vertex_texcoord, 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-                                    mesh_attachment_info.gl_vertex_triangle = glMakeVertex(gl, vertex_triangle, 1, gl.ELEMENT_ARRAY_BUFFER, gl.STATIC_DRAW);
-                                    var anim_ffd_attachments = mesh_attachment_info.anim_ffd_attachments = {};
-                                    spine_data.iterateAnims(function (anim_key, anim) {
-                                        var anim_ffd = anim.ffds && anim.ffds[skin_key];
-                                        var ffd_slot = anim_ffd && anim_ffd.ffd_slots[slot_key];
-                                        var ffd_attachment = ffd_slot && ffd_slot.ffd_attachments[attachment_key];
-                                        if (ffd_attachment) {
-                                            var anim_ffd_attachment = anim_ffd_attachments[anim_key] = {};
-                                            var anim_ffd_keyframes = anim_ffd_attachment.ffd_keyframes = [];
-                                            ffd_attachment.ffd_keyframes.forEach(function (ffd_keyframe, ffd_keyframe_index) {
-                                                var anim_ffd_keyframe = anim_ffd_keyframes[ffd_keyframe_index] = {};
-                                                var vertex = new Float32Array(2 * vertex_count);
-                                                vertex.subarray(ffd_keyframe.offset, ffd_keyframe.offset + ffd_keyframe.vertices.length).set(new Float32Array(ffd_keyframe.vertices));
-                                                anim_ffd_keyframe.gl_vertex = glMakeVertex(gl, vertex, 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-                                            });
-                                        }
-                                    });
+                                case "region":
+                                    render_slot.attachment_map[attachment_key] = new RenderRegionAttachment(this).loadData(spine_data, skin_key, slot_key, attachment_key, attachment);
                                     break;
-                                }
-                                case 'skinnedmesh': {
-                                    var skinned_mesh_attachment = attachment;
-                                    var skinned_mesh_attachment_info = slot_info.attachment_info_map[attachment_key] = new SkinnedMeshAttachmentInfo();
-                                    var vertex_count = skinned_mesh_attachment.uvs.length / 2;
-                                    var vertex_position = new Float32Array(2 * vertex_count);
-                                    var vertex_blenders = new Float32Array(2 * render.gl_skin_shader_blenders_count * vertex_count);
-                                    var vertex_texcoord = new Float32Array(skinned_mesh_attachment.uvs);
-                                    var vertex_triangle = new Uint16Array(skinned_mesh_attachment.triangles);
-                                    var blend_bone_index_array = skinned_mesh_attachment_info.blend_bone_index_array = [];
-                                    var _loop_1 = function(vertex_index, index) {
-                                        var blender_count = skinned_mesh_attachment.vertices[index++];
-                                        var blender_array = [];
-                                        for (var blender_index = 0; blender_index < blender_count; ++blender_index) {
-                                            var bone_index = skinned_mesh_attachment.vertices[index++];
-                                            var x = skinned_mesh_attachment.vertices[index++];
-                                            var y = skinned_mesh_attachment.vertices[index++];
-                                            var weight = skinned_mesh_attachment.vertices[index++];
-                                            blender_array.push({ position: new spine.Vector(x, y), bone_index: bone_index, weight: weight });
-                                        }
-                                        blender_array = blender_array.sort(function (a, b) { return b.weight - a.weight; });
-                                        if (blender_array.length > render.gl_skin_shader_blenders_count) {
-                                            console.log("blend array length for", attachment_key, "is", blender_array.length, "so clamp to", render.gl_skin_shader_blenders_count);
-                                            blender_array.length = render.gl_skin_shader_blenders_count;
-                                            var weight_sum = 0;
-                                            blender_array.forEach(function (blend) { weight_sum += blend.weight; });
-                                            blender_array.forEach(function (blend) { blend.weight /= weight_sum; });
-                                        }
-                                        var position_x = 0;
-                                        var position_y = 0;
-                                        var blend_position = new spine.Vector();
-                                        var vertex_blenders_offset = vertex_index * 2 * render.gl_skin_shader_blenders_count;
-                                        blender_array.forEach(function (blend, index) {
-                                            if (blend_bone_index_array.indexOf(blend.bone_index) === -1) {
-                                                blend_bone_index_array.push(blend.bone_index);
-                                            }
-                                            var bone_key = spine_data.bone_keys[blend.bone_index];
-                                            var bone = spine_data.bones[bone_key];
-                                            spine.Space.transform(bone.world_space, blend.position, blend_position);
-                                            position_x += blend_position.x * blend.weight;
-                                            position_y += blend_position.y * blend.weight;
-                                            vertex_blenders[vertex_blenders_offset++] = blend_bone_index_array.indexOf(blend.bone_index);
-                                            vertex_blenders[vertex_blenders_offset++] = blend.weight;
-                                        });
-                                        var vertex_position_offset = vertex_index * 2;
-                                        vertex_position[vertex_position_offset++] = position_x;
-                                        vertex_position[vertex_position_offset++] = position_y;
-                                        if (blend_bone_index_array.length > render.gl_skin_shader_modelview_count) {
-                                            console.log("blend bone index array length for", attachment_key, "is", blend_bone_index_array.length, "greater than", render.gl_skin_shader_modelview_count);
-                                        }
-                                    };
-                                    for (var vertex_index = 0, index = 0; vertex_index < vertex_count; ++vertex_index) {
-                                        _loop_1(vertex_index, index);
-                                    }
-                                    skinned_mesh_attachment_info.gl_vertex_position = glMakeVertex(gl, vertex_position, 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-                                    skinned_mesh_attachment_info.gl_vertex_blenders = glMakeVertex(gl, vertex_blenders, 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-                                    skinned_mesh_attachment_info.gl_vertex_texcoord = glMakeVertex(gl, vertex_texcoord, 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-                                    skinned_mesh_attachment_info.gl_vertex_triangle = glMakeVertex(gl, vertex_triangle, 1, gl.ELEMENT_ARRAY_BUFFER, gl.STATIC_DRAW);
-                                    var anim_ffd_attachments = skinned_mesh_attachment_info.anim_ffd_attachments = {};
-                                    spine_data.iterateAnims(function (anim_key, anim) {
-                                        var anim_ffd = anim.ffds && anim.ffds[skin_key];
-                                        var ffd_slot = anim_ffd && anim_ffd.ffd_slots[slot_key];
-                                        var ffd_attachment = ffd_slot && ffd_slot.ffd_attachments[attachment_key];
-                                        if (ffd_attachment) {
-                                            var anim_ffd_attachment = anim_ffd_attachments[anim_key] = {};
-                                            var anim_ffd_keyframes = anim_ffd_attachment.ffd_keyframes = [];
-                                            ffd_attachment.ffd_keyframes.forEach(function (ffd_keyframe, ffd_keyframe_index) {
-                                                var anim_ffd_keyframe = anim_ffd_keyframes[ffd_keyframe_index] = {};
-                                                var vertex = new Float32Array(2 * vertex_count);
-                                                for (var vertex_index = 0, index = 0, ffd_index = 0; vertex_index < vertex_count; ++vertex_index) {
-                                                    var blender_count = skinned_mesh_attachment.vertices[index++];
-                                                    var vertex_x = 0;
-                                                    var vertex_y = 0;
-                                                    for (var blender_index = 0; blender_index < blender_count; ++blender_index) {
-                                                        var bone_index = skinned_mesh_attachment.vertices[index++];
-                                                        var x = skinned_mesh_attachment.vertices[index++];
-                                                        var y = skinned_mesh_attachment.vertices[index++];
-                                                        var weight = skinned_mesh_attachment.vertices[index++];
-                                                        var morph_position_x = ffd_keyframe.vertices[ffd_index - ffd_keyframe.offset] || 0;
-                                                        ++ffd_index;
-                                                        var morph_position_y = ffd_keyframe.vertices[ffd_index - ffd_keyframe.offset] || 0;
-                                                        ++ffd_index;
-                                                        vertex_x += morph_position_x * weight;
-                                                        vertex_y += morph_position_y * weight;
-                                                    }
-                                                    var vertex_offset = vertex_index * 2;
-                                                    vertex[vertex_offset++] = vertex_x;
-                                                    vertex[vertex_offset++] = vertex_y;
-                                                }
-                                                anim_ffd_keyframe.gl_vertex = glMakeVertex(gl, vertex, 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-                                            });
-                                        }
-                                    });
+                                case "mesh":
+                                    render_slot.attachment_map[attachment_key] = new RenderMeshAttachment(this).loadData(spine_data, skin_key, slot_key, attachment_key, attachment);
                                     break;
-                                }
-                                default:
+                                case "weightedmesh":
+                                    render_slot.attachment_map[attachment_key] = new RenderWeightedMeshAttachment(this).loadData(spine_data, skin_key, slot_key, attachment_key, attachment);
                                     break;
                             }
                         });
                     });
                     if (atlas_data) {
-                        atlas_data.pages.forEach(function (page) {
-                            if (page.format !== 'RGBA8888') {
+                        const gl = this.gl;
+                        atlas_data.pages.forEach((page) => {
+                            if (page.format !== "RGBA8888") {
                                 throw new Error(page.format);
                             }
-                            var gl_min_filter = gl.NONE;
+                            let min_filter = gl.NONE;
                             switch (page.min_filter) {
-                                case 'Nearest':
-                                    gl_min_filter = gl.NEAREST;
+                                case "Nearest":
+                                    min_filter = gl.NEAREST;
                                     break;
                                 default:
-                                case 'Linear':
-                                    gl_min_filter = gl.LINEAR;
+                                case "Linear":
+                                    min_filter = gl.LINEAR;
                                     break;
-                                case 'MipMapNearestNearest':
-                                    gl_min_filter = gl.NEAREST_MIPMAP_NEAREST;
+                                case "MipMapNearestNearest":
+                                    min_filter = gl.NEAREST_MIPMAP_NEAREST;
                                     break;
-                                case 'MipMapLinearNearest':
-                                    gl_min_filter = gl.LINEAR_MIPMAP_NEAREST;
+                                case "MipMapLinearNearest":
+                                    min_filter = gl.LINEAR_MIPMAP_NEAREST;
                                     break;
-                                case 'MipMapNearestLinear':
-                                    gl_min_filter = gl.NEAREST_MIPMAP_LINEAR;
+                                case "MipMapNearestLinear":
+                                    min_filter = gl.NEAREST_MIPMAP_LINEAR;
                                     break;
-                                case 'MipMapLinearLinear':
-                                    gl_min_filter = gl.LINEAR_MIPMAP_LINEAR;
+                                case "MipMapLinearLinear":
+                                    min_filter = gl.LINEAR_MIPMAP_LINEAR;
                                     break;
                             }
-                            var gl_mag_filter = gl.NONE;
+                            let mag_filter = gl.NONE;
                             switch (page.mag_filter) {
-                                case 'Nearest':
-                                    gl_mag_filter = gl.NEAREST;
+                                case "Nearest":
+                                    mag_filter = gl.NEAREST;
                                     break;
                                 default:
-                                case 'Linear':
-                                    gl_mag_filter = gl.LINEAR;
+                                case "Linear":
+                                    mag_filter = gl.LINEAR;
                                     break;
                             }
-                            var gl_wrap_s = gl.NONE;
+                            let wrap_s = gl.NONE;
                             switch (page.wrap_s) {
-                                case 'Repeat':
-                                    gl_wrap_s = gl.REPEAT;
+                                case "Repeat":
+                                    wrap_s = gl.REPEAT;
                                     break;
                                 default:
-                                case 'ClampToEdge':
-                                    gl_wrap_s = gl.CLAMP_TO_EDGE;
+                                case "ClampToEdge":
+                                    wrap_s = gl.CLAMP_TO_EDGE;
                                     break;
-                                case 'MirroredRepeat':
-                                    gl_wrap_s = gl.MIRRORED_REPEAT;
+                                case "MirroredRepeat":
+                                    wrap_s = gl.MIRRORED_REPEAT;
                                     break;
                             }
-                            var gl_wrap_t = gl.NONE;
+                            let wrap_t = gl.NONE;
                             switch (page.wrap_t) {
-                                case 'Repeat':
-                                    gl_wrap_t = gl.REPEAT;
+                                case "Repeat":
+                                    wrap_t = gl.REPEAT;
                                     break;
                                 default:
-                                case 'ClampToEdge':
-                                    gl_wrap_t = gl.CLAMP_TO_EDGE;
+                                case "ClampToEdge":
+                                    wrap_t = gl.CLAMP_TO_EDGE;
                                     break;
-                                case 'MirroredRepeat':
-                                    gl_wrap_t = gl.MIRRORED_REPEAT;
+                                case "MirroredRepeat":
+                                    wrap_t = gl.MIRRORED_REPEAT;
                                     break;
                             }
-                            var image_key = page.name;
-                            var image = images[image_key];
-                            var gl_texture = render.gl_textures[image_key] = gl.createTexture();
-                            gl.bindTexture(gl.TEXTURE_2D, gl_texture);
+                            const image_key = page.name;
+                            const image = images[image_key];
+                            const texture = this.textures[image_key] = new RenderTexture();
+                            texture.texture = gl.createTexture();
+                            gl.bindTexture(gl.TEXTURE_2D, texture.texture);
                             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-                            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl_min_filter);
-                            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl_mag_filter);
-                            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl_wrap_s);
-                            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl_wrap_t);
+                            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, min_filter);
+                            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, mag_filter);
+                            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrap_s);
+                            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrap_t);
                         });
                     }
                     else {
-                        spine_data.iterateSkins(function (skin_key, skin) {
-                            skin.iterateAttachments(function (slot_key, skin_slot, attachment_key, attachment) {
+                        const gl = this.gl;
+                        spine_data.iterateSkins((skin_key, skin) => {
+                            skin.iterateAttachments((slot_key, skin_slot, attachment_key, attachment) => {
                                 if (!attachment) {
                                     return;
                                 }
                                 switch (attachment.type) {
-                                    case 'region':
-                                    case 'mesh':
-                                    case 'skinnedmesh':
-                                        var image_key = attachment_key;
-                                        var image = images[image_key];
-                                        var gl_texture = render.gl_textures[image_key] = gl.createTexture();
-                                        gl.bindTexture(gl.TEXTURE_2D, gl_texture);
+                                    case "region":
+                                    case "mesh":
+                                    case "weightedmesh":
+                                        const image_key = attachment_key;
+                                        const image = images[image_key];
+                                        const texture = this.textures[image_key] = new RenderTexture();
+                                        texture.texture = gl.createTexture();
+                                        gl.bindTexture(gl.TEXTURE_2D, texture.texture);
                                         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
                                         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
                                         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
                                         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
                                         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
                                         break;
-                                    default:
-                                        break;
                                 }
                             });
                         });
                     }
-                };
-                ;
-                RenderWebGL.prototype.drawPose = function (spine_pose, atlas_data) {
-                    var render = this;
-                    var gl = render.gl;
-                    if (!gl) {
-                        return;
-                    }
-                    var gl_projection = render.gl_projection;
-                    var gl_modelview = render.gl_modelview;
-                    var gl_tex_matrix = render.gl_tex_matrix;
-                    var gl_color = render.gl_color;
-                    var alpha = gl_color[3];
-                    spine_pose.iterateAttachments(function (slot_key, slot, skin_slot, attachment_key, attachment) {
+                }
+                dropData(spine_data, atlas_data = null) {
+                    const gl = this.gl;
+                    Object.keys(this.textures).forEach((image_key) => {
+                        const texture = this.textures[image_key];
+                        gl.deleteTexture(texture.texture);
+                    });
+                    this.textures = {};
+                    this.bone_map = {};
+                    spine_data.iterateSkins((skin_key, skin) => {
+                        const render_skin = this.skin_map[skin_key] = new RenderSkin();
+                        skin.iterateAttachments((slot_key, skin_slot, attachment_key, attachment) => {
+                            if (!attachment) {
+                                return;
+                            }
+                            const render_slot = render_skin.slot_map[slot_key] || (render_skin.slot_map[slot_key] = new RenderSlot());
+                            const render_attachment = render_slot.attachment_map[attachment_key];
+                            if (render_attachment) {
+                                render_attachment.dropData(spine_data, skin_key, slot_key, attachment_key, attachment);
+                            }
+                        });
+                    });
+                    this.skin_map = {};
+                }
+                drawPose(spine_pose, atlas_data = null) {
+                    const gl = this.gl;
+                    const alpha = this.color[3];
+                    spine_pose.iterateAttachments((slot_key, slot, skin_slot, attachment_key, attachment) => {
                         if (!attachment) {
                             return;
                         }
-                        if (attachment.type === 'boundingbox') {
+                        if (attachment.type === "boundingbox") {
                             return;
                         }
-                        var site = atlas_data && atlas_data.sites[attachment_key];
-                        var page = site && site.page;
-                        var image_key = (page && page.name) || attachment_key;
-                        var gl_texture = render.gl_textures[image_key];
-                        if (!gl_texture) {
+                        const site = atlas_data && atlas_data.sites[attachment.path || attachment.name || attachment_key];
+                        const page = site && site.page;
+                        const image_key = (page && page.name) || attachment.path || attachment.name || attachment_key;
+                        const texture = this.textures[image_key];
+                        if (!texture) {
                             return;
                         }
-                        mat3x3Identity(gl_modelview);
-                        mat3x3Identity(gl_tex_matrix);
-                        mat3x3ApplyAtlasPageTexcoord(gl_tex_matrix, page);
-                        mat3x3ApplyAtlasSiteTexcoord(gl_tex_matrix, site);
-                        vec4CopyColor(gl_color, slot.color);
-                        gl_color[3] *= alpha;
+                        mat4x4Identity(this.modelview);
+                        mat3x3Identity(this.texmatrix);
+                        mat3x3ApplyAtlasPageTexcoord(this.texmatrix, page);
+                        mat3x3ApplyAtlasSiteTexcoord(this.texmatrix, site);
+                        vec4CopyColor(this.color, slot.color);
+                        this.color[3] *= alpha;
                         gl.enable(gl.BLEND);
                         switch (slot.blend) {
                             default:
-                            case 'normal':
+                            case "normal":
                                 gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
                                 break;
-                            case 'additive':
+                            case "additive":
                                 gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
                                 break;
-                            case 'multiply':
+                            case "multiply":
                                 gl.blendFunc(gl.DST_COLOR, gl.ONE_MINUS_SRC_ALPHA);
                                 break;
-                            case 'screen':
+                            case "screen":
                                 gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_COLOR);
                                 break;
                         }
-                        var skin_info = render.skin_info_map[spine_pose.skin_key];
-                        var default_skin_info = render.skin_info_map['default'];
-                        var slot_info = skin_info.slot_info_map[slot_key] || default_skin_info.slot_info_map[slot_key];
-                        switch (attachment.type) {
-                            case 'region': {
-                                var bone = spine_pose.bones[slot.bone_key];
-                                var region_attachment = attachment;
-                                var region_attachment_info = slot_info.attachment_info_map[attachment_key];
-                                mat3x3ApplySpace(gl_modelview, bone.world_space);
-                                mat3x3ApplySpace(gl_modelview, region_attachment.local_space);
-                                mat3x3Scale(gl_modelview, region_attachment.width / 2, region_attachment.height / 2);
-                                mat3x3ApplyAtlasSitePosition(gl_modelview, site);
-                                var gl_shader = render.gl_mesh_shader;
-                                var gl_vertex_position = render.gl_region_vertex_position;
-                                var gl_vertex_texcoord = render.gl_region_vertex_texcoord;
-                                gl.useProgram(gl_shader.program);
-                                gl.uniformMatrix4fv(gl_shader.uniforms['uProjection'], false, gl_projection);
-                                gl.uniformMatrix3fv(gl_shader.uniforms['uModelview'], false, gl_modelview);
-                                gl.uniformMatrix3fv(gl_shader.uniforms['uTexMatrix'], false, gl_tex_matrix);
-                                gl.uniform4fv(gl_shader.uniforms['uColor'], gl_color);
-                                gl.activeTexture(gl.TEXTURE0);
-                                gl.bindTexture(gl.TEXTURE_2D, gl_texture);
-                                gl.uniform1i(gl_shader.uniforms['uSampler'], 0);
-                                glSetupAttribute(gl, gl_shader, 'aVertexPosition', gl_vertex_position);
-                                glSetupAttribute(gl, gl_shader, 'aVertexTexCoord', gl_vertex_texcoord);
-                                gl.drawArrays(gl.TRIANGLE_FAN, 0, gl_vertex_position.count);
-                                glResetAttribute(gl, gl_shader, 'aVertexPosition', gl_vertex_position);
-                                glResetAttribute(gl, gl_shader, 'aVertexTexCoord', gl_vertex_texcoord);
-                                gl.bindTexture(gl.TEXTURE_2D, null);
-                                gl.useProgram(null);
-                                break;
-                            }
-                            case 'mesh': {
-                                var bone = spine_pose.bones[slot.bone_key];
-                                var mesh_attachment = attachment;
-                                var mesh_attachment_info = slot_info.attachment_info_map[attachment_key];
-                                mat3x3ApplySpace(gl_modelview, bone.world_space);
-                                mat3x3ApplyAtlasSitePosition(gl_modelview, site);
-                                var anim = spine_pose.data.anims[spine_pose.anim_key];
-                                var anim_ffd = anim && anim.ffds && anim.ffds[spine_pose.skin_key];
-                                var ffd_slot = anim_ffd && anim_ffd.ffd_slots[slot_key];
-                                var ffd_attachment = ffd_slot && ffd_slot.ffd_attachments[attachment_key];
-                                var ffd_keyframes = ffd_attachment && ffd_attachment.ffd_keyframes;
-                                var ffd_keyframe0_index = spine.Keyframe.find(ffd_keyframes, spine_pose.time);
-                                if (ffd_keyframe0_index !== -1) {
-                                    var pct = 0;
-                                    var ffd_keyframe0 = ffd_keyframes[ffd_keyframe0_index];
-                                    var ffd_keyframe1_index = ffd_keyframe0_index + 1;
-                                    var ffd_keyframe1 = ffd_keyframes[ffd_keyframe1_index];
-                                    if (ffd_keyframe1) {
-                                        pct = ffd_keyframe0.curve.evaluate((spine_pose.time - ffd_keyframe0.time) / (ffd_keyframe1.time - ffd_keyframe0.time));
-                                    }
-                                    else {
-                                        ffd_keyframe1_index = ffd_keyframe0_index;
-                                        ffd_keyframe1 = ffd_keyframes[ffd_keyframe1_index];
-                                    }
-                                    var anim_ffd_attachment = mesh_attachment_info.anim_ffd_attachments[spine_pose.anim_key];
-                                    var anim_ffd_keyframe0 = anim_ffd_attachment.ffd_keyframes[ffd_keyframe0_index];
-                                    var anim_ffd_keyframe1 = anim_ffd_attachment.ffd_keyframes[ffd_keyframe1_index];
-                                    var gl_shader = render.gl_ffd_mesh_shader;
-                                    var gl_vertex_position = mesh_attachment_info.gl_vertex_position;
-                                    var gl_vertex_texcoord = mesh_attachment_info.gl_vertex_texcoord;
-                                    var gl_vertex_triangle = mesh_attachment_info.gl_vertex_triangle;
-                                    gl.useProgram(gl_shader.program);
-                                    gl.uniformMatrix4fv(gl_shader.uniforms['uProjection'], false, gl_projection);
-                                    gl.uniformMatrix3fv(gl_shader.uniforms['uModelview'], false, gl_modelview);
-                                    gl.uniformMatrix3fv(gl_shader.uniforms['uTexMatrix'], false, gl_tex_matrix);
-                                    gl.uniform4fv(gl_shader.uniforms['uColor'], gl_color);
-                                    gl.uniform1f(gl_shader.uniforms['uMorphWeight'], pct);
-                                    gl.activeTexture(gl.TEXTURE0);
-                                    gl.bindTexture(gl.TEXTURE_2D, gl_texture);
-                                    gl.uniform1i(gl_shader.uniforms['uSampler'], 0);
-                                    glSetupAttribute(gl, gl_shader, 'aVertexPosition', gl_vertex_position);
-                                    glSetupAttribute(gl, gl_shader, 'aVertexMorph0Position', anim_ffd_keyframe0.gl_vertex);
-                                    glSetupAttribute(gl, gl_shader, 'aVertexMorph1Position', anim_ffd_keyframe1.gl_vertex);
-                                    glSetupAttribute(gl, gl_shader, 'aVertexTexCoord', gl_vertex_texcoord);
-                                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl_vertex_triangle.buffer);
-                                    gl.drawElements(gl.TRIANGLES, gl_vertex_triangle.count, gl_vertex_triangle.type, 0);
-                                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-                                    glResetAttribute(gl, gl_shader, 'aVertexPosition', gl_vertex_position);
-                                    glResetAttribute(gl, gl_shader, 'aVertexMorph0Position', anim_ffd_keyframe0.gl_vertex);
-                                    glResetAttribute(gl, gl_shader, 'aVertexMorph1Position', anim_ffd_keyframe1.gl_vertex);
-                                    glResetAttribute(gl, gl_shader, 'aVertexTexCoord', gl_vertex_texcoord);
-                                    gl.bindTexture(gl.TEXTURE_2D, null);
-                                    gl.useProgram(null);
-                                }
-                                else {
-                                    var gl_shader = render.gl_mesh_shader;
-                                    var gl_vertex_position = mesh_attachment_info.gl_vertex_position;
-                                    var gl_vertex_texcoord = mesh_attachment_info.gl_vertex_texcoord;
-                                    var gl_vertex_triangle = mesh_attachment_info.gl_vertex_triangle;
-                                    gl.useProgram(gl_shader.program);
-                                    gl.uniformMatrix4fv(gl_shader.uniforms['uProjection'], false, gl_projection);
-                                    gl.uniformMatrix3fv(gl_shader.uniforms['uModelview'], false, gl_modelview);
-                                    gl.uniformMatrix3fv(gl_shader.uniforms['uTexMatrix'], false, gl_tex_matrix);
-                                    gl.uniform4fv(gl_shader.uniforms['uColor'], gl_color);
-                                    gl.activeTexture(gl.TEXTURE0);
-                                    gl.bindTexture(gl.TEXTURE_2D, gl_texture);
-                                    gl.uniform1i(gl_shader.uniforms['uSampler'], 0);
-                                    glSetupAttribute(gl, gl_shader, 'aVertexPosition', gl_vertex_position);
-                                    glSetupAttribute(gl, gl_shader, 'aVertexTexCoord', gl_vertex_texcoord);
-                                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl_vertex_triangle.buffer);
-                                    gl.drawElements(gl.TRIANGLES, gl_vertex_triangle.count, gl_vertex_triangle.type, 0);
-                                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-                                    glResetAttribute(gl, gl_shader, 'aVertexPosition', gl_vertex_position);
-                                    glResetAttribute(gl, gl_shader, 'aVertexTexCoord', gl_vertex_texcoord);
-                                    gl.bindTexture(gl.TEXTURE_2D, null);
-                                    gl.useProgram(null);
-                                }
-                                break;
-                            }
-                            case 'skinnedmesh': {
-                                var skinned_mesh_attachment = attachment;
-                                var skinned_mesh_attachment_info = slot_info.attachment_info_map[attachment_key];
-                                var blend_bone_index_array = skinned_mesh_attachment_info.blend_bone_index_array;
-                                for (var index = 0; index < blend_bone_index_array.length; ++index) {
-                                    var bone_index = blend_bone_index_array[index];
-                                    var bone_key = spine_pose.bone_keys[bone_index];
-                                    var bone = spine_pose.bones[bone_key];
-                                    var bone_info = render.bone_info_map[bone_key];
-                                    if (index < render.gl_skin_shader_modelview_count) {
-                                        var modelview = render.gl_skin_shader_modelview_array.subarray(index * 9, (index + 1) * 9);
-                                        mat3x3Copy(modelview, gl_modelview);
-                                        mat3x3ApplySpace(modelview, bone.world_space);
-                                        mat3x3ApplySpace(modelview, bone_info.setup_space);
-                                        mat3x3ApplyAtlasSitePosition(modelview, site);
-                                    }
-                                }
-                                var anim = spine_pose.data.anims[spine_pose.anim_key];
-                                var anim_ffd = anim && anim.ffds && anim.ffds[spine_pose.skin_key];
-                                var ffd_slot = anim_ffd && anim_ffd.ffd_slots[slot_key];
-                                var ffd_attachment = ffd_slot && ffd_slot.ffd_attachments[attachment_key];
-                                var ffd_keyframes = ffd_attachment && ffd_attachment.ffd_keyframes;
-                                var ffd_keyframe0_index = spine.Keyframe.find(ffd_keyframes, spine_pose.time);
-                                if (ffd_keyframe0_index !== -1) {
-                                    var pct = 0;
-                                    var ffd_keyframe0 = ffd_keyframes[ffd_keyframe0_index];
-                                    var ffd_keyframe1_index = ffd_keyframe0_index + 1;
-                                    var ffd_keyframe1 = ffd_keyframes[ffd_keyframe1_index];
-                                    if (ffd_keyframe1) {
-                                        pct = ffd_keyframe0.curve.evaluate((spine_pose.time - ffd_keyframe0.time) / (ffd_keyframe1.time - ffd_keyframe0.time));
-                                    }
-                                    else {
-                                        ffd_keyframe1_index = ffd_keyframe0_index;
-                                        ffd_keyframe1 = ffd_keyframes[ffd_keyframe1_index];
-                                    }
-                                    var anim_ffd_attachment = skinned_mesh_attachment_info.anim_ffd_attachments[spine_pose.anim_key];
-                                    var anim_ffd_keyframe0 = anim_ffd_attachment.ffd_keyframes[ffd_keyframe0_index];
-                                    var anim_ffd_keyframe1 = anim_ffd_attachment.ffd_keyframes[ffd_keyframe1_index];
-                                    var gl_shader = render.gl_ffd_skin_shader;
-                                    var gl_vertex_position = skinned_mesh_attachment_info.gl_vertex_position;
-                                    var gl_vertex_blenders = skinned_mesh_attachment_info.gl_vertex_blenders;
-                                    var gl_vertex_texcoord = skinned_mesh_attachment_info.gl_vertex_texcoord;
-                                    var gl_vertex_triangle = skinned_mesh_attachment_info.gl_vertex_triangle;
-                                    gl.useProgram(gl_shader.program);
-                                    gl.uniformMatrix4fv(gl_shader.uniforms['uProjection'], false, gl_projection);
-                                    gl.uniformMatrix3fv(gl_shader.uniforms['uModelviewArray[0]'], false, render.gl_skin_shader_modelview_array);
-                                    gl.uniformMatrix3fv(gl_shader.uniforms['uTexMatrix'], false, gl_tex_matrix);
-                                    gl.uniform4fv(gl_shader.uniforms['uColor'], gl_color);
-                                    gl.uniform1f(gl_shader.uniforms['uMorphWeight'], pct);
-                                    gl.activeTexture(gl.TEXTURE0);
-                                    gl.bindTexture(gl.TEXTURE_2D, gl_texture);
-                                    gl.uniform1i(gl_shader.uniforms['uSampler'], 0);
-                                    glSetupAttribute(gl, gl_shader, 'aVertexPosition', gl_vertex_position);
-                                    glSetupAttribute(gl, gl_shader, 'aVertexBlenders{index}', gl_vertex_blenders, render.gl_skin_shader_blenders_count);
-                                    glSetupAttribute(gl, gl_shader, 'aVertexMorph0Position', anim_ffd_keyframe0.gl_vertex);
-                                    glSetupAttribute(gl, gl_shader, 'aVertexMorph1Position', anim_ffd_keyframe1.gl_vertex);
-                                    glSetupAttribute(gl, gl_shader, 'aVertexTexCoord', gl_vertex_texcoord);
-                                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl_vertex_triangle.buffer);
-                                    gl.drawElements(gl.TRIANGLES, gl_vertex_triangle.count, gl_vertex_triangle.type, 0);
-                                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-                                    glResetAttribute(gl, gl_shader, 'aVertexPosition', gl_vertex_position);
-                                    glResetAttribute(gl, gl_shader, 'aVertexBlenders{index}', gl_vertex_blenders, render.gl_skin_shader_blenders_count);
-                                    glResetAttribute(gl, gl_shader, 'aVertexMorph0Position', anim_ffd_keyframe0.gl_vertex);
-                                    glResetAttribute(gl, gl_shader, 'aVertexMorph1Position', anim_ffd_keyframe1.gl_vertex);
-                                    glResetAttribute(gl, gl_shader, 'aVertexTexCoord', gl_vertex_texcoord);
-                                    gl.bindTexture(gl.TEXTURE_2D, null);
-                                    gl.useProgram(null);
-                                }
-                                else {
-                                    var gl_shader = render.gl_skin_shader;
-                                    var gl_vertex_position = skinned_mesh_attachment_info.gl_vertex_position;
-                                    var gl_vertex_blenders = skinned_mesh_attachment_info.gl_vertex_blenders;
-                                    var gl_vertex_texcoord = skinned_mesh_attachment_info.gl_vertex_texcoord;
-                                    var gl_vertex_triangle = skinned_mesh_attachment_info.gl_vertex_triangle;
-                                    gl.useProgram(gl_shader.program);
-                                    gl.uniformMatrix4fv(gl_shader.uniforms['uProjection'], false, gl_projection);
-                                    gl.uniformMatrix3fv(gl_shader.uniforms['uModelviewArray[0]'], false, render.gl_skin_shader_modelview_array);
-                                    gl.uniformMatrix3fv(gl_shader.uniforms['uTexMatrix'], false, gl_tex_matrix);
-                                    gl.uniform4fv(gl_shader.uniforms['uColor'], gl_color);
-                                    gl.activeTexture(gl.TEXTURE0);
-                                    gl.bindTexture(gl.TEXTURE_2D, gl_texture);
-                                    gl.uniform1i(gl_shader.uniforms['uSampler'], 0);
-                                    glSetupAttribute(gl, gl_shader, 'aVertexPosition', gl_vertex_position);
-                                    glSetupAttribute(gl, gl_shader, 'aVertexBlenders{index}', gl_vertex_blenders, render.gl_skin_shader_blenders_count);
-                                    glSetupAttribute(gl, gl_shader, 'aVertexTexCoord', gl_vertex_texcoord);
-                                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl_vertex_triangle.buffer);
-                                    gl.drawElements(gl.TRIANGLES, gl_vertex_triangle.count, gl_vertex_triangle.type, 0);
-                                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-                                    glResetAttribute(gl, gl_shader, 'aVertexPosition', gl_vertex_position);
-                                    glResetAttribute(gl, gl_shader, 'aVertexBlenders{index}', gl_vertex_blenders, render.gl_skin_shader_blenders_count);
-                                    glResetAttribute(gl, gl_shader, 'aVertexTexCoord', gl_vertex_texcoord);
-                                    gl.bindTexture(gl.TEXTURE_2D, null);
-                                    gl.useProgram(null);
-                                }
-                                break;
-                            }
-                            default:
-                                break;
+                        const render_skin = this.skin_map[spine_pose.skin_key];
+                        const render_slot = render_skin.slot_map[slot_key] || this.skin_map["default"].slot_map[slot_key];
+                        const render_attachment = render_slot.attachment_map[attachment_key];
+                        if (render_attachment) {
+                            render_attachment.drawPose(spine_pose, spine_pose.skin_key, slot_key, slot, attachment_key, attachment, texture, site, page);
                         }
                     });
-                    gl_color[3] = alpha;
-                };
-                return RenderWebGL;
-            }());
+                    this.color[3] = alpha;
+                }
+            };
             exports_1("RenderWebGL", RenderWebGL);
+            RenderBone = class RenderBone {
+                constructor() {
+                    this.setup_space = new Spine.Space();
+                }
+            };
+            RenderSkin = class RenderSkin {
+                constructor() {
+                    this.slot_map = {};
+                }
+            };
+            RenderSlot = class RenderSlot {
+                constructor() {
+                    this.attachment_map = {};
+                }
+            };
+            RenderRegionAttachment = class RenderRegionAttachment {
+                constructor(render) {
+                    this.render = render;
+                }
+                loadData(spine_data, skin_key, slot_key, attachment_key, attachment) {
+                    return this;
+                }
+                dropData(spine_data, skin_key, slot_key, attachment_key, attachment) {
+                    return this;
+                }
+                drawPose(spine_pose, skin_key, slot_key, slot, attachment_key, attachment, texture, site, page) {
+                    const gl = this.render.gl;
+                    const bone = spine_pose.bones[slot.bone_key];
+                    mat4x4ApplySpace(this.render.modelview, bone.world_space);
+                    mat4x4ApplySpace(this.render.modelview, attachment.local_space);
+                    mat4x4Scale(this.render.modelview, attachment.width / 2, attachment.height / 2);
+                    mat4x4ApplyAtlasSitePosition(this.render.modelview, site);
+                    const shader = this.render.mesh_shader;
+                    gl.useProgram(shader.program);
+                    gl.uniformMatrix4fv(shader.uniforms["uProjection"], false, this.render.projection);
+                    gl.uniformMatrix4fv(shader.uniforms["uModelview"], false, this.render.modelview);
+                    gl.uniformMatrix3fv(shader.uniforms["uTexMatrix"], false, this.render.texmatrix);
+                    gl.uniform4fv(shader.uniforms["uColor"], this.render.color);
+                    gl.activeTexture(gl.TEXTURE0);
+                    gl.bindTexture(gl.TEXTURE_2D, texture.texture);
+                    gl.uniform1i(shader.uniforms["uSampler"], 0);
+                    glSetupAttribute(gl, shader, "aPosition", this.render.region_vertex_position);
+                    glSetupAttribute(gl, shader, "aTexCoord", this.render.region_vertex_texcoord);
+                    gl.drawArrays(gl.TRIANGLE_FAN, 0, this.render.region_vertex_position.count);
+                }
+            };
+            RenderMeshAttachment = class RenderMeshAttachment {
+                constructor(render) {
+                    this.ffd_attachment_map = {};
+                    this.render = render;
+                }
+                loadData(spine_data, skin_key, slot_key, attachment_key, attachment) {
+                    const gl = this.render.gl;
+                    const vertex_count = attachment.vertices.length / 2;
+                    const vertex_position = new Float32Array(attachment.vertices);
+                    const vertex_texcoord = new Float32Array(attachment.uvs);
+                    const vertex_triangle = new Uint16Array(attachment.triangles);
+                    this.vertex_position = glMakeVertex(gl, vertex_position, 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+                    this.vertex_texcoord = glMakeVertex(gl, vertex_texcoord, 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+                    this.vertex_triangle = glMakeVertex(gl, vertex_triangle, 1, gl.ELEMENT_ARRAY_BUFFER, gl.STATIC_DRAW);
+                    spine_data.iterateAnims((anim_key, anim) => {
+                        const ffd_timeline = anim.ffd_timeline_map && anim.ffd_timeline_map[skin_key];
+                        const ffd_slot = ffd_timeline && ffd_timeline.ffd_slots[slot_key];
+                        const ffd_attachment = ffd_slot && ffd_slot.ffd_attachments[attachment_key];
+                        if (ffd_attachment) {
+                            const render_ffd_attachment = this.ffd_attachment_map[anim_key] = new RenderFfdAttachment();
+                            ffd_attachment.ffd_keyframes.forEach((ffd_keyframe, ffd_keyframe_index) => {
+                                const render_ffd_keyframe = render_ffd_attachment.ffd_keyframes[ffd_keyframe_index] = new RenderFfdKeyframe();
+                                const vertex_position_morph = new Float32Array(2 * vertex_count);
+                                vertex_position_morph.subarray(ffd_keyframe.offset, ffd_keyframe.offset + ffd_keyframe.vertices.length).set(new Float32Array(ffd_keyframe.vertices));
+                                render_ffd_keyframe.vertex_position_morph = glMakeVertex(gl, vertex_position_morph, 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+                            });
+                        }
+                    });
+                    return this;
+                }
+                dropData(spine_data, skin_key, slot_key, attachment_key, attachment) {
+                    const gl = this.render.gl;
+                    gl.deleteBuffer(this.vertex_position.buffer);
+                    gl.deleteBuffer(this.vertex_texcoord.buffer);
+                    gl.deleteBuffer(this.vertex_triangle.buffer);
+                    Object.keys(this.ffd_attachment_map).forEach((anim_key) => {
+                        const render_ffd_attachment = this.ffd_attachment_map[anim_key];
+                        render_ffd_attachment.ffd_keyframes.forEach((ffd_keyframe) => {
+                            gl.deleteBuffer(ffd_keyframe.vertex_position_morph.buffer);
+                        });
+                    });
+                    return this;
+                }
+                drawPose(spine_pose, skin_key, slot_key, slot, attachment_key, attachment, texture, site, page) {
+                    const gl = this.render.gl;
+                    const bone = spine_pose.bones[slot.bone_key];
+                    mat4x4ApplySpace(this.render.modelview, bone.world_space);
+                    mat4x4ApplyAtlasSitePosition(this.render.modelview, site);
+                    const anim = spine_pose.data.anims[spine_pose.anim_key];
+                    const ffd_timeline = anim && anim.ffd_timeline_map && anim.ffd_timeline_map[spine_pose.skin_key];
+                    const ffd_slot = ffd_timeline && ffd_timeline.ffd_slots[slot_key];
+                    const ffd_attachment = ffd_slot && ffd_slot.ffd_attachments[attachment_key];
+                    const ffd_keyframes = ffd_attachment && ffd_attachment.ffd_keyframes;
+                    const ffd_keyframe0_index = Spine.Keyframe.find(ffd_keyframes, spine_pose.time);
+                    const ffd_keyframe1_index = ffd_keyframe0_index + 1 || ffd_keyframe0_index;
+                    const ffd_keyframe0 = ffd_keyframes && ffd_keyframes[ffd_keyframe0_index];
+                    const ffd_keyframe1 = ffd_keyframes && ffd_keyframes[ffd_keyframe1_index] || ffd_keyframe0;
+                    const shader = (ffd_keyframe0) ? this.render.ffd_mesh_shader : this.render.mesh_shader;
+                    gl.useProgram(shader.program);
+                    gl.uniformMatrix4fv(shader.uniforms["uProjection"], false, this.render.projection);
+                    gl.uniformMatrix4fv(shader.uniforms["uModelview"], false, this.render.modelview);
+                    gl.uniformMatrix3fv(shader.uniforms["uTexMatrix"], false, this.render.texmatrix);
+                    gl.uniform4fv(shader.uniforms["uColor"], this.render.color);
+                    gl.activeTexture(gl.TEXTURE0);
+                    gl.bindTexture(gl.TEXTURE_2D, texture.texture);
+                    gl.uniform1i(shader.uniforms["uSampler"], 0);
+                    glSetupAttribute(gl, shader, "aPosition", this.vertex_position);
+                    glSetupAttribute(gl, shader, "aTexCoord", this.vertex_texcoord);
+                    if (ffd_keyframe0) {
+                        const weight = (ffd_keyframe0.time === ffd_keyframe1.time) ? 0 : ffd_keyframe0.curve.evaluate((spine_pose.time - ffd_keyframe0.time) / (ffd_keyframe1.time - ffd_keyframe0.time));
+                        const render_ffd_attachment = this.ffd_attachment_map[spine_pose.anim_key];
+                        const render_ffd_keyframe0 = render_ffd_attachment.ffd_keyframes[ffd_keyframe0_index];
+                        const render_ffd_keyframe1 = render_ffd_attachment.ffd_keyframes[ffd_keyframe1_index] || render_ffd_keyframe0;
+                        gl.uniform1f(shader.uniforms["uMorphWeight"], weight);
+                        glSetupAttribute(gl, shader, "aPositionMorph0", render_ffd_keyframe0.vertex_position_morph);
+                        glSetupAttribute(gl, shader, "aPositionMorph1", render_ffd_keyframe1.vertex_position_morph);
+                    }
+                    const vertex_triangle = this.vertex_triangle;
+                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vertex_triangle.buffer);
+                    gl.drawElements(gl.TRIANGLES, vertex_triangle.count, vertex_triangle.type, 0);
+                }
+            };
+            RenderWeightedMeshAttachment = class RenderWeightedMeshAttachment {
+                constructor(render) {
+                    this.blend_bone_index_array = [];
+                    this.ffd_attachment_map = {};
+                    this.render = render;
+                }
+                loadData(spine_data, skin_key, slot_key, attachment_key, attachment) {
+                    function parseBlenders(vertices, index, callback) {
+                        const blender_count = vertices[index++];
+                        for (let blender_index = 0; blender_index < blender_count; ++blender_index) {
+                            const blender = new Blender();
+                            blender.bone_index = vertices[index++];
+                            blender.position.x = vertices[index++];
+                            blender.position.y = vertices[index++];
+                            blender.weight = vertices[index++];
+                            callback(blender, blender_index);
+                        }
+                        return index;
+                    }
+                    const gl = this.render.gl;
+                    const vertex_count = attachment.uvs.length / 2;
+                    const vertex_position = new Float32Array(2 * vertex_count);
+                    const vertex_texcoord = new Float32Array(attachment.uvs);
+                    const vertex_blenders = new Float32Array(2 * vertex_count * this.render.skin_shader_blenders_count);
+                    const vertex_triangle = new Uint16Array(attachment.triangles);
+                    const blend_bone_index_array = this.blend_bone_index_array;
+                    for (let vertex_index = 0, parse_index = 0; vertex_index < vertex_count; ++vertex_index) {
+                        const blender_array = [];
+                        parse_index = parseBlenders(attachment.vertices, parse_index, (blender) => { blender_array.push(blender); });
+                        blender_array.sort((a, b) => { return b.weight - a.weight; });
+                        if (blender_array.length > this.render.skin_shader_blenders_count) {
+                            console.log("blend array length for", attachment_key, "is", blender_array.length, "so clamp to", this.render.skin_shader_blenders_count);
+                            blender_array.length = this.render.skin_shader_blenders_count;
+                        }
+                        let weight_sum = 0;
+                        blender_array.forEach((blender) => { weight_sum += blender.weight; });
+                        blender_array.forEach((blender) => { blender.weight /= weight_sum; });
+                        const position = new Spine.Vector();
+                        blender_array.forEach((blender, blender_index) => {
+                            const bone_key = spine_data.bone_keys[blender.bone_index];
+                            const bone = spine_data.bones[bone_key];
+                            const blend_position = new Spine.Vector();
+                            Spine.Space.transform(bone.world_space, blender.position, blend_position);
+                            position.selfAdd(blend_position.selfScale(blender.weight));
+                            if (blend_bone_index_array.indexOf(blender.bone_index) === -1) {
+                                blend_bone_index_array.push(blender.bone_index);
+                            }
+                            vertex_blenders[vertex_index * 2 * this.render.skin_shader_blenders_count + blender_index * 2 + 0] = blend_bone_index_array.indexOf(blender.bone_index);
+                            vertex_blenders[vertex_index * 2 * this.render.skin_shader_blenders_count + blender_index * 2 + 1] = blender.weight;
+                        });
+                        vertex_position[vertex_index * 2 + 0] = position.x;
+                        vertex_position[vertex_index * 2 + 1] = position.y;
+                        if (blend_bone_index_array.length > this.render.skin_shader_modelview_count) {
+                            console.log("blend bone index array length for", attachment_key, "is", blend_bone_index_array.length, "greater than", this.render.skin_shader_modelview_count);
+                        }
+                    }
+                    this.vertex_position = glMakeVertex(gl, vertex_position, 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+                    this.vertex_texcoord = glMakeVertex(gl, vertex_texcoord, 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+                    this.vertex_blenders = glMakeVertex(gl, vertex_blenders, 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+                    this.vertex_triangle = glMakeVertex(gl, vertex_triangle, 1, gl.ELEMENT_ARRAY_BUFFER, gl.STATIC_DRAW);
+                    spine_data.iterateAnims((anim_key, anim) => {
+                        const ffd_timeline = anim.ffd_timeline_map && anim.ffd_timeline_map[skin_key];
+                        const ffd_slot = ffd_timeline && ffd_timeline.ffd_slots[slot_key];
+                        const ffd_attachment = ffd_slot && ffd_slot.ffd_attachments[attachment_key];
+                        if (ffd_attachment) {
+                            const render_ffd_attachment = this.ffd_attachment_map[anim_key] = new RenderFfdAttachment();
+                            ffd_attachment.ffd_keyframes.forEach((ffd_keyframe, ffd_keyframe_index) => {
+                                const render_ffd_keyframe = render_ffd_attachment.ffd_keyframes[ffd_keyframe_index] = new RenderFfdKeyframe();
+                                const vertex_position_morph = new Float32Array(2 * vertex_count);
+                                for (let vertex_index = 0, parse_index = 0, ffd_index = 0; vertex_index < vertex_count; ++vertex_index) {
+                                    const blender_array = [];
+                                    parse_index = parseBlenders(attachment.vertices, parse_index, (blender) => { blender_array.push(blender); });
+                                    const position_morph = new Spine.Vector();
+                                    blender_array.forEach((blender) => {
+                                        const bone_key = spine_data.bone_keys[blender.bone_index];
+                                        const bone = spine_data.bones[bone_key];
+                                        const blend_position = new Spine.Vector();
+                                        blend_position.x = ffd_keyframe.vertices[ffd_index - ffd_keyframe.offset] || 0;
+                                        ++ffd_index;
+                                        blend_position.y = ffd_keyframe.vertices[ffd_index - ffd_keyframe.offset] || 0;
+                                        ++ffd_index;
+                                        Spine.Matrix.transform(bone.world_space.affine.matrix, blend_position, blend_position);
+                                        position_morph.selfAdd(blend_position.selfScale(blender.weight));
+                                    });
+                                    vertex_position_morph[vertex_index * 2 + 0] = position_morph.x;
+                                    vertex_position_morph[vertex_index * 2 + 1] = position_morph.y;
+                                }
+                                render_ffd_keyframe.vertex_position_morph = glMakeVertex(gl, vertex_position_morph, 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+                            });
+                        }
+                    });
+                    return this;
+                }
+                dropData(spine_data, skin_key, slot_key, attachment_key, attachment) {
+                    const gl = this.render.gl;
+                    gl.deleteBuffer(this.vertex_position.buffer);
+                    gl.deleteBuffer(this.vertex_blenders.buffer);
+                    gl.deleteBuffer(this.vertex_texcoord.buffer);
+                    gl.deleteBuffer(this.vertex_triangle.buffer);
+                    Object.keys(this.ffd_attachment_map).forEach((anim_key) => {
+                        const render_ffd_attachment = this.ffd_attachment_map[anim_key];
+                        render_ffd_attachment.ffd_keyframes.forEach((ffd_keyframe) => {
+                            gl.deleteBuffer(ffd_keyframe.vertex_position_morph.buffer);
+                        });
+                    });
+                    return this;
+                }
+                drawPose(spine_pose, skin_key, slot_key, slot, attachment_key, attachment, texture, site, page) {
+                    const gl = this.render.gl;
+                    const blend_bone_index_array = this.blend_bone_index_array;
+                    for (let index = 0; index < blend_bone_index_array.length; ++index) {
+                        if (index < this.render.skin_shader_modelview_count) {
+                            const bone_index = blend_bone_index_array[index];
+                            const bone_key = spine_pose.bone_keys[bone_index];
+                            const bone = spine_pose.bones[bone_key];
+                            const render_bone = this.render.bone_map[bone_key];
+                            const modelview = this.render.skin_shader_modelview_array.subarray(index * 16, (index + 1) * 16);
+                            mat4x4Copy(modelview, this.render.modelview);
+                            mat4x4ApplySpace(modelview, bone.world_space);
+                            mat4x4ApplySpace(modelview, render_bone.setup_space);
+                            mat4x4ApplyAtlasSitePosition(modelview, site);
+                        }
+                    }
+                    const anim = spine_pose.data.anims[spine_pose.anim_key];
+                    const ffd_timeline = anim && anim.ffd_timeline_map && anim.ffd_timeline_map[spine_pose.skin_key];
+                    const ffd_slot = ffd_timeline && ffd_timeline.ffd_slots[slot_key];
+                    const ffd_attachment = ffd_slot && ffd_slot.ffd_attachments[attachment_key];
+                    const ffd_keyframes = ffd_attachment && ffd_attachment.ffd_keyframes;
+                    const ffd_keyframe0_index = Spine.Keyframe.find(ffd_keyframes, spine_pose.time);
+                    const ffd_keyframe1_index = ffd_keyframe0_index + 1 || ffd_keyframe0_index;
+                    const ffd_keyframe0 = ffd_keyframes && ffd_keyframes[ffd_keyframe0_index];
+                    const ffd_keyframe1 = ffd_keyframes && ffd_keyframes[ffd_keyframe1_index] || ffd_keyframe0;
+                    const shader = (ffd_keyframe0) ? this.render.ffd_skin_shader : this.render.skin_shader;
+                    gl.useProgram(shader.program);
+                    gl.uniformMatrix4fv(shader.uniforms["uProjection"], false, this.render.projection);
+                    gl.uniformMatrix4fv(shader.uniforms["uModelviewArray[0]"], false, this.render.skin_shader_modelview_array);
+                    gl.uniformMatrix3fv(shader.uniforms["uTexMatrix"], false, this.render.texmatrix);
+                    gl.uniform4fv(shader.uniforms["uColor"], this.render.color);
+                    gl.activeTexture(gl.TEXTURE0);
+                    gl.bindTexture(gl.TEXTURE_2D, texture.texture);
+                    gl.uniform1i(shader.uniforms["uSampler"], 0);
+                    glSetupAttribute(gl, shader, "aPosition", this.vertex_position);
+                    glSetupAttribute(gl, shader, "aTexCoord", this.vertex_texcoord);
+                    glSetupAttribute(gl, shader, "aBlenders{index}", this.vertex_blenders, this.render.skin_shader_blenders_count);
+                    if (ffd_keyframe0) {
+                        const weight = (ffd_keyframe0.time === ffd_keyframe1.time) ? 0 : ffd_keyframe0.curve.evaluate((spine_pose.time - ffd_keyframe0.time) / (ffd_keyframe1.time - ffd_keyframe0.time));
+                        const render_ffd_attachment = this.ffd_attachment_map[spine_pose.anim_key];
+                        const render_ffd_keyframe0 = render_ffd_attachment.ffd_keyframes[ffd_keyframe0_index];
+                        const render_ffd_keyframe1 = render_ffd_attachment.ffd_keyframes[ffd_keyframe1_index] || render_ffd_keyframe0;
+                        gl.uniform1f(shader.uniforms["uMorphWeight"], weight);
+                        glSetupAttribute(gl, shader, "aPositionMorph0", render_ffd_keyframe0.vertex_position_morph);
+                        glSetupAttribute(gl, shader, "aPositionMorph1", render_ffd_keyframe1.vertex_position_morph);
+                    }
+                    const vertex_triangle = this.vertex_triangle;
+                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vertex_triangle.buffer);
+                    gl.drawElements(gl.TRIANGLES, vertex_triangle.count, vertex_triangle.type, 0);
+                }
+            };
+            Blender = class Blender {
+                constructor() {
+                    this.position = new Spine.Vector();
+                    this.bone_index = -1;
+                    this.weight = 0;
+                }
+            };
+            RenderFfdAttachment = class RenderFfdAttachment {
+                constructor() {
+                    this.ffd_keyframes = [];
+                }
+            };
+            RenderFfdKeyframe = class RenderFfdKeyframe {
+            };
+            RenderShader = class RenderShader {
+            };
+            RenderVertex = class RenderVertex {
+            };
+            RenderTexture = class RenderTexture {
+            };
         }
-    }
+    };
 });
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoicmVuZGVyLXdlYmdsLmpzIiwic291cmNlUm9vdCI6IiIsInNvdXJjZXMiOlsicmVuZGVyLXdlYmdsLnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7O0lBbWxCQSxnQkFBZ0IsTUFBYyxFQUFFLEtBQWE7UUFDM0MsTUFBTSxLQUFLLEdBQWEsRUFBRSxDQUFDO1FBQzNCLEdBQUcsQ0FBQyxDQUFDLElBQUksS0FBSyxHQUFXLENBQUMsRUFBRSxLQUFLLEdBQUcsS0FBSyxFQUFFLEVBQUUsS0FBSyxFQUFFLENBQUM7WUFDbkQsS0FBSyxDQUFDLElBQUksQ0FBQyxNQUFNLENBQUMsT0FBTyxDQUFDLFVBQVUsRUFBRSxLQUFLLENBQUMsUUFBUSxFQUFFLENBQUMsQ0FBQyxDQUFDO1FBQzNELENBQUM7UUFDRCxNQUFNLENBQUMsS0FBSyxDQUFDO0lBQ2YsQ0FBQztJQUVELGlCQUFpQixLQUFZLEVBQUUsTUFBYSxFQUFFO1FBQzVDLEtBQUssQ0FBQyxPQUFPLENBQUMsQ0FBQyxLQUFVO1lBQ3ZCLEVBQUUsQ0FBQyxDQUFDLEtBQUssQ0FBQyxPQUFPLENBQUMsS0FBSyxDQUFDLENBQUMsQ0FBQyxDQUFDO2dCQUFDLE9BQU8sQ0FBQyxLQUFLLEVBQUUsR0FBRyxDQUFDLENBQUM7WUFBQyxDQUFDO1lBQUMsSUFBSSxDQUFDLENBQUM7Z0JBQUMsR0FBRyxDQUFDLElBQUksQ0FBQyxLQUFLLENBQUMsQ0FBQztZQUFDLENBQUM7UUFDOUUsQ0FBQyxDQUFDLENBQUM7UUFDSCxNQUFNLENBQUMsR0FBRyxDQUFDO0lBQ2IsQ0FBQztJQTBCRCxzQkFBNkIsQ0FBZTtRQUMxQyxDQUFDLENBQUMsQ0FBQyxDQUFDLEdBQUcsQ0FBQyxDQUFDLENBQUMsQ0FBQyxHQUFHLENBQUMsQ0FBQyxDQUFDLENBQUMsR0FBRyxDQUFDLENBQUMsQ0FBQyxDQUFDLEdBQUcsR0FBRyxDQUFDO1FBQ2hDLE1BQU0sQ0FBQyxDQUFDLENBQUM7SUFDWCxDQUFDOztJQUVELHVCQUE4QixDQUFlLEVBQUUsS0FBa0I7UUFDL0QsQ0FBQyxDQUFDLENBQUMsQ0FBQyxHQUFHLEtBQUssQ0FBQyxDQUFDLENBQUM7UUFDZixDQUFDLENBQUMsQ0FBQyxDQUFDLEdBQUcsS0FBSyxDQUFDLENBQUMsQ0FBQztRQUNmLENBQUMsQ0FBQyxDQUFDLENBQUMsR0FBRyxLQUFLLENBQUMsQ0FBQyxDQUFDO1FBQ2YsQ0FBQyxDQUFDLENBQUMsQ0FBQyxHQUFHLEtBQUssQ0FBQyxDQUFDLENBQUM7UUFDZixNQUFNLENBQUMsQ0FBQyxDQUFDO0lBQ1gsQ0FBQzs7SUFFRCx3QkFBK0IsQ0FBZSxFQUFFLEtBQWtCO1FBQ2hFLENBQUMsQ0FBQyxDQUFDLENBQUMsSUFBSSxLQUFLLENBQUMsQ0FBQyxDQUFDO1FBQ2hCLENBQUMsQ0FBQyxDQUFDLENBQUMsSUFBSSxLQUFLLENBQUMsQ0FBQyxDQUFDO1FBQ2hCLENBQUMsQ0FBQyxDQUFDLENBQUMsSUFBSSxLQUFLLENBQUMsQ0FBQyxDQUFDO1FBQ2hCLENBQUMsQ0FBQyxDQUFDLENBQUMsSUFBSSxLQUFLLENBQUMsQ0FBQyxDQUFDO1FBQ2hCLE1BQU0sQ0FBQyxDQUFDLENBQUM7SUFDWCxDQUFDOztJQUVELHdCQUErQixDQUFlO1FBQzVDLENBQUMsQ0FBQyxDQUFDLENBQUMsR0FBRyxDQUFDLENBQUMsQ0FBQyxDQUFDLEdBQUcsQ0FBQyxDQUFDLENBQUMsQ0FBQztZQUNsQixDQUFDLENBQUMsQ0FBQyxDQUFDLEdBQUcsQ0FBQyxDQUFDLENBQUMsQ0FBQyxHQUFHLENBQUMsQ0FBQyxDQUFDLENBQUMsR0FBRyxHQUFHLENBQUM7UUFDekIsQ0FBQyxDQUFDLENBQUMsQ0FBQyxHQUFHLENBQUMsQ0FBQyxDQUFDLENBQUMsR0FBRyxDQUFDLENBQUMsQ0FBQyxDQUFDLEdBQUcsR0FBRyxDQUFDO1FBQ3pCLE1BQU0sQ0FBQyxDQUFDLENBQUM7SUFDWCxDQUFDOztJQUVELG9CQUEyQixDQUFlLEVBQUUsS0FBbUI7UUFDN0QsQ0FBQyxDQUFDLEdBQUcsQ0FBQyxLQUFLLENBQUMsQ0FBQztRQUNiLE1BQU0sQ0FBQyxDQUFDLENBQUM7SUFDWCxDQUFDOztJQUVELHFCQUE0QixDQUFlLEVBQUUsQ0FBUyxFQUFFLENBQVMsRUFBRSxDQUFTLEVBQUUsQ0FBUztRQUNyRixNQUFNLEVBQUUsR0FBVyxDQUFDLEdBQUcsQ0FBQyxDQUFDLEdBQUcsQ0FBQyxDQUFDLENBQUM7UUFDL0IsTUFBTSxFQUFFLEdBQVcsQ0FBQyxHQUFHLENBQUMsQ0FBQyxHQUFHLENBQUMsQ0FBQyxDQUFDO1FBQy9CLENBQUMsQ0FBQyxDQUFDLENBQUMsSUFBSSxDQUFDLENBQUMsR0FBRyxFQUFFLENBQUM7UUFDaEIsQ0FBQyxDQUFDLENBQUMsQ0FBQyxJQUFJLENBQUMsQ0FBQyxHQUFHLEVBQUUsQ0FBQztRQUNoQixDQUFDLENBQUMsQ0FBQyxDQUFDLElBQUksQ0FBQyxDQUFDLEdBQUcsQ0FBQyxDQUFDLEdBQUcsRUFBRSxDQUFDO1FBQ3JCLENBQUMsQ0FBQyxDQUFDLENBQUMsSUFBSSxDQUFDLENBQUMsR0FBRyxDQUFDLENBQUMsR0FBRyxFQUFFLENBQUM7UUFDckIsTUFBTSxDQUFDLENBQUMsQ0FBQztJQUNYLENBQUM7O0lBRUQseUJBQWdDLENBQWUsRUFBRSxDQUFTLEVBQUUsQ0FBUztRQUNuRSxDQUFDLENBQUMsQ0FBQyxDQUFDLElBQUksQ0FBQyxDQUFDLENBQUMsQ0FBQyxHQUFHLENBQUMsR0FBRyxDQUFDLENBQUMsQ0FBQyxDQUFDLEdBQUcsQ0FBQyxDQUFDO1FBQzVCLENBQUMsQ0FBQyxDQUFDLENBQUMsSUFBSSxDQUFDLENBQUMsQ0FBQyxDQUFDLEdBQUcsQ0FBQyxHQUFHLENBQUMsQ0FBQyxDQUFDLENBQUMsR0FBRyxDQUFDLENBQUM7UUFDNUIsTUFBTSxDQUFDLENBQUMsQ0FBQztJQUNYLENBQUM7O0lBRUQsNEJBQW1DLENBQWUsRUFBRSxDQUFTLEVBQUUsQ0FBUztRQUN0RSxNQUFNLEVBQUUsR0FBVyxDQUFDLENBQUMsQ0FBQyxDQUFDLENBQUM7UUFBQyxNQUFNLEVBQUUsR0FBVyxDQUFDLENBQUMsQ0FBQyxDQUFDLENBQUM7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R0FBVyxDQUFDLENBQUMsQ0FBQyxDQUFDLENBQUM7UUFBQyxNQUFNLEdBQUcsR0FBVyxDQUFDLENBQUMsQ0FBQyxDQUFDLENBQUM7UUFBQyxNQUFNLEdBQUcsR0FBVyxDQUFDLENBQUMsQ0FBQyxDQUFDLENBQUM7UUFBQyxNQUFNLEdBQUcsR0FBVyxDQUFDLENBQUMsQ0FBQyxDQUFDLENBQUM7UUFDdkcsQ0FBQyxDQUFDLENBQUMsQ0FBQyxHQUFHLEdBQUcsR0FBRyxDQUFDLEdBQUcsR0FBRyxHQUFHLENBQUMsQ0FBQztRQUN6QixDQUFDLENBQUMsQ0FBQyxDQUFDLEdBQUcsR0FBRyxHQUFHLENBQUMsR0FBRyxHQUFHLEdBQUcsQ0FBQyxDQUFDO1FBQ3pCLENBQUMsQ0FBQyxDQUFDLENBQUMsR0FBRyxHQUFHLEdBQUcsQ0FBQyxHQUFHLEdBQUcsR0FBRyxDQUFDLENBQUM7UUFDekIsQ0FBQyxDQUFDLENBQUMsQ0FBQyxHQUFHLEdBQUcsR0FBRyxDQUFDLEdBQUcsR0FBRyxHQUFHLENBQUMsQ0FBQztRQUN6QixDQUFDLENBQUMsQ0FBQyxDQUFDLEdBQUcsR0FBRyxHQUFHLENBQUMsR0FBRyxHQUFHLEdBQUcsQ0FBQyxDQUFDO1FBQ3pCLENBQUMsQ0FBQyxDQUFDLENBQUMsR0FBRyxHQUFHLEdBQUcsQ0FBQyxHQUFHLEdBQUcsR0FBRyxDQUFDLENBQUM7UUFDekIsQ0FBQyxDQUFDLENBQUMsQ0FBQyxHQUFHLEdBQUcsR0FBRyxDQUFDLEdBQUcsR0FBRyxHQUFHLENBQUMsQ0FBQztRQUN6QixDQUFDLENBQUMsQ0FBQyxDQUFDLEdBQUcsR0FBRyxHQUFHLENBQUMsR0FBRyxHQUFHLEdBQUcsQ0FBQyxDQUFDO1FBQ3pCLE1BQU0sQ0FBQyxDQUFDLENBQUM7SUFDWCxDQUFDOztJQUVELHVCQUE4QixDQUFlLEVBQUUsS0FBYTtRQUMxRCxNQUFNLENBQUMsbUJBQW1CLENBQUMsQ0FBQyxFQUFFLElBQUksQ0FBQyxHQUFHLENBQUMsS0FBSyxDQUFDLEVBQUUsSUFBSSxDQUFDLEdBQUcsQ0FBQyxLQUFLLENBQUMsQ0FBQyxDQUFDO0lBQ2xFLENBQUM7O0lBRUQscUJBQTRCLENBQWUsRUFBRSxDQUFTLEVBQUUsQ0FBUyxFQUFFLElBQVksQ0FBQztRQUM5RSxDQUFDLENBQUMsQ0FBQyxDQUFDLElBQUksQ0FBQyxDQUFDO1FBQUMsQ0FBQyxDQUFDLENBQUMsQ0FBQyxJQUFJLENBQUMsQ0FBQztRQUFDLENBQUMsQ0FBQyxDQUFDLENBQUMsSUFBSSxDQUFDLENBQUM7UUFBQyxDQUFDLENBQUMsQ0FBQyxDQUFDLElBQUksQ0FBQyxDQUFDO1FBQzNDLENBQUMsQ0FBQyxDQUFDLENBQUMsSUFBSSxDQUFDLENBQUM7UUFBQyxDQUFDLENBQUMsQ0FBQyxDQUFDLElBQUksQ0FBQyxDQUFDO1FBQUMsQ0FBQyxDQUFDLENBQUMsQ0FBQyxJQUFJLENBQUMsQ0FBQztRQUFDLENBQUMsQ0FBQyxDQUFDLENBQUMsSUFBSSxDQUFDLENBQUM7UUFDM0MsQ0FBQyxDQUFDLENBQUMsQ0FBQyxJQUFJLENBQUMsQ0FBQztRQUFDLENBQUMsQ0FBQyxDQUFDLENBQUMsSUFBSSxDQUFDLENBQUM7UUFBQyxDQUFDLENBQUMsRUFBRSxDQUFDLElBQUksQ0FBQyxDQUFDO1FBQUMsQ0FBQyxDQUFDLEVBQUUsQ0FBQyxJQUFJLENBQUMsQ0FBQztRQUM3QyxNQUFNLENBQUMsQ0FBQyxDQUFDO0lBQ1gsQ0FBQzs7SUFFRCwwQkFBaUMsQ0FBZSxFQUFFLEtBQWtCO1FBQ2xFLEVBQUUsQ0FBQyxDQUFDLEtBQUssQ0FBQyxDQUFDLENBQUM7WUFDVixlQUFlLENBQUMsQ0FBQyxFQUFFLEtBQUssQ0FBQyxRQUFRLENBQUMsQ0FBQyxFQUFFLEtBQUssQ0FBQyxRQUFRLENBQUMsQ0FBQyxDQUFDLENBQUM7WUFDdkQsYUFBYSxDQUFDLENBQUMsRUFBRSxLQUFLLENBQUMsUUFBUSxDQUFDLEdBQUcsQ0FBQyxDQUFDO1lBQ3JDLFdBQVcsQ0FBQyxDQUFDLEVBQUUsS0FBSyxDQUFDLEtBQUssQ0FBQyxDQUFDLEVBQUUsS0FBSyxDQUFDLEtBQUssQ0FBQyxDQUFDLENBQUMs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QVksWUFBWSxDQUFDLENBQUMsQ0FBQztZQUFDLE1BQU0sQ0FBQyxJQUFJLEdBQUcsRUFBRSxDQUFDLEtBQUssQ0FBQztRQUFDLENBQUM7UUFDbkUsSUFBSSxDQUFDLEVBQUUsQ0FBQyxDQUFDLFVBQVUsWUFBWSxTQUFTLENBQUMsQ0FBQyxDQUFDO1lBQUMsTUFBTSxDQUFDLElBQUksR0FBRyxFQUFFLENBQUMsSUFBSSxDQUFDO1FBQUMsQ0FBQztRQUNwRSxJQUFJLENBQUMsRUFBRSxDQUFDLENBQUMsVUFBVSxZQUFZLFVBQVUsQ0FBQyxDQUFDLENBQUM7WUFBQyxNQUFNLENBQUMsSUFBSSxHQUFHLEVBQUUsQ0FBQyxhQUFhLENBQUM7UUFBQyxDQUFDO1FBQzlFLElBQUksQ0FBQyxFQUFFLENBQUMsQ0FBQyxVQUFVLFlBQVksVUFBVSxDQUFDLENBQUMsQ0FBQztZQUFDLE1BQU0sQ0FBQyxJQUFJLEdBQUcsRUFBRSxDQUFDLEtBQUssQ0FBQztRQUFDLENBQUM7UUFDdEUsSUFBSSxDQUFDLEVBQUUsQ0FBQyxDQUFDLFVBQVUsWUFBWSxXQUFXLENBQUMsQ0FBQyxDQUFDO1lBQUMsTUFBTSxDQUFDLElBQUksR0FBRyxFQUFFLENBQUMsY0FBYyxDQUFDO1FBQUMsQ0FBQztRQUNoRixJQUFJLENBQUMsRUFBRSxDQUFDLENBQUMsVUFBVSxZQUFZLFVBQVUsQ0FBQyxDQUFDLENBQUM7WUFBQyxNQUFNLENBQUMsSUFBSSxHQUFHLEVBQUUsQ0FBQyxHQUFHLENBQUM7UUFBQyxDQUFDO1FBQ3BFLElBQUksQ0FBQyxFQUFFLENBQUMsQ0FBQyxVQUFVLFlBQVksV0FBVyxDQUFDLENBQUMsQ0FBQztZQUFDLE1BQU0sQ0FBQyxJQUFJLEdBQUcsRUFBRSxDQUFDLFlBQVksQ0FBQztRQUFDLENBQUM7UUFDOUUsSUFBSSxDQUFDLENBQUM7WUFBQyxNQUFNLENBQUMsSUFBSSxHQUFHLEVBQUUsQ0FBQyxJQUFJLENBQUM7WUFBQyxNQUFNLElBQUksS0FBSyxFQUFFLENBQUM7UUFBQyxDQUFDO1FBQ2xELE1BQU0sQ0FBQyxJQUFJLEdBQUcsSUFBSSxDQUFDO1FBQ25CLE1BQU0sQ0FBQyxLQUFLLEdBQUcsVUFBVSxDQUFDLE1BQU0sR0FBRyxNQUFNLENBQUMsSUFBSSxDQUFDO1FBQy9DLE1BQU0sQ0FBQyxVQUFVLEdBQUcsVUFBVSxDQUFDO1FBQy9CLE1BQU0sQ0FBQyxNQUFNLEdBQUcsRUFBRSxDQUFDLFlBQVksRUFBRSxDQUFDO1FBQ2xDLE1BQU0sQ0FBQyxXQUFXLEdBQUcsV0FBVyxDQUFDO1FBQ2pDLE1BQU0sQ0FBQyxXQUFXLEdBQUcsV0FBVyxDQUFDO1FBQ2pDLEVBQUUsQ0FBQyxVQUFVLENBQUMsTUFBTSxDQUFDLFdBQVcsRUFBRSxNQUFNLENBQUMsTUFBTSxDQUFDLENBQUM7UUFDakQsRUFBRSxDQUFDLFVBQVUsQ0FBQyxNQUFNLENBQUMsV0FBVyxFQUFFLE1BQU0sQ0FBQyxVQUFVLEVBQUUsTUFBTSxDQUFDLFdBQVcsQ0FBQyxDQUFDO1FBQ3pFLE1BQU0sQ0FBQyxNQUFNLENBQUM7SUFDaEIsQ0FBQzs7SUFFRCwwQkFBaUMsRUFBeUIsRUFBRSxNQUFvQixFQUFFLE1BQWMsRUFBRSxNQUFvQixFQUFFLFFBQWdCLENBQUM7UUFDdkksRUFBRSxDQUFDLFVBQVUsQ0FBQyxNQUFNLENBQUMsV0FBVyxFQUFFLE1BQU0sQ0FBQyxNQUFNLENBQUMsQ0FBQztRQUNqRCxFQUFFLENBQUMsQ0FBQyxLQUFLLEdBQUcsQ0FBQyxDQUFDLENBQUMsQ0FBQztZQUNkLE1BQU0sYUFBYSxHQUFXLE1BQU0sQ0FBQyxVQUFVLENBQUMsaUJBQWlCLEdBQUcsTUFBTSxDQUFDLElBQUksQ0FBQztZQUNoRixNQUFNLE1BQU0sR0FBVyxhQUFhLEdBQUcsS0FBSyxDQUFDO1lBQzdDLEdBQUcsQ0FBQyxDQUFDLElBQUksS0FBSyxHQUFXLENBQUMsRUFBRSxLQUFLLEdBQUcsS0FBSyxFQUFFLEVBQUUsS0FBSyxFQUFFLENBQUM7Z0JBQ25ELE1BQU0sTUFBTSxHQUFXLGFBQWEsR0FBRyxLQUFLLENBQUM7Z0JBQzdDLE1BQU0sTUFBTSxHQUFXLE1BQU0sQ0FBQyxPQUFPLENBQUMsTUFBTSxDQUFDLE9BQU8sQ0FBQyxVQUFVLEVBQUUsS0FBSyxDQUFDLFFBQVEsRUFBRSxDQUFDLENBQUMsQ0FBQztnQkFDcEYsRUFBRSxDQUFDLG1CQUFtQixDQUFDLE1BQU0sRUFBRSxNQUFNLENBQUMsSUFBSSxFQUFFLE1BQU0sQ0FBQyxJQUFJLEVBQUUsS0FBSyxFQUFFLE1BQU0sRUFBRSxNQUFNLENBQUMsQ0FBQztnQkFDaEYsRUFBRSxDQUFDLHVCQUF1QixDQUFDLE1BQU0sQ0FBQyxDQUFDO1lBQ3JDLENBQUM7UUFDSCxDQUFDO1FBQUMsSUFBSSxDQUFDLENBQUM7WUFDTixNQUFNLE1BQU0sR0FBVyxNQUFNLENBQUMsT0FBTyxDQUFDLE1BQU0sQ0FBQyxDQUFDO1lBQzlDLEVBQUUsQ0FBQyxtQkFBbUIsQ0FBQyxNQUFNLEVBQUUsTUFBTSxDQUFDLElBQUksRUFBRSxNQUFNLENBQUMsSUFBSSxFQUFFLEtBQUssRUFBRSxDQUFDLEVBQUUsQ0FBQyxDQUFDLENBQUM7WUFDdEUsRUFBRSxDQUFDLHVCQUF1QixDQUFDLE1BQU0sQ0FBQyxDQUFDO1FBQ3JDLENBQUM7SUFDSCxDQUFDOztJQUVELDBCQUFpQyxFQUF5QixFQUFFLE1BQW9CLEVBQUUsTUFBYyxFQUFFLE1BQW9CLEVBQUUsUUFBZ0IsQ0FBQztRQUN2SSxFQUFFLENBQUMsQ0FBQyxLQUFLLEdBQUcsQ0FBQyxDQUFDLENBQUMsQ0FBQztZQUNkLEdBQUcsQ0FBQyxDQUFDLElBQUksS0FBSyxHQUFHLENBQUMsRUFBRSxLQUFLLEdBQUcsS0FBSyxFQUFFLEVBQUUsS0FBSyxFQUFFLENBQUM7Z0JBQzNDLE1BQU0sTUFBTSxHQUFXLE1BQU0sQ0FBQyxPQUFPLENBQUMsTUFBTSxDQUFDLE9BQU8sQ0FBQyxVQUFVLEVBQUUsS0FBSyxDQUFDLFFBQVEsRUFBRSxDQUFDLENBQUMsQ0FBQztnQkFDcEYsRUFBRSxDQUFDLHdCQUF3QixDQUFDLE1BQU0sQ0FBQyxDQUFDO1lBQ3RDLENBQUM7UUFDSCxDQUFDO1FBQUMsSUFBSSxDQUFDLENBQUM7WUFDTixNQUFNLE1BQU0sR0FBVyxNQUFNLENBQUMsT0FBTyxDQUFDLE1BQU0sQ0FBQyxDQUFDO1lBQzlDLEVBQUUsQ0FBQyx3QkFBd0IsQ0FBQyxNQUFNLENBQUMsQ0FBQztRQUN0QyxDQUFDO0lBQ0gsQ0FBQzs7Ozs7Ozs7OztZQXA4QkQsY0FBQTtnQkFtQkUsWUFBWSxFQUF5QjtvQkFqQjlCLGFBQVEsR0FBZ0MsRUFBRSxDQUFDO29CQUMzQyxhQUFRLEdBQWdDLEVBQUUsQ0FBQztvQkFDM0MsYUFBUSxHQUFtQyxFQUFFLENBQUM7b0JBQzlDLGVBQVUsR0FBaUIsY0FBYyxDQUFDLElBQUksWUFBWSxDQUFDLEVBQUUsQ0FBQyxDQUFDLENBQUM7b0JBQ2hFLGNBQVMsR0FBaUIsY0FBYyxDQUFDLElBQUksWUFBWSxDQUFDLEVBQUUsQ0FBQyxDQUFDLENBQUM7b0JBQy9ELGNBQVMsR0FBaUIsY0FBYyxDQUFDLElBQUksWUFBWSxDQUFDLENBQUMsQ0FBQyxDQUFDLENBQUM7b0JBQzlELFVBQUssR0FBaUIsWUFBWSxDQUFDLElBQUksWUFBWSxDQUFDLENBQUMsQ0FBQyxDQUFDLENBQUM7b0JBR3hELGdDQUEyQixHQUFXLEVBQUUsQ0FBQztvQkFDekMsZ0NBQTJCLEdBQWlCLElBQUksWUFBWSxDQUFDLEVBQUUsR0FBRyxJQUFJLENBQUMsMkJBQTJCLENBQUMsQ0FBQztvQkFDcEcsK0JBQTBCLEdBQVcsQ0FBQyxDQUFDO29CQU81QyxJQUFJLENBQUMsRUFBRSxHQUFHLEVBQUUsQ0FBQztvQkFFYixNQUFNLGtCQUFrQixHQUFhO3dCQUNuQywyQkFBMkI7d0JBQzNCLDBCQUEwQjt3QkFDMUIsMEJBQTBCO3dCQUMxQiwyQkFBMkI7d0JBQzNCLDJCQUEyQjt3QkFDM0IseUJBQXlCO3dCQUN6QixtQkFBbUI7d0JBQ25CLHNFQUFzRTt3QkFDdEUsaURBQWlEO3dCQUNqRCxHQUFHO3FCQUNKLENBQUM7b0JBQ0YsTUFBTSxzQkFBc0IsR0FBYTt3QkFDdkMsMkJBQTJCO3dCQUMzQiwwQkFBMEI7d0JBQzFCLDBCQUEwQjt3QkFDMUIsNkJBQTZCO3dCQUM3QiwyQkFBMkI7d0JBQzNCLDJCQUEyQjt3QkFDM0IsaUNBQWlDO3dCQUNqQyxpQ0FBaUM7d0JBQ2pDLHlCQUF5Qjt3QkFDekIsbUJBQW1CO3dCQUNuQiw0SEFBNEg7d0JBQzVILGlEQUFpRDt3QkFDakQsR0FBRztxQkFDSixDQUFDO29CQUNGLE1BQU0sa0JBQWtCLEdBQWE7d0JBQ25DLDZCQUE2Qjt3QkFDN0Isc0JBQXNCO3dCQUN0Qix5QkFBeUI7d0JBQ3pCLG1CQUFtQjt3QkFDbkIsNkRBQTZEO3dCQUM3RCxHQUFHO3FCQUNKLENBQUM7b0JBQ0YsSUFBSSxDQUFDLFdBQVcsR0FBRyxZQUFZLENBQUMsRUFBRSxFQUFFLGtCQUFrQixFQUFFLGtCQUFrQixDQUFDLENBQUM7b0JBQzVFLElBQUksQ0FBQyxlQUFlLEdBQUcsWUFBWSxDQUFDLEVBQUUsRUFBRSxzQkFBc0IsRUFBRSxrQkFBa0IsQ0FBQyxDQUFDO29CQUVwRixNQUFNLGtCQUFrQixHQUF3Qjt3QkFDOUMsMkJBQTJCO3dCQUMzQiwrQkFBK0IsR0FBRyxJQUFJLENBQUMsMkJBQTJCLEdBQUcsSUFBSTt3QkFDekUsMEJBQTBCO3dCQUMxQiwyQkFBMkI7d0JBQzNCLDJCQUEyQjt3QkFDM0IsTUFBTSxDQUFDLGtDQUFrQyxFQUFFLElBQUksQ0FBQywwQkFBMEIsQ0FBQzt3QkFDM0UseUJBQXlCO3dCQUN6QixtQkFBbUI7d0JBQ25CLDZDQUE2Qzt3QkFDN0Msa0NBQWtDO3dCQUNsQyxNQUFNLENBQUMsK0ZBQStGLEVBQUUsSUFBSSxDQUFDLDBCQUEwQixDQUFDO3dCQUN4SSxnRUFBZ0U7d0JBQ2hFLGlEQUFpRDt3QkFDakQsR0FBRztxQkFDSixDQUFDO29CQUNGLE1BQU0sc0JBQXNCLEdBQXdCO3dCQUNsRCwyQkFBMkI7d0JBQzNCLCtCQUErQixHQUFHLElBQUksQ0FBQywyQkFBMkIsR0FBRyxJQUFJO3dCQUN6RSwwQkFBMEI7d0JBQzFCLDZCQUE2Qjt3QkFDN0IsMkJBQTJCO3dCQUMzQiwyQkFBMkI7d0JBQzNCLGlDQUFpQzt3QkFDakMsaUNBQWlDO3dCQUNqQyxNQUFNLENBQUMsa0NBQWtDLEVBQUUsSUFBSSxDQUFDLDBCQUEwQixDQUFDO3dCQUMzRSx5QkFBeUI7d0JBQ3pCLG1CQUFtQjt3QkFDbkIsbUdBQW1HO3dCQUNuRyxrQ0FBa0M7d0JBQ2xDLE1BQU0sQ0FBQywrRkFBK0YsRUFBRSxJQUFJLENBQUMsMEJBQTBCLENBQUM7d0JBQ3hJLGdFQUFnRTt3QkFDaEUsaURBQWlEO3dCQUNqRCxHQUFHO3FCQUNKLENBQUM7b0JBQ0YsTUFBTSxrQkFBa0IsR0FBYTt3QkFDbkMsNkJBQTZCO3dCQUM3QixzQkFBc0I7d0JBQ3RCLHlCQUF5Qjt3QkFDekIsbUJBQW1CO3dCQUNuQiw2REFBNkQ7d0JBQzdELEdBQUc7cUJBQ0osQ0FBQztvQkFDRixJQUFJLENBQUMsV0FBVyxHQUFHLFlBQVksQ0FBQyxFQUFFLEVBQUUsa0JBQWtCLEVBQUUsa0JBQWtCLENBQUMsQ0FBQztvQkFDNUUsSUFBSSxDQUFDLGVBQWUsR0FBRyxZQUFZLENBQUMsRUFBRSxFQUFFLHNCQUFzQixFQUFFLGtCQUFrQixDQUFDLENBQUM7b0JBRXBGLElBQUksQ0FBQyxzQkFBc0IsR0FBRyxZQUFZLENBQUMsRUFBRSxFQUFFLElBQUksWUFBWSxDQUFDLENBQUMsQ0FBQyxDQUFDLEVBQUUsQ0FBQyxDQUFDLEVBQUUsQ0FBQyxFQUFFLENBQUMsQ0FBQyxFQUFFLENBQUMsRUFBRSxDQUFDLEVBQUUsQ0FBQyxDQUFDLEVBQUUsQ0FBQyxDQUFDLENBQUMsRUFBRSxDQUFDLEVBQUUsRUFBRSxDQUFDLFlBQVksRUFBRSxFQUFFLENBQUMsV0FBVyxDQUFDLENBQUM7b0JBQ25JLElBQUksQ0FBQyxzQkFBc0IsR0FBRyxZQUFZLENBQUMsRUFBRSxFQUFFLElBQUksWUFBWSxDQUFDLENBQUMsQ0FBQyxFQUFFLENBQUMsRUFBRSxDQUFDLEVBQUUsQ0FBQyxFQUFFLENBQUMsRUFBRSxDQUFDLEVBQUUsQ0FBQyxFQUFFLENBQUMsQ0FBQyxDQUFDLEVBQUUsQ0FBQyxFQUFFLEVBQUUsQ0FBQyxZQUFZLEVBQUUsRUFBRSxDQUFDLFdBQVcsQ0FBQyxDQUFDO2dCQUNqSSxDQUFDO2dCQUVNLFFBQVEsQ0FBQyxVQUFzQixFQUFFLFVBQTZCLEVBQUUsTUFBeUM7b0JBQzlHLFVBQVUsQ0FBQyxZQUFZLENBQUMsQ0FBQyxRQUFnQixFQUFFLElBQWdCO3dCQUN6RCxNQUFNLFdBQVcsR0FBZSxJQUFJLENBQUMsUUFBUSxDQUFDLFFBQVEsQ0FBQyxHQUFHLElBQUksVUFBVSxFQUFFLENBQUM7d0JBQzNFLEtBQUssQ0FBQyxLQUFLLENBQUMsTUFBTSxDQUFDLElBQUksQ0FBQyxXQUFXLEVBQUUsV0FBVyxDQUFDLFdBQVcsQ0FBQyxDQUFDO29CQUNoRSxDQUFDLENBQUMsQ0FBQztvQkFDSCxVQUFVLENBQUMsWUFBWSxDQUFDLENBQUMsUUFBZ0IsRUFBRSxJQUFnQjt3QkFDekQsTUFBTSxXQUFXLEdBQWUsSUFBSSxDQUFDLFFBQVEsQ0FBQyxRQUFRLENBQUMsR0FBRyxJQUFJLFVBQVUsRUFBRSxDQUFDO3dCQUMzRSxJQUFJLENBQUMsa0JBQWtCLENBQUMsQ0FBQyxRQUFnQixFQUFFLFNBQXlCLEVBQUUsY0FBc0IsRUFBRSxVQUE0Qjs0QkFDeEgsRUFBRSxDQUFDLENBQUMsQ0FBQyxVQUFVLENBQUMsQ0FBQyxDQUFDO2dDQUFDLE1BQU0sQ0FBQzs0QkFBQyxDQUFDOzRCQUM1QixNQUFNLFdBQVcsR0FBZSxXQUFXLENBQUMsUUFBUSxDQUFDLFFBQVEsQ0FBQyxJQUFJLENBQUMsV0FBVyxDQUFDLFFBQVEsQ0FBQyxRQUFRLENBQUMsR0FBRyxJQUFJLFVBQVUsRUFBRSxDQUFDLENBQUM7NEJBQ3RILE1BQU0sQ0FBQyxDQUFDLFVBQVUsQ0FBQyxJQUFJLENBQUMsQ0FBQyxDQUFDO2dDQUN4QixLQUFLLFFBQVE7b0NBQ1gsV0FBVyxDQUFDLGNBQWMsQ0FBQyxjQUFjLENBQUMsR0FBRyxJQUFJLHNCQUFzQixDQUFDLElBQUksQ0FBQyxDQUFDLFFBQVEsQ0FBQyxVQUFVLEVBQUUsUUFBUSxFQUFFLFFBQVEsRUFBRSxjQUFjLEVBQTJCLFVBQVUsQ0FBQyxDQUFDO29DQUM1SyxLQUFLLENBQUM7Z0NBQ1IsS0FBSyxNQUFNO29DQUNULFdBQVcsQ0FBQyxjQUFjLENBQUMsY0FBYyxDQUFDLEdBQUcsSUFBSSxvQkFBb0IsQ0FBQyxJQUFJLENBQUMsQ0FBQyxRQUFRLENBQUMsVUFBVSxFQUFFLFFBQVEsRUFBRSxRQUFRLEVBQUUsY0FBYyxFQUF5QixVQUFVLENBQUMsQ0FBQztvQ0FDeEssS0FBSyxDQUFDO2dDQUNSLEtBQUssY0FBYztvQ0FDakIsV0FBVyxDQUFDLGNBQWMsQ0FBQyxjQUFjLENBQUMsR0FBRyxJQUFJLDRCQUE0QixDQUFDLElBQUksQ0FBQyxDQUFDLFFBQVEsQ0FBQyxVQUFVLEVBQUUsUUFBUSxFQUFFLFFBQVEsRUFBRSxjQUFjLEVBQWlDLFVBQVUsQ0FBQyxDQUFDO29DQUN4TCxLQUFLLENBQUM7NEJBQ1YsQ0FBQzt3QkFDSCxDQUFDLENBQUMsQ0FBQztvQkFDTCxDQUFDLENBQUMsQ0FBQztvQkFDSCxFQUFFLENBQUMsQ0FBQyxVQUFVLENBQUMsQ0FBQyxDQUFDO3dCQUNmLE1BQU0sRUFBRSxHQUEwQixJQUFJLENBQUMsRUFBRSxDQUFDO3dCQUMxQyxVQUFVLENBQUMsS0FBSyxDQUFDLE9BQU8sQ0FBQyxDQUFDLElBQWdCOzRCQUN4QyxFQUFFLENBQUMsQ0FBQyxJQUFJLENBQUMsTUFBTSxLQUFLLFVBQVUsQ0FBQyxDQUFDLENBQUM7Z0NBQy9CLE1BQU0sSUFBSSxLQUFLLENBQUMsSUFBSSxDQUFDLE1BQU0sQ0FBQyxDQUFDOzRCQUMvQixDQUFDOzRCQUNELElBQUksVUFBVSxHQUFXLEVBQUUsQ0FBQyxJQUFJLENBQUM7NEJBQ2pDLE1BQU0sQ0FBQyxDQUFDLElBQUksQ0FBQyxVQUFVLENBQUMsQ0FBQyxDQUFDO2dDQUN4QixLQUFLLFNBQVM7b0NBQUUsVUFBVSxHQUFHLEVBQUUsQ0FBQyxPQUFPLENBQUM7b0NBQUMsS0FBSyxDQUFDO2dDQUMvQyxRQUFRO2dDQUFDLEtBQUssUUFBUTtvQ0FBRSxVQUFVLEdBQUcsRUFBRSxDQUFDLE1BQU0sQ0FBQztvQ0FBQyxLQUFLLENBQUM7Z0NBQ3RELEtBQUssc0JBQXNCO29DQUFFLFVBQVUsR0FBRyxFQUFFLENBQUMsc0JBQXNCLENBQUM7b0NBQUMsS0FBSyxDQUFDO2dDQUMzRSxLQUFLLHFCQUFxQjtvQ0FBRSxVQUFVLEdBQUcsRUFBRSxDQUFDLHFCQUFxQixDQUFDO29DQUFDLEtBQUssQ0FBQztnQ0FDekUsS0FBSyxxQkFBcUI7b0NBQUUsVUFBVSxHQUFHLEVBQUUsQ0FBQyxxQkFBcUIsQ0FBQztvQ0FBQyxLQUFLLENBQUM7Z0NBQ3pFLEtBQUssb0JBQW9CO29DQUFFLFVBQVUsR0FBRyxFQUFFLENBQUMsb0JBQW9CLENBQUM7b0NBQUMsS0FBSyxDQUFDOzRCQUN6RSxDQUFDOzRCQUNELElBQUksVUFBVSxHQUFXLEVBQUUsQ0FBQyxJQUFJLENBQUM7NEJBQ2pDLE1BQU0sQ0FBQyxDQUFDLElBQUksQ0FBQyxVQUFVLENBQUMsQ0FBQyxDQUFDO2dDQUN4QixLQUFLLFNBQVM7b0NBQUUsVUFBVSxHQUFHLEVBQUUsQ0FBQyxPQUFPLENBQUM7b0NBQUMsS0FBSyxDQUFDO2dDQUMvQyxRQUFRO2dDQUFDLEtBQUssUUFBUTtvQ0FBRSxVQUFVLEdBQUcsRUFBRSxDQUFDLE1BQU0sQ0FBQztvQ0FBQyxLQUFLLENBQUM7NEJBQ3hELENBQUM7NEJBQ0QsSUFBSSxNQUFNLEdBQVcsRUFBRSxDQUFDLElBQUksQ0FBQzs0QkFDN0IsTUFBTSxDQUFDLENBQUMsSUFBSSxDQUFDLE1BQU0sQ0FBQyxDQUFDLENBQUM7Z0NBQ3BCLEtBQUssUUFBUTtvQ0FBRSxNQUFNLEdBQUcsRUFBRSxDQUFDLE1BQU0sQ0FBQztvQ0FBQyxLQUFLLENBQUM7Z0NBQ3pDLFFBQVE7Z0NBQUMsS0FBSyxhQUFhO29DQUFFLE1BQU0sR0FBRyxFQUFFLENBQUMsYUFBYSxDQUFDO29DQUFDLEtBQUssQ0FBQztnQ0FDOUQsS0FBSyxnQkFBZ0I7b0NBQUUsTUFBTSxHQUFHLEVBQUUsQ0FBQyxlQUFlLENBQUM7b0NBQUMsS0FBSyxDQUFDOzRCQUM1RCxDQUFDOzRCQUNELElBQUksTUFBTSxHQUFXLEVBQUUsQ0FBQyxJQUFJLENBQUM7NEJBQzdCLE1BQU0sQ0FBQyxDQUFDLElBQUksQ0FBQyxNQUFNLENBQUMsQ0FBQyxDQUFDO2dDQUNwQixLQUFLLFFBQVE7b0NBQUUsTUFBTSxHQUFHLEVBQUUsQ0FBQyxNQUFNLENBQUM7b0NBQUMsS0FBSyxDQUFDO2dDQUN6QyxRQUFRO2dDQUFDLEtBQUssYUFBYTtvQ0FBRSxNQUFNLEdBQUcsRUFBRSxDQUFDLGFBQWEsQ0FBQztvQ0FBQyxLQUFLLENBQUM7Z0NBQzlELEtBQUssZ0JBQWdCO29DQUFFLE1BQU0sR0FBRyxFQUFFLENBQUMsZUFBZSxDQUFDO29DQUFDLEtBQUssQ0FBQzs0QkFDNUQsQ0FBQzs0QkFDRCxNQUFNLFNBQVMsR0FBVyxJQUFJLENBQUMsSUFBSSxDQUFDOzRCQUNwQyxNQUFNLEtBQUssR0FBcUIsTUFBTSxDQUFDLFNBQVMsQ0FBQyxDQUFDOzRCQUNsRCxNQUFNLE9BQU8sR0FBa0IsSUFBSSxDQUFDLFFBQVEsQ0FBQyxTQUFTLENBQUMsR0FBRyxJQUFJLGFBQWEsRUFBRSxDQUFDOzRCQUM5RSxPQUFPLENBQUMsT0FBTyxHQUFHLEVBQUUsQ0FBQyxhQUFhLEVBQUUsQ0FBQzs0QkFDckMsRUFBRSxDQUFDLFdBQVcsQ0FBQyxFQUFFLENBQUMsVUFBVSxFQUFFLE9BQU8sQ0FBQyxPQUFPLENBQUMsQ0FBQzs0QkFDL0MsRUFBRSxDQUFDLFVBQVUsQ0FBQyxFQUFFLENBQUMsVUFBVSxFQUFFLENBQUMsRUFBRSxFQUFFLENBQUMsSUFBSSxFQUFFLEVBQUUsQ0FBQyxJQUFJLEVBQUUsRUFBRSxDQUFDLGFBQWEsRUFBRSxLQUFLLENBQUMsQ0FBQzs0QkFDM0UsRUFBRSxDQUFDLGFBQWEsQ0FBQyxFQUFFLENBQUMsVUFBVSxFQUFFLEVBQUUsQ0FBQyxrQkFBa0IsRUFBRSxVQUFVLENBQUMsQ0FBQzs0QkFDbkUsRUFBRSxDQUFDLGFBQWEsQ0FBQyxFQUFFLENBQUMsVUFBVSxFQUFFLEVBQUUsQ0FBQyxrQkFBa0IsRUFBRSxVQUFVLENBQUMsQ0FBQzs0QkFDbkUsRUFBRSxDQUFDLGFBQWEsQ0FBQyxFQUFFLENBQUMsVUFBVSxFQUFFLEVBQUUsQ0FBQyxjQUFjLEVBQUUsTUFBTSxDQUFDLENBQUM7NEJBQzNELEVBQUUsQ0FBQyxhQUFhLENBQUMsRUFBRSxDQUFDLFVBQVUsRUFBRSxFQUFFLENBQUMsY0FBYyxFQUFFLE1BQU0sQ0FBQyxDQUFDO3dCQUM3RCxDQUFDLENBQUMsQ0FBQztvQkFDTCxDQUFDO29CQUFDLElBQUksQ0FBQyxDQUFDO3dCQUNOLE1BQU0sRUFBRSxHQUEwQixJQUFJLENBQUMsRUFBRSxDQUFDO3dCQUMxQyxVQUFVLENBQUMsWUFBWSxDQUFDLENBQUMsUUFBZ0IsRUFBRSxJQUFnQjs0QkFDekQsSUFBSSxDQUFDLGtCQUFrQixDQUFDLENBQUMsUUFBZ0IsRUFBRSxTQUF5QixFQUFFLGNBQXNCLEVBQUUsVUFBNEI7Z0NBQ3hILEVBQUUsQ0FBQyxDQUFDLENBQUMsVUFBVSxDQUFDLENBQUMsQ0FBQztvQ0FBQyxNQUFNLENBQUM7Z0NBQUMsQ0FBQztnQ0FDNUIsTUFBTSxDQUFDLENBQUMsVUFBVSxDQUFDLElBQUksQ0FBQyxDQUFDLENBQUM7b0NBQ3hCLEtBQUssUUFBUSxDQUFDO29DQUNkLEtBQUssTUFBTSxDQUFDO29DQUNaLEtBQUssY0FBYzt3Q0FDakIsTUFBTSxTQUFTLEdBQVcsY0FBYyxDQUFDO3dDQUN6QyxNQUFNLEtBQUssR0FBcUIsTUFBTSxDQUFDLFNBQVMsQ0FBQyxDQUFDO3dDQUNsRCxNQUFNLE9BQU8sR0FBa0IsSUFBSSxDQUFDLFFBQVEsQ0FBQyxTQUFTLENBQUMsR0FBRyxJQUFJLGFBQWEsRUFBRSxDQUFDO3dDQUM5RSxPQUFPLENBQUMsT0FBTyxHQUFHLEVBQUUsQ0FBQyxhQUFhLEVBQUUsQ0FBQzt3Q0FDckMsRUFBRSxDQUFDLFdBQVcsQ0FBQyxFQUFFLENBQUMsVUFBVSxFQUFFLE9BQU8sQ0FBQyxPQUFPLENBQUMsQ0FBQzt3Q0FDL0MsRUFBRSxDQUFDLFVBQVUsQ0FBQyxFQUFFLENBQUMsVUFBVSxFQUFFLENBQUMsRUFBRSxFQUFFLENBQUMsSUFBSSxFQUFFLEVBQUUsQ0FBQyxJQUFJLEVBQUUsRUFBRSxDQUFDLGFBQWEsRUFBRSxLQUFLLENBQUMsQ0FBQzt3Q0FDM0UsRUFBRSxDQUFDLGFBQWEsQ0FBQyxFQUFFLENBQUMsVUFBVSxFQUFFLEVBQUUsQ0FBQyxrQkFBa0IsRUFBRSxFQUFFLENBQUMsTUFBTSxDQUFDLENBQUM7d0NBQ2xFLEVBQUUsQ0FBQyxhQUFhLENBQUMsRUFBRSxDQUFDLFVBQVUsRUFBRSxFQUFFLENBQUMsa0JBQWtCLEVBQUUsRUFBRSxDQUFDLE1BQU0sQ0FBQyxDQUFDO3dDQUNsRSxFQUFFLENBQUMsYUFBYSxDQUFDLEVBQUUsQ0FBQyxVQUFVLEVBQUUsRUFBRSxDQUFDLGNBQWMsRUFBRSxFQUFFLENBQUMsYUFBYSxDQUFDLENBQUM7d0NBQ3JFLEVBQUUsQ0FBQyxhQUFhLENBQUMsRUFBRSxDQUFDLFVBQVUsRUFBRSxFQUFFLENBQUMsY0FBYyxFQUFFLEVBQUUsQ0FBQyxhQUFhLENBQUMsQ0FBQzt3Q0FDckUsS0FBSyxDQUFDO2dDQUNWLENBQUM7NEJBQ0gsQ0FBQyxDQUFDLENBQUM7d0JBQ0wsQ0FBQyxDQUFDLENBQUM7b0JBQ0wsQ0FBQztnQkFDSCxDQUFDO2dCQUVNLFFBQVEsQ0FBQyxVQUFzQixFQUFFLGFBQWdDLElBQUk7b0JBQzFFLE1BQU0sRUFBRSxHQUEwQixJQUFJLENBQUMsRUFBRSxDQUFDO29CQUMxQyxNQUFNLENBQUMsSUFBSSxDQUFDLElBQUksQ0FBQyxRQUFRLENBQUMsQ0FBQyxPQUFPLENBQUMsQ0FBQyxTQUFpQjt3QkFDbkQsTUFBTSxPQUFPLEdBQWtCLElBQUksQ0FBQyxRQUFRLENBQUMsU0FBUyxDQUFDLENBQUM7d0JBQ3hELEVBQUUsQ0FBQyxhQUFhLENBQUMsT0FBTyxDQUFDLE9BQU8sQ0FBQyxDQUFDO29CQUNwQyxDQUFDLENBQUMsQ0FBQztvQkFDSCxJQUFJLENBQUMsUUFBUSxHQUFHLEVBQUUsQ0FBQztvQkFDbkIsSUFBSSxDQUFDLFFBQVEsR0FBRyxFQUFFLENBQUM7b0JBQ25CLFVBQVUsQ0FBQyxZQUFZLENBQUMsQ0FBQyxRQUFnQixFQUFFLElBQWdCO3dCQUN6RCxNQUFNLFdBQVcsR0FBZSxJQUFJLENBQUMsUUFBUSxDQUFDLFFBQVEsQ0FBQyxHQUFHLElBQUksVUFBVSxFQUFFLENBQUM7d0JBQzNFLElBQUksQ0FBQyxrQkFBa0IsQ0FBQyxDQUFDLFFBQWdCLEVBQUUsU0FBeUIsRUFBRSxjQUFzQixFQUFFLFVBQTRCOzRCQUN4SCxFQUFFLENBQUMsQ0FBQyxDQUFDLFVBQVUsQ0FBQyxDQUFDLENBQUM7Z0NBQUMsTUFBTSxDQUFDOzRCQUFDLENBQUM7NEJBQzVCLE1BQU0sV0FBVyxHQUFlLFdBQVcsQ0FBQyxRQUFRLENBQUMsUUFBUSxDQUFDLElBQUksQ0FBQyxXQUFXLENBQUMsUUFBUSxDQUFDLFFBQVEsQ0FBQyxHQUFHLElBQUksVUFBVSxFQUFFLENBQUMsQ0FBQzs0QkFDdEgsTUFBTSxpQkFBaUIsR0FBcUIsV0FBVyxDQUFDLGNBQWMsQ0FBQyxjQUFjLENBQUMsQ0FBQzs0QkFDdkYsRUFBRSxDQUFDLENBQUMsaUJBQWlCLENBQUMsQ0FBQyxDQUFDO2dDQUN0QixpQkFBaUIsQ0FBQyxRQUFRLENBQUMsVUFBVSxFQUFFLFFBQVEsRUFBRSxRQUFRLEVBQUUsY0FBYyxFQUFFLFVBQVUsQ0FBQyxDQUFDOzRCQUN6RixDQUFDO3dCQUNILENBQUMsQ0FBQyxDQUFDO29CQUNMLENBQUMsQ0FBQyxDQUFDO29CQUNILElBQUksQ0FBQyxRQUFRLEdBQUcsRUFBRSxDQUFDO2dCQUNyQixDQUFDO2dCQUVNLFFBQVEsQ0FBQyxVQUFzQixFQUFFLGFBQWdDLElBQUk7b0JBQzFFLE1BQU0sRUFBRSxHQUEwQixJQUFJLENBQUMsRUFBRSxDQUFDO29CQUMxQyxNQUFNLEtBQUssR0FBVyxJQUFJLENBQUMsS0FBSyxDQUFDLENBQUMsQ0FBQyxDQUFDO29CQUNwQyxVQUFVLENBQUMsa0JBQWtCLENBQUMsQ0FBQyxRQUFnQixFQUFFLElBQWdCLEVBQUUsU0FBeUIsRUFBRSxjQUFzQixFQUFFLFVBQTRCO3dCQUNoSixFQUFFLENBQUMsQ0FBQyxDQUFDLFVBQVUsQ0FBQyxDQUFDLENBQUM7NEJBQUMsTUFBTSxDQUFDO3dCQUFDLENBQUM7d0JBQzVCLEVBQUUsQ0FBQyxDQUFDLFVBQVUsQ0FBQyxJQUFJLEtBQUssYUFBYSxDQUFDLENBQUMsQ0FBQzs0QkFBQyxNQUFNLENBQUM7d0JBQUMsQ0FBQzt3QkFDbEQsTUFBTSxJQUFJLEdBQXNCLFVBQVUsSUFBSSxVQUFVLENBQUMsS0FBSyxDQUFDLFVBQVUsQ0FBQyxJQUFJLElBQUksVUFBVSxDQUFDLElBQUksSUFBSSxjQUFjLENBQUMsQ0FBQzt3QkFDckgsTUFBTSxJQUFJLEdBQXNCLElBQUksSUFBSSxJQUFJLENBQUMsSUFBSSxDQUFDO3dCQUNsRCxNQUFNLFNBQVMsR0FBVyxDQUFDLElBQUksSUFBSSxJQUFJLENBQUMsSUFBSSxDQUFDLElBQUksVUFBVSxDQUFDLElBQUksSUFBSSxVQUFVLENBQUMsSUFBSSxJQUFJLGNBQWMsQ0FBQzt3QkFDdEcsTUFBTSxPQUFPLEdBQWtCLElBQUksQ0FBQyxRQUFRLENBQUMsU0FBUyxDQUFDLENBQUM7d0JBQ3hELEVBQUUsQ0FBQyxDQUFDLENBQUMsT0FBTyxDQUFDLENBQUMsQ0FBQzs0QkFBQyxNQUFNLENBQUM7d0JBQUMsQ0FBQzt3QkFDekIsY0FBYyxDQUFDLElBQUksQ0FBQyxTQUFTLENBQUMsQ0FBQzt3QkFDL0IsY0FBYyxDQUFDLElBQUksQ0FBQyxTQUFTLENBQUMsQ0FBQzt3QkFDL0IsNEJBQTRCLENBQUMsSUFBSSxDQUFDLFNBQVMsRUFBRSxJQUFJLENBQUMsQ0FBQzt3QkFDbkQsNEJBQTRCLENBQUMsSUFBSSxDQUFDLFNBQVMsRUFBRSxJQUFJLENBQUMsQ0FBQzt3QkFDbkQsYUFBYSxDQUFDLElBQUksQ0FBQyxLQUFLLEVBQUUsSUFBSSxDQUFDLEtBQUssQ0FBQyxDQUFDO3dCQUN0QyxJQUFJLENBQUMsS0FBSyxDQUFDLENBQUMsQ0FBQyxJQUFJLEtBQUssQ0FBQzt3QkFDdkIsRUFBRSxDQUFDLE1BQU0sQ0FBQyxFQUFFLENBQUMsS0FBSyxDQUFDLENBQUM7d0JBQ3BCLE1BQU0sQ0FBQyxDQUFDLElBQUksQ0FBQyxLQUFLLENBQUMsQ0FBQyxDQUFDOzRCQUNuQixRQUFROzRCQUNSLEtBQUssUUFBUTtnQ0FBRSxFQUFFLENBQUMsU0FBUyxDQUFDLEVBQUUsQ0FBQyxTQUFTLEVBQUUsRUFBRSxDQUFDLG1CQUFtQixDQUFDLENBQUM7Z0NBQUMsS0FBSyxDQUFDOzRCQUN6RSxLQUFLLFVBQVU7Z0NBQUUsRUFBRSxDQUFDLFNBQVMsQ0FBQyxFQUFFLENBQUMsU0FBUyxFQUFFLEVBQUUsQ0FBQyxHQUFHLENBQUMsQ0FBQztnQ0FBQyxLQUFLLENBQUM7NEJBQzNELEtBQUssVUFBVTtnQ0FBRSxFQUFFLENBQUMsU0FBUyxDQUFDLEVBQUUsQ0FBQyxTQUFTLEVBQUUsRUFBRSxDQUFDLG1CQUFtQixDQUFDLENBQUM7Z0NBQUMsS0FBSyxDQUFDOzRCQUMzRSxLQUFLLFFBQVE7Z0NBQUUsRUFBRSxDQUFDLFNBQVMsQ0FBQyxFQUFFLENBQUMsR0FBRyxFQUFFLEVBQUUsQ0FBQyxtQkFBbUIsQ0FBQyxDQUFDO2dDQUFDLEtBQUssQ0FBQzt3QkFDckUsQ0FBQzt3QkFDRCxNQUFNLFdBQVcsR0FBZSxJQUFJLENBQUMsUUFBUSxDQUFDLFVBQVUsQ0FBQyxRQUFRLENBQUMsQ0FBQzt3QkFDbkUsTUFBTSxXQUFXLEdBQWUsV0FBVyxDQUFDLFFBQVEsQ0FBQyxRQUFRLENBQUMsSUFBSSxJQUFJLENBQUMsUUFBUSxDQUFDLFNBQVMsQ0FBQyxDQUFDLFFBQVEsQ0FBQyxRQUFRLENBQUMsQ0FBQzt3QkFDOUcsTUFBTSxpQkFBaUIsR0FBcUIsV0FBVyxDQUFDLGNBQWMsQ0FBQyxjQUFjLENBQUMsQ0FBQzt3QkFDdkYsRUFBRSxDQUFDLENBQUMsaUJBQWlCLENBQUMsQ0FBQyxDQUFDOzRCQUN0QixpQkFBaUIsQ0FBQyxRQUFRLENBQUMsVUFBVSxFQUFFLFVBQVUsQ0FBQyxRQUFRLEVBQUUsUUFBUSxFQUFFLElBQUksRUFBRSxjQUFjLEVBQUUsVUFBVSxFQUFFLE9BQU8sRUFBRSxJQUFJLEVBQUUsSUFBSSxDQUFDLENBQUM7d0JBQy9ILENBQUM7b0JBQ0gsQ0FBQyxDQUFDLENBQUM7b0JBQ0gsSUFBSSxDQUFDLEtBQUssQ0FBQyxDQUFDLENBQUMsR0FBRyxLQUFLLENBQUM7Z0JBQ3hCLENBQUM7YUFDRixDQUFBOztZQUVELGFBQUE7Z0JBQUE7b0JBQ1MsZ0JBQVcsR0FBZ0IsSUFBSSxLQUFLLENBQUMsS0FBSyxFQUFFLENBQUM7Z0JBQ3RELENBQUM7YUFBQSxDQUFBO1lBRUQsYUFBQTtnQkFBQTtvQkFDUyxhQUFRLEdBQWdDLEVBQUUsQ0FBQztnQkFDcEQsQ0FBQzthQUFBLENBQUE7WUFFRCxhQUFBO2dCQUFBO29CQUNTLG1CQUFjLEdBQXNDLEVBQUUsQ0FBQztnQkFDaEUsQ0FBQzthQUFBLENBQUE7WUFRRCx5QkFBQTtnQkFHRSxZQUFZLE1BQW1CO29CQUM3QixJQUFJLENBQUMsTUFBTSxHQUFHLE1BQU0sQ0FBQztnQkFDdkIsQ0FBQztnQkFFRCxRQUFRLENBQUMsVUFBc0IsRUFBRSxRQUFnQixFQUFFLFFBQWdCLEVBQUUsY0FBc0IsRUFBRSxVQUFrQztvQkFDN0gsTUFBTSxDQUFDLElBQUksQ0FBQztnQkFDZCxDQUFDO2dCQUVELFFBQVEsQ0FBQyxVQUFzQixFQUFFLFFBQWdCLEVBQUUsUUFBZ0IsRUFBRSxjQUFzQixFQUFFLFVBQWtDO29CQUM3SCxNQUFNLENBQUMsSUFBSSxDQUFDO2dCQUNkLENBQUM7Z0JBRUQsUUFBUSxDQUFDLFVBQXNCLEVBQUUsUUFBZ0IsRUFBRSxRQUFnQixFQUFFLElBQWdCLEVBQUUsY0FBc0IsRUFBRSxVQUFrQyxFQUFFLE9BQXNCLEVBQUUsSUFBdUIsRUFBRSxJQUF1QjtvQkFDek4sTUFBTSxFQUFFLEdBQTBCLElBQUksQ0FBQyxNQUFNLENBQUMsRUFBRSxDQUFDO29CQUNqRCxNQUFNLElBQUksR0FBZSxVQUFVLENBQUMsS0FBSyxDQUFDLElBQUksQ0FBQyxRQUFRLENBQUMsQ0FBQztvQkFDekQsZ0JBQWdCLENBQUMsSUFBSSxDQUFDLE1BQU0sQ0FBQyxTQUFTLEVBQUUsSUFBSSxDQUFDLFdBQVcsQ0FBQyxDQUFDO29CQUMxRCxnQkFBZ0IsQ0FBQyxJQUFJLENBQUMsTUFBTSxDQUFDLFNBQVMsRUFBRSxVQUFVLENBQUMsV0FBVyxDQUFDLENBQUM7b0JBQ2hFLFdBQVcsQ0FBQyxJQUFJLENBQUMsTUFBTSxDQUFDLFNBQVMsRUFBRSxVQUFVLENBQUMsS0FBSyxHQUFHLENBQUMsRUFBRSxVQUFVLENBQUMsTUFBTSxHQUFHLENBQUMsQ0FBQyxDQUFDO29CQUNoRiw0QkFBNEIsQ0FBQyxJQUFJLENBQUMsTUFBTSxDQUFDLFNBQVMsRUFBRSxJQUFJLENBQUMsQ0FBQztvQkFDMUQsTUFBTSxNQUFNLEdBQWlCLElBQUksQ0FBQyxNQUFNLENBQUMsV0FBVyxDQUFDO29CQUNyRCxFQUFFLENBQUMsVUFBVSxDQUFDLE1BQU0sQ0FBQyxPQUFPLENBQUMsQ0FBQztvQkFDOUIsRUFBRSxDQUFDLGdCQUFnQixDQUFDLE1BQU0sQ0FBQyxRQUFRLENBQUMsYUFBYSxDQUFDLEVBQUUsS0FBSyxFQUFFLElBQUksQ0FBQyxNQUFNLENBQUMsVUFBVSxDQUFDLENBQUM7b0JBQ25GLEVBQUUsQ0FBQyxnQkFBZ0IsQ0FBQyxNQUFNLENBQUMsUUFBUSxDQUFDLFlBQVksQ0FBQyxFQUFFLEtBQUssRUFBRSxJQUFJLENBQUMsTUFBTSxDQUFDLFNBQVMsQ0FBQyxDQUFDO29CQUNqRixFQUFFLENBQUMsZ0JBQWdCLENBQUMsTUFBTSxDQUFDLFFBQVEsQ0FBQyxZQUFZLENBQUMsRUFBRSxLQUFLLEVBQUUsSUFBSSxDQUFDLE1BQU0sQ0FBQyxTQUFTLENBQUMsQ0FBQztvQkFDakYsRUFBRSxDQUFDLFVBQVUsQ0FBQyxNQUFNLENBQUMsUUFBUSxDQUFDLFFBQVEsQ0FBQyxFQUFFLElBQUksQ0FBQyxNQUFNLENBQUMsS0FBSyxDQUFDLENBQUM7b0JBQzVELEVBQUUsQ0FBQyxhQUFhLENBQUMsRUFBRSxDQUFDLFFBQVEsQ0FBQyxDQUFDO29CQUM5QixFQUFFLENBQUMsV0FBVyxDQUFDLEVBQUUsQ0FBQyxVQUFVLEVBQUUsT0FBTyxDQUFDLE9BQU8sQ0FBQyxDQUFDO29CQUMvQyxFQUFFLENBQUMsU0FBUyxDQUFDLE1BQU0sQ0FBQyxRQUFRLENBQUMsVUFBVSxDQUFDLEVBQUUsQ0FBQyxDQUFDLENBQUM7b0JBQzdDLGdCQUFnQixDQUFDLEVBQUUsRUFBRSxNQUFNLEVBQUUsV0FBVyxFQUFFLElBQUksQ0FBQyxNQUFNLENBQUMsc0JBQXNCLENBQUMsQ0FBQztvQkFDOUUsZ0JBQWdCLENBQUMsRUFBRSxFQUFFLE1BQU0sRUFBRSxXQUFXLEVBQUUsSUFBSSxDQUFDLE1BQU0sQ0FBQyxzQkFBc0IsQ0FBQyxDQUFDO29CQUM5RSxFQUFFLENBQUMsVUFBVSxDQUFDLEVBQUUsQ0FBQyxZQUFZLEVBQUUsQ0FBQyxFQUFFLElBQUksQ0FBQyxNQUFNLENBQUMsc0JBQXNCLENBQUMsS0FBSyxDQUFDLENBQUM7Z0JBQzlFLENBQUM7YUFDRixDQUFBO1lBRUQsdUJBQUE7Z0JBT0UsWUFBWSxNQUFtQjtvQkFGeEIsdUJBQWtCLEdBQXlDLEVBQUUsQ0FBQztvQkFHbkUsSUFBSSxDQUFDLE1BQU0sR0FBRyxNQUFNLENBQUM7Z0JBQ3ZCLENBQUM7Z0JBRUQsUUFBUSxDQUFDLFVBQXNCLEVBQUUsUUFBZ0IsRUFBRSxRQUFnQixFQUFFLGNBQXNCLEVBQUUsVUFBZ0M7b0JBQzNILE1BQU0sRUFBRSxHQUEwQixJQUFJLENBQUMsTUFBTSxDQUFDLEVBQUUsQ0FBQztvQkFDakQsTUFBTSxZQUFZLEdBQVcsVUFBVSxDQUFDLFFBQVEsQ0FBQyxNQUFNLEdBQUcsQ0FBQyxDQUFDO29CQUM1RCxNQUFNLGVBQWUsR0FBaUIsSUFBSSxZQUFZLENBQUMsVUFBVSxDQUFDLFFBQVEsQ0FBQyxDQUFDO29CQUM1RSxNQUFNLGVBQWUsR0FBaUIsSUFBSSxZQUFZLENBQUMsVUFBVSxDQUFDLEdBQUcsQ0FBQyxDQUFDO29CQUN2RSxNQUFNLGVBQWUsR0FBZ0IsSUFBSSxXQUFXLENBQUMsVUFBVSxDQUFDLFNBQVMsQ0FBQyxDQUFDO29CQUMzRSxJQUFJLENBQUMsZUFBZSxHQUFHLFlBQVksQ0FBQyxFQUFFLEVBQUUsZUFBZSxFQUFFLENBQUMsRUFBRSxFQUFFLENBQUMsWUFBWSxFQUFFLEVBQUUsQ0FBQyxXQUFXLENBQUMsQ0FBQztvQkFDN0YsSUFBSSxDQUFDLGVBQWUsR0FBRyxZQUFZLENBQUMsRUFBRSxFQUFFLGVBQWUsRUFBRSxDQUFDLEVBQUUsRUFBRSxDQUFDLFlBQVksRUFBRSxFQUFFLENBQUMsV0FBVyxDQUFDLENBQUM7b0JBQzdGLElBQUksQ0FBQyxlQUFlLEdBQUcsWUFBWSxDQUFDLEVBQUUsRUFBRSxlQUFlLEVBQUUsQ0FBQyxFQUFFLEVBQUUsQ0FBQyxvQkFBb0IsRUFBRSxFQUFFLENBQUMsV0FBVyxDQUFDLENBQUM7b0JBQ3JHLFVBQVUsQ0FBQyxZQUFZLENBQUMsQ0FBQyxRQUFnQixFQUFFLElBQXFCO3dCQUM5RCxNQUFNLFlBQVksR0FBc0IsSUFBSSxDQUFDLGdCQUFnQixJQUFJLElBQUksQ0FBQyxnQkFBZ0IsQ0FBQyxRQUFRLENBQUMsQ0FBQzt3QkFDakcsTUFBTSxRQUFRLEdBQWtCLFlBQVksSUFBSSxZQUFZLENBQUMsU0FBUyxDQUFDLFFBQVEsQ0FBQyxDQUFDO3dCQUNqRixNQUFNLGNBQWMsR0FBd0IsUUFBUSxJQUFJLFFBQVEsQ0FBQyxlQUFlLENBQUMsY0FBYyxDQUFDLENBQUM7d0JBQ2pHLEVBQUUsQ0FBQyxDQUFDLGNBQWMsQ0FBQyxDQUFDLENBQUM7NEJBQ25CLE1BQU0scUJBQXFCLEdBQXdCLElBQUksQ0FBQyxrQkFBa0IsQ0FBQyxRQUFRLENBQUMsR0FBRyxJQUFJLG1CQUFtQixFQUFFLENBQUM7NEJBQ2pILGNBQWMsQ0FBQyxhQUFhLENBQUMsT0FBTyxDQUFDLENBQUMsWUFBK0IsRUFBRSxrQkFBMEI7Z0NBQy9GLE1BQU0sbUJBQW1CLEdBQXNCLHFCQUFxQixDQUFDLGFBQWEsQ0FBQyxrQkFBa0IsQ0FBQyxHQUFHLElBQUksaUJBQWlCLEVBQUUsQ0FBQztnQ0FDakksTUFBTSxxQkFBcUIsR0FBaUIsSUFBSSxZQUFZLENBQUMsQ0FBQyxHQUFHLFlBQVksQ0FBQyxDQUFDO2dDQUMvRSxxQkFBcUIsQ0FBQyxRQUFRLENBQUMsWUFBWSxDQUFDLE1BQU0sRUFBRSxZQUFZLENBQUMsTUFBTSxHQUFHLFlBQVksQ0FBQyxRQUFRLENBQUMsTUFBTSxDQUFDLENBQUMsR0FBRyxDQUFDLElBQUksWUFBWSxDQUFDLFlBQVksQ0FBQyxRQUFRLENBQUMsQ0FBQyxDQUFDO2dDQUNySixtQkFBbUIsQ0FBQyxxQkFBcUIsR0FBRyxZQUFZLENBQUMsRUFBRSxFQUFFLHFCQUFxQixFQUFFLENBQUMsRUFBRSxFQUFFLENBQUMsWUFBWSxFQUFFLEVBQUUsQ0FBQyxXQUFXLENBQUMsQ0FBQzs0QkFDMUgsQ0FBQyxDQUFDLENBQUM7d0JBQ0wsQ0FBQztvQkFDSCxDQUFDLENBQUMsQ0FBQztvQkFDSCxNQUFNLENBQUMsSUFBSSxDQUFDO2dCQUNkLENBQUM7Z0JBRUQsUUFBUSxDQUFDLFVBQXNCLEVBQUUsUUFBZ0IsRUFBRSxRQUFnQixFQUFFLGNBQXNCLEVBQUUsVUFBZ0M7b0JBQzNILE1BQU0sRUFBRSxHQUEwQixJQUFJLENBQUMsTUFBTSxDQUFDLEVBQUUsQ0FBQztvQkFDakQsRUFBRSxDQUFDLFlBQVksQ0FBQyxJQUFJLENBQUMsZUFBZSxDQUFDLE1BQU0sQ0FBQyxDQUFDO29CQUM3QyxFQUFFLENBQUMsWUFBWSxDQUFDLElBQUksQ0FBQyxlQUFlLENBQUMsTUFBTSxDQUFDLENBQUM7b0JBQzdDLEVBQUUsQ0FBQyxZQUFZLENBQUMsSUFBSSxDQUFDLGVBQWUsQ0FBQyxNQUFNLENBQUMsQ0FBQztvQkFDN0MsTUFBTSxDQUFDLElBQUksQ0FBQyxJQUFJLENBQUMsa0JBQWtCLENBQUMsQ0FBQyxPQUFPLENBQUMsQ0FBQyxRQUFnQjt3QkFDNUQsTUFBTSxxQkFBcUIsR0FBd0IsSUFBSSxDQUFDLGtCQUFrQixDQUFDLFFBQVEsQ0FBQyxDQUFDO3dCQUNyRixxQkFBcUIsQ0FBQyxhQUFhLENBQUMsT0FBTyxDQUFDLENBQUMsWUFBK0I7NEJBQzFFLEVBQUUsQ0FBQyxZQUFZLENBQUMsWUFBWSxDQUFDLHFCQUFxQixDQUFDLE1BQU0sQ0FBQyxDQUFDO3dCQUM3RCxDQUFDLENBQUMsQ0FBQztvQkFDTCxDQUFDLENBQUMsQ0FBQztvQkFDSCxNQUFNLENBQUMsSUFBSSxDQUFDO2dCQUNkLENBQUM7Z0JBRUQsUUFBUSxDQUFDLFVBQXNCLEVBQUUsUUFBZ0IsRUFBRSxRQUFnQixFQUFFLElBQWdCLEVBQUUsY0FBc0IsRUFBRSxVQUFnQyxFQUFFLE9BQXNCLEVBQUUsSUFBdUIsRUFBRSxJQUF1QjtvQkFDdk4sTUFBTSxFQUFFLEdBQTBCLElBQUksQ0FBQyxNQUFNLENBQUMsRUFBRSxDQUFDO29CQUNqRCxNQUFNLElBQUksR0FBZSxVQUFVLENBQUMsS0FBSyxDQUFDLElBQUksQ0FBQyxRQUFRLENBQUMsQ0FBQztvQkFDekQsZ0JBQWdCLENBQUMsSUFBSSxDQUFDLE1BQU0sQ0FBQyxTQUFTLEVBQUUsSUFBSSxDQUFDLFdBQVcsQ0FBQyxDQUFDO29CQUMxRCw0QkFBNEIsQ0FBQyxJQUFJLENBQUMsTUFBTSxDQUFDLFNBQVMsRUFBRSxJQUFJLENBQUMsQ0FBQztvQkFDMUQsTUFBTSxJQUFJLEdBQWdDLFVBQVUsQ0FBQyxJQUFJLENBQUMsS0FBSyxDQUFDLFVBQVUsQ0FBQyxRQUFRLENBQUMsQ0FBQztvQkFDckYsTUFBTSxZQUFZLEdBQWtDLElBQUksSUFBSSxJQUFJLENBQUMsZ0JBQWdCLElBQUksSUFBSSxDQUFDLGdCQUFnQixDQUFDLFVBQVUsQ0FBQyxRQUFRLENBQUMsQ0FBQztvQkFDaEksTUFBTSxRQUFRLEdBQThCLFlBQVksSUFBSSxZQUFZLENBQUMsU0FBUyxDQUFDLFFBQVEsQ0FBQyxDQUFDO29CQUM3RixNQUFNLGNBQWMsR0FBb0MsUUFBUSxJQUFJLFFBQVEsQ0FBQyxlQUFlLENBQUMsY0FBYyxDQUFDLENBQUM7b0JBQzdHLE1BQU0sYUFBYSxHQUFvQyxjQUFjLElBQUksY0FBYyxDQUFDLGFBQWEsQ0FBQztvQkFDdEcsTUFBTSxtQkFBbUIsR0FBVyxLQUFLLENBQUMsUUFBUSxDQUFDLElBQUksQ0FBQyxhQUFhLEVBQUUsVUFBVSxDQUFDLElBQUksQ0FBQyxDQUFDO29CQUN4RixNQUFNLG1CQUFtQixHQUFXLG1CQUFtQixHQUFHLENBQUMsSUFBSSxtQkFBbUIsQ0FBQztvQkFDbkYsTUFBTSxhQUFhLEdBQWtDLGFBQWEsSUFBSSxhQUFhLENBQUMsbUJBQW1CLENBQUMsQ0FBQztvQkFDekcsTUFBTSxhQUFhLEdBQWtDLGFBQWEsSUFBSSxhQUFhLENBQUMsbUJBQW1CLENBQUMsSUFBSSxhQUFhLENBQUM7b0JBQzFILE1BQU0sTUFBTSxHQUFpQixDQUFDLGFBQWEsQ0FBQyxHQUFHLElBQUksQ0FBQyxNQUFNLENBQUMsZUFBZSxHQUFHLElBQUksQ0FBQyxNQUFNLENBQUMsV0FBVyxDQUFDO29CQUNyRyxFQUFFLENBQUMsVUFBVSxDQUFDLE1BQU0sQ0FBQyxPQUFPLENBQUMsQ0FBQztvQkFDOUIsRUFBRSxDQUFDLGdCQUFnQixDQUFDLE1BQU0sQ0FBQyxRQUFRLENBQUMsYUFBYSxDQUFDLEVBQUUsS0FBSyxFQUFFLElBQUksQ0FBQyxNQUFNLENBQUMsVUFBVSxDQUFDLENBQUM7b0JBQ25GLEVBQUUsQ0FBQyxnQkFBZ0IsQ0FBQyxNQUFNLENBQUMsUUFBUSxDQUFDLFlBQVksQ0FBQyxFQUFFLEtBQUssRUFBRSxJQUFJLENBQUMsTUFBTSxDQUFDLFNBQVMsQ0FBQyxDQUFDO29CQUNqRixFQUFFLENBQUMsZ0JBQWdCLENBQUMsTUFBTSxDQUFDLFFBQVEsQ0FBQyxZQUFZLENBQUMsRUFBRSxLQUFLLEVBQUUsSUFBSSxDQUFDLE1BQU0sQ0FBQyxTQUFTLENBQUMsQ0FBQztvQkFDakYsRUFBRSxDQUFDLFVBQVUsQ0FBQyxNQUFNLENBQUMsUUFBUSxDQUFDLFFBQVEsQ0FBQyxFQUFFLElBQUksQ0FBQyxNQUFNLENBQUMsS0FBSyxDQUFDLENBQUM7b0JBQzVELEVBQUUsQ0FBQyxhQUFhLENBQUMsRUFBRSxDQUFDLFFBQVEsQ0FBQyxDQUFDO29CQUM5QixFQUFFLENBQUMsV0FBVyxDQUFDLEVBQUUsQ0FBQyxVQUFVLEVBQUUsT0FBTyxDQUFDLE9BQU8sQ0FBQyxDQUFDO29CQUMvQyxFQUFFLENBQUMsU0FBUyxDQUFDLE1BQU0sQ0FBQyxRQUFRLENBQUMsVUFBVSxDQUFDLEVBQUUsQ0FBQyxDQUFDLENBQUM7b0JBQzdDLGdCQUFnQixDQUFDLEVBQUUsRUFBRSxNQUFNLEVBQUUsV0FBVyxFQUFFLElBQUksQ0FBQyxlQUFlLENBQUMsQ0FBQztvQkFDaEUsZ0JBQWdCLENBQUMsRUFBRSxFQUFFLE1BQU0sRUFBRSxXQUFXLEVBQUUsSUFBSSxDQUFDLGVBQWUsQ0FBQyxDQUFDO29CQUNoRSxFQUFFLENBQUMsQ0FBQyxhQUFhLENBQUMsQ0FBQyxDQUFDO3dCQUNsQixNQUFNLE1BQU0sR0FBVyxDQUFDLGFBQWEsQ0FBQyxJQUFJLEtBQUssYUFBYSxDQUFDLElBQUksQ0FBQyxHQUFHLENBQUMsR0FBRyxhQUFhLENBQUMsS0FBSyxDQUFDLFFBQVEsQ0FBQyxDQUFDLFVBQVUsQ0FBQyxJQUFJLEdBQUcsYUFBYSxDQUFDLElBQUksQ0FBQyxHQUFHLENBQUMsYUFBYSxDQUFDLElBQUksR0FBRyxhQUFhLENBQUMsSUFBSSxDQUFDLENBQUMsQ0FBQzt3QkFDMUwsTUFBTSxxQkFBcUIsR0FBd0IsSUFBSSxDQUFDLGtCQUFrQixDQUFDLFVBQVUsQ0FBQyxRQUFRLENBQUMsQ0FBQzt3QkFDaEcsTUFBTSxvQkFBb0IsR0FBc0IscUJBQXFCLENBQUMsYUFBYSxDQUFDLG1CQUFtQixDQUFDLENBQUM7d0JBQ3pHLE1BQU0sb0JBQW9CLEdBQXNCLHFCQUFxQixDQUFDLGFBQWEsQ0FBQyxtQkFBbUIsQ0FBQyxJQUFJLG9CQUFvQixDQUFDO3dCQUNqSSxFQUFFLENBQUMsU0FBUyxDQUFDLE1BQU0sQ0FBQyxRQUFRLENBQUMsY0FBYyxDQUFDLEVBQUUsTUFBTSxDQUFDLENBQUM7d0JBQ3RELGdCQUFnQixDQUFDLEVBQUUsRUFBRSxNQUFNLEVBQUUsaUJBQWlCLEVBQUUsb0JBQW9CLENBQUMscUJBQXFCLENBQUMsQ0FBQzt3QkFDNUYsZ0JBQWdCLENBQUMsRUFBRSxFQUFFLE1BQU0sRUFBRSxpQkFBaUIsRUFBRSxvQkFBb0IsQ0FBQyxxQkFBcUIsQ0FBQyxDQUFDO29CQUM5RixDQUFDO29CQUNELE1BQU0sZUFBZSxHQUFpQixJQUFJLENBQUMsZUFBZSxDQUFDO29CQUMzRCxFQUFFLENBQUMsVUFBVSxDQUFDLEVBQUUsQ0FBQyxvQkFBb0IsRUFBRSxlQUFlLENBQUMsTUFBTSxDQUFDLENBQUM7b0JBQy9ELEVBQUUsQ0FBQyxZQUFZLENBQUMsRUFBRSxDQUFDLFNBQVMsRUFBRSxlQUFlLENBQUMsS0FBSyxFQUFFLGVBQWUsQ0FBQyxJQUFJLEVBQUUsQ0FBQyxDQUFDLENBQUM7Z0JBQ2hGLENBQUM7YUFDRixDQUFBO1lBRUQsK0JBQUE7Z0JBU0UsWUFBWSxNQUFtQjtvQkFIeEIsMkJBQXNCLEdBQWEsRUFBRSxDQUFDO29CQUN0Qyx1QkFBa0IsR0FBeUMsRUFBRSxDQUFDO29CQUduRSxJQUFJLENBQUMsTUFBTSxHQUFHLE1BQU0sQ0FBQztnQkFDdkIsQ0FBQztnQkFFRCxRQUFRLENBQUMsVUFBc0IsRUFBRSxRQUFnQixFQUFFLFFBQWdCLEVBQUUsY0FBc0IsRUFBRSxVQUF3QztvQkFDbkksdUJBQXVCLFFBQWtCLEVBQUUsS0FBYSxFQUFFLFFBQTJEO3dCQUNuSCxNQUFNLGFBQWEsR0FBVyxRQUFRLENBQUMsS0FBSyxFQUFFLENBQUMsQ0FBQzt3QkFDaEQsR0FBRyxDQUFDLENBQUMsSUFBSSxhQUFhLEdBQVcsQ0FBQyxFQUFFLGFBQWEsR0FBRyxhQUFhLEVBQUUsRUFBRSxhQUFhLEVBQUUsQ0FBQzs0QkFDbkYsTUFBTSxPQUFPLEdBQVksSUFBSSxPQUFPLEVBQUUsQ0FBQzs0QkFDdkMsT0FBTyxDQUFDLFVBQVUsR0FBRyxRQUFRLENBQUMsS0FBSyxFQUFFLENBQUMsQ0FBQzs0QkFDdkMsT0FBTyxDQUFDLFFBQVEsQ0FBQyxDQUFDLEdBQUcsUUFBUSxDQUFDLEtBQUssRUFBRSxDQUFDLENBQUM7NEJBQ3ZDLE9BQU8sQ0FBQyxRQUFRLENBQUMsQ0FBQyxHQUFHLFFBQVEsQ0FBQyxLQUFLLEVBQUUsQ0FBQyxDQUFDOzRCQUN2QyxPQUFPLENBQUMsTUFBTSxHQUFHLFFBQVEsQ0FBQyxLQUFLLEVBQUUsQ0FBQyxDQUFDOzRCQUNuQyxRQUFRLENBQUMsT0FBTyxFQUFFLGFBQWEsQ0FBQyxDQUFDO3dCQUNuQyxDQUFDO3dCQUNELE1BQU0sQ0FBQyxLQUFLLENBQUM7b0JBQ2YsQ0FBQztvQkFDRCxNQUFNLEVBQUUsR0FBMEIsSUFBSSxDQUFDLE1BQU0sQ0FBQyxFQUFFLENBQUM7b0JBQ2pELE1BQU0sWUFBWSxHQUFXLFVBQVUsQ0FBQyxHQUFHLENBQUMsTUFBTSxHQUFHLENBQUMsQ0FBQztvQkFDdkQsTUFBTSxlQUFlLEdBQWlCLElBQUksWUFBWSxDQUFDLENBQUMsR0FBRyxZQUFZLENBQUMsQ0FBQztvQkFDekUsTUFBTSxlQUFlLEdBQWlCLElBQUksWUFBWSxDQUFDLFVBQVUsQ0FBQyxHQUFHLENBQUMsQ0FBQztvQkFDdkUsTUFBTSxlQUFlLEdBQWlCLElBQUksWUFBWSxDQUFDLENBQUMsR0FBRyxZQUFZLEdBQUcsSUFBSSxDQUFDLE1BQU0sQ0FBQywwQkFBMEIsQ0FBQyxDQUFDO29CQUNsSCxNQUFNLGVBQWUsR0FBZ0IsSUFBSSxXQUFXLENBQUMsVUFBVSxDQUFDLFNBQVMsQ0FBQyxDQUFDO29CQUMzRSxNQUFNLHNCQUFzQixHQUFhLElBQUksQ0FBQyxzQkFBc0IsQ0FBQztvQkFDckUsR0FBRyxDQUFDLENBQUMsSUFBSSxZQUFZLEdBQVcsQ0FBQyxFQUFFLFdBQVcsR0FBVyxDQUFDLEVBQUUsWUFBWSxHQUFHLFlBQVksRUFBRSxFQUFFLFlBQVksRUFBRSxDQUFDO3dCQUN4RyxNQUFNLGFBQWEsR0FBYyxFQUFFLENBQUM7d0JBQ3BDLFdBQVcsR0FBRyxhQUFhLENBQUMsVUFBVSxDQUFDLFFBQVEsRUFBRSxXQUFXLEVBQUUsQ0FBQyxPQUFnQixPQUFhLGFBQWEsQ0FBQyxJQUFJLENBQUMsT0FBTyxDQUFDLENBQUMsQ0FBQyxDQUFDLENBQUMsQ0FBQzt3QkFFNUgsYUFBYSxDQUFDLElBQUksQ0FBQyxDQUFDLENBQVUsRUFBRSxDQUFVLE9BQWUsTUFBTSxDQUFDLENBQUMsQ0FBQyxNQUFNLEdBQUcsQ0FBQyxDQUFDLE1BQU0sQ0FBQyxDQUFDLENBQUMsQ0FBQyxDQUFDO3dCQUV4RixFQUFFLENBQUMsQ0FBQyxhQUFhLENBQUMsTUFBTSxHQUFHLElBQUksQ0FBQyxNQUFNLENBQUMsMEJBQTBCLENBQUMsQ0FBQyxDQUFDOzRCQUNsRSxPQUFPLENBQUMsR0FBRyxDQUFDLHdCQUF3QixFQUFFLGNBQWMsRUFBRSxJQUFJLEVBQUUsYUFBYSxDQUFDLE1BQU0sRUFBRSxhQUFhLEVBQUUsSUFBSSxDQUFDLE1BQU0sQ0FBQywwQkFBMEIsQ0FBQyxDQUFDOzRCQUN6SSxhQUFhLENBQUMsTUFBTSxHQUFHLElBQUksQ0FBQyxNQUFNLENBQUMsMEJBQTBCLENBQUM7d0JBQ2hFLENBQUM7d0JBRUQsSUFBSSxVQUFVLEdBQVcsQ0FBQyxDQUFDO3dCQUMzQixhQUFhLENBQUMsT0FBTyxDQUFDLENBQUMsT0FBZ0IsT0FBYSxVQUFVLElBQUksT0FBTyxDQUFDLE1BQU0sQ0FBQyxDQUFDLENBQUMsQ0FBQyxDQUFDO3dCQUNyRixhQUFhLENBQUMsT0FBTyxDQUFDLENBQUMsT0FBZ0IsT0FBYSxPQUFPLENBQUMsTUFBTSxJQUFJLFVBQVUsQ0FBQyxDQUFDLENBQUMsQ0FBQyxDQUFDO3dCQUNyRixNQUFNLFFBQVEsR0FBaUIsSUFBSSxLQUFLLENBQUMsTUFBTSxFQUFFLENBQUM7d0JBQ2xELGFBQWEsQ0FBQyxPQUFPLENBQUMsQ0FBQyxPQUFnQixFQUFFLGFBQXFCOzRCQUM1RCxNQUFNLFFBQVEsR0FBVyxVQUFVLENBQUMsU0FBUyxDQUFDLE9BQU8sQ0FBQyxVQUFVLENBQUMsQ0FBQzs0QkFDbEUsTUFBTSxJQUFJLEdBQWUsVUFBVSxDQUFDLEtBQUssQ0FBQyxRQUFRLENBQUMsQ0FBQzs0QkFDcEQsTUFBTSxjQUFjLEdBQWlCLElBQUksS0FBSyxDQUFDLE1BQU0sRUFBRSxDQUFDOzRCQUN4RCxLQUFLLENBQUMsS0FBSyxDQUFDLFNBQVMsQ0FBQyxJQUFJLENBQUMsV0FBVyxFQUFFLE9BQU8sQ0FBQyxRQUFRLEVBQUUsY0FBYyxDQUFDLENBQUM7NEJBQzFFLFFBQVEsQ0FBQyxPQUFPLENBQUMsY0FBYyxDQUFDLFNBQVMsQ0FBQyxPQUFPLENBQUMsTUFBTSxDQUFDLENBQUMsQ0FBQzs0QkFFM0QsRUFBRSxDQUFDLENBQUMsc0JBQXNCLENBQUMsT0FBTyxDQUFDLE9BQU8sQ0FBQyxVQUFVLENBQUMsS0FBSyxDQUFDLENBQUMsQ0FBQyxDQUFDLENBQUM7Z0NBQzlELHNCQUFzQixDQUFDLElBQUksQ0FBQyxPQUFPLENBQUMsVUFBVSxDQUFDLENBQUM7NEJBQ2xELENBQUM7NEJBRUQsZUFBZSxDQUFDLFlBQVksR0FBRyxDQUFDLEdBQUcsSUFBSSxDQUFDLE1BQU0sQ0FBQywwQkFBMEIsR0FBRyxhQUFhLEdBQUcsQ0FBQyxHQUFHLENBQUMsQ0FBQyxHQUFHLHNCQUFzQixDQUFDLE9BQU8sQ0FBQyxPQUFPLENBQUMsVUFBVSxDQUFDLENBQUM7NEJBQ3hKLGVBQWUsQ0FBQyxZQUFZLEdBQUcsQ0FBQyxHQUFHLElBQUksQ0FBQyxNQUFNLENBQUMsMEJBQTBCLEdBQUcsYUFBYSxHQUFHLENBQUMsR0FBRyxDQUFDLENBQUMsR0FBRyxPQUFPLENBQUMsTUFBTSxDQUFDO3dCQUN0SCxDQUFDLENBQUMsQ0FBQzt3QkFDSCxlQUFlLENBQUMsWUFBWSxHQUFHLENBQUMsR0FBRyxDQUFDLENBQUMsR0FBRyxRQUFRLENBQUMsQ0FBQyxDQUFDO3dCQUNuRCxlQUFlLENBQUMsWUFBWSxHQUFHLENBQUMsR0FBRyxDQUFDLENBQUMsR0FBRyxRQUFRLENBQUMsQ0FBQyxDQUFDO3dCQUNuRCxFQUFFLENBQUMsQ0FBQyxzQkFBc0IsQ0FBQyxNQUFNLEdBQUcsSUFBSSxDQUFDLE1BQU0sQ0FBQywyQkFBMkIsQ0FBQyxDQUFDLENBQUM7NEJBQzVFLE9BQU8sQ0FBQyxHQUFHLENBQUMsbUNBQW1DLEVBQUUsY0FBYyxFQUFFLElBQUksRUFBRSxzQkFBc0IsQ0FBQyxNQUFNLEVBQUUsY0FBYyxFQUFFLElBQUksQ0FBQyxNQUFNLENBQUMsMkJBQTJCLENBQUMsQ0FBQzt3QkFDakssQ0FBQztvQkFDSCxDQUFDO29CQUNELElBQUksQ0FBQyxlQUFlLEdBQUcsWUFBWSxDQUFDLEVBQUUsRUFBRSxlQUFlLEVBQUUsQ0FBQyxFQUFFLEVBQUUsQ0FBQyxZQUFZLEVBQUUsRUFBRSxDQUFDLFdBQVcsQ0FBQyxDQUFDO29CQUM3RixJQUFJLENBQUMsZUFBZSxHQUFHLFlBQVksQ0FBQyxFQUFFLEVBQUUsZUFBZSxFQUFFLENBQUMsRUFBRSxFQUFFLENBQUMsWUFBWSxFQUFFLEVBQUUsQ0FBQyxXQUFXLENBQUMsQ0FBQztvQkFDN0YsSUFBSSxDQUFDLGVBQWUsR0FBRyxZQUFZLENBQUMsRUFBRSxFQUFFLGVBQWUsRUFBRSxDQUFDLEVBQUUsRUFBRSxDQUFDLFlBQVksRUFBRSxFQUFFLENBQUMsV0FBVyxDQUFDLENBQUM7b0JBQzdGLElBQUksQ0FBQyxlQUFlLEdBQUcsWUFBWSxDQUFDLEVBQUUsRUFBRSxlQUFlLEVBQUUsQ0FBQyxFQUFFLEVBQUUsQ0FBQyxvQkFBb0IsRUFBRSxFQUFFLENBQUMsV0FBVyxDQUFDLENBQUM7b0JBQ3JHLFVBQVUsQ0FBQyxZQUFZLENBQUMsQ0FBQyxRQUFnQixFQUFFLElBQXFCO3dCQUM5RCxNQUFNLFlBQVksR0FBc0IsSUFBSSxDQUFDLGdCQUFnQixJQUFJLElBQUksQ0FBQyxnQkFBZ0IsQ0FBQyxRQUFRLENBQUMsQ0FBQzt3QkFDakcsTUFBTSxRQUFRLEdBQWtCLFlBQVksSUFBSSxZQUFZLENBQUMsU0FBUyxDQUFDLFFBQVEsQ0FBQyxDQUFDO3dCQUNqRixNQUFNLGNBQWMsR0FBd0IsUUFBUSxJQUFJLFFBQVEsQ0FBQyxlQUFlLENBQUMsY0FBYyxDQUFDLENBQUM7d0JBQ2pHLEVBQUUsQ0FBQyxDQUFDLGNBQWMsQ0FBQyxDQUFDLENBQUM7NEJBQ25CLE1BQU0scUJBQXFCLEdBQXdCLElBQUksQ0FBQyxrQkFBa0IsQ0FBQyxRQUFRLENBQUMsR0FBRyxJQUFJLG1CQUFtQixFQUFFLENBQUM7NEJBQ2pILGNBQWMsQ0FBQyxhQUFhLENBQUMsT0FBTyxDQUFDLENBQUMsWUFBK0IsRUFBRSxrQkFBMEI7Z0NBQy9GLE1BQU0sbUJBQW1CLEdBQXNCLHFCQUFxQixDQUFDLGFBQWEsQ0FBQyxrQkFBa0IsQ0FBQyxHQUFHLElBQUksaUJBQWlCLEVBQUUsQ0FBQztnQ0FDakksTUFBTSxxQkFBcUIsR0FBaUIsSUFBSSxZQUFZLENBQUMsQ0FBQyxHQUFHLFlBQVksQ0FBQyxDQUFDO2dDQUMvRSxHQUFHLENBQUMsQ0FBQyxJQUFJLFlBQVksR0FBVyxDQUFDLEVBQUUsV0FBVyxHQUFXLENBQUMsRUFBRSxTQUFTLEdBQVcsQ0FBQyxFQUFFLFlBQVksR0FBRyxZQUFZLEVBQUUsRUFBRSxZQUFZLEVBQUUsQ0FBQztvQ0FDL0gsTUFBTSxhQUFhLEdBQWMsRUFBRSxDQUFDO29DQUNwQyxXQUFXLEdBQUcsYUFBYSxDQUFDLFVBQVUsQ0FBQyxRQUFRLEVBQUUsV0FBVyxFQUFFLENBQUMsT0FBZ0IsT0FBYSxhQUFhLENBQUMsSUFBSSxDQUFDLE9BQU8sQ0FBQyxDQUFDLENBQUMsQ0FBQyxDQUFDLENBQUM7b0NBQzVILE1BQU0sY0FBYyxHQUFpQixJQUFJLEtBQUssQ0FBQyxNQUFNLEVBQUUsQ0FBQztvQ0FDeEQsYUFBYSxDQUFDLE9BQU8sQ0FBQyxDQUFDLE9BQWdCO3dDQUNyQyxNQUFNLFFBQVEsR0FBRyxVQUFVLENBQUMsU0FBUyxDQUFDLE9BQU8sQ0FBQyxVQUFVLENBQUMsQ0FBQzt3Q0FDMUQsTUFBTSxJQUFJLEdBQUcsVUFBVSxDQUFDLEtBQUssQ0FBQyxRQUFRLENBQUMsQ0FBQzt3Q0FDeEMsTUFBTSxjQUFjLEdBQUcsSUFBSSxLQUFLLENBQUMsTUFBTSxFQUFFLENBQUM7d0NBQzFDLGNBQWMsQ0FBQyxDQUFDLEdBQUcsWUFBWSxDQUFDLFFBQVEsQ0FBQyxTQUFTLEdBQUcsWUFBWSxDQUFDLE1BQU0sQ0FBQyxJQUFJLENBQUMsQ0FBQzt3Q0FBQyxFQUFFLFNBQVMsQ0FBQzt3Q0FDNUYsY0FBYyxDQUFDLENBQUMsR0FBRyxZQUFZLENBQUMsUUFBUSxDQUFDLFNBQVMsR0FBRyxZQUFZLENBQUMsTUFBTSxDQUFDLElBQUksQ0FBQyxDQUFDO3dDQUFDLEVBQUUsU0FBUyxDQUFDO3dDQUM1RixLQUFLLENBQUMsTUFBTSxDQUFDLFNBQVMsQ0FBQyxJQUFJLENBQUMsV0FBVyxDQUFDLE1BQU0sQ0FBQyxNQUFNLEVBQUUsY0FBYyxFQUFFLGNBQWMsQ0FBQyxDQUFDO3dDQUN2RixjQUFjLENBQUMsT0FBTyxDQUFDLGNBQWMsQ0FBQyxTQUFTLENBQUMsT0FBTyxDQUFDLE1BQU0sQ0FBQyxDQUFDLENBQUM7b0NBQ25FLENBQUMsQ0FBQyxDQUFDO29DQUNILHFCQUFxQixDQUFDLFlBQVksR0FBRyxDQUFDLEdBQUcsQ0FBQyxDQUFDLEdBQUcsY0FBYyxDQUFDLENBQUMsQ0FBQztvQ0FDL0QscUJBQXFCLENBQUMsWUFBWSxHQUFHLENBQUMsR0FBRyxDQUFDLENBQUMsR0FBRyxjQUFjLENBQUMsQ0FBQyxDQUFDO2dDQUNqRSxDQUFDO2dDQUNELG1CQUFtQixDQUFDLHFCQUFxQixHQUFHLFlBQVksQ0FBQyxFQUFFLEVBQUUscUJBQXFCLEVBQUUsQ0FBQyxFQUFFLEVBQUUsQ0FBQyxZQUFZLEVBQUUsRUFBRSxDQUFDLFdBQVcsQ0FBQyxDQUFDOzRCQUMxSCxDQUFDLENBQUMsQ0FBQzt3QkFDTCxDQUFDO29CQUNILENBQUMsQ0FBQyxDQUFDO29CQUNILE1BQU0sQ0FBQyxJQUFJLENBQUM7Z0JBQ2QsQ0FBQztnQkFFRCxRQUFRLENBQUMsVUFBc0IsRUFBRSxRQUFnQixFQUFFLFFBQWdCLEVBQUUsY0FBc0IsRUFBRSxVQUF3QztvQkFDbkksTUFBTSxFQUFFLEdBQTBCLElBQUksQ0FBQyxNQUFNLENBQUMsRUFBRSxDQUFDO29CQUNqRCxFQUFFLENBQUMsWUFBWSxDQUFDLElBQUksQ0FBQyxlQUFlLENBQUMsTUFBTSxDQUFDLENBQUM7b0JBQzdDLEVBQUUsQ0FBQyxZQUFZLENBQUMsSUFBSSxDQUFDLGVBQWUsQ0FBQyxNQUFNLENBQUMsQ0FBQztvQkFDN0MsRUFBRSxDQUFDLFlBQVksQ0FBQyxJQUFJLENBQUMsZUFBZSxDQUFDLE1BQU0sQ0FBQyxDQUFDO29CQUM3QyxFQUFFLENBQUMsWUFBWSxDQUFDLElBQUksQ0FBQyxlQUFlLENBQUMsTUFBTSxDQUFDLENBQUM7b0JBQzdDLE1BQU0sQ0FBQyxJQUFJLENBQUMsSUFBSSxDQUFDLGtCQUFrQixDQUFDLENBQUMsT0FBTyxDQUFDLENBQUMsUUFBZ0I7d0JBQzVELE1BQU0scUJBQXFCLEdBQXdCLElBQUksQ0FBQyxrQkFBa0IsQ0FBQyxRQUFRLENBQUMsQ0FBQzt3QkFDckYscUJBQXFCLENBQUMsYUFBYSxDQUFDLE9BQU8sQ0FBQyxDQUFDLFlBQStCOzRCQUMxRSxFQUFFLENBQUMsWUFBWSxDQUFDLFlBQVksQ0FBQyxxQkFBcUIsQ0FBQyxNQUFNLENBQUMsQ0FBQzt3QkFDN0QsQ0FBQyxDQUFDLENBQUM7b0JBQ0wsQ0FBQyxDQUFDLENBQUM7b0JBQ0gsTUFBTSxDQUFDLElBQUksQ0FBQztnQkFDZCxDQUFDO2dCQUVELFFBQVEsQ0FBQyxVQUFzQixFQUFFLFFBQWdCLEVBQUUsUUFBZ0IsRUFBRSxJQUFnQixFQUFFLGNBQXNCLEVBQUUsVUFBd0MsRUFBRSxPQUFzQixFQUFFLElBQXVCLEVBQUUsSUFBdUI7b0JBQy9OLE1BQU0sRUFBRSxHQUEwQixJQUFJLENBQUMsTUFBTSxDQUFDLEVBQUUsQ0FBQztvQkFFakQsTUFBTSxzQkFBc0IsR0FBYSxJQUFJLENBQUMsc0JBQXNCLENBQUM7b0JBQ3JFLEdBQUcsQ0FBQyxDQUFDLElBQUksS0FBSyxHQUFXLENBQUMsRUFBRSxLQUFLLEdBQUcsc0JBQXNCLENBQUMsTUFBTSxFQUFFLEVBQUUsS0FBSyxFQUFFLENBQUM7d0JBQzNFLEVBQUUsQ0FBQyxDQUFDLEtBQUssR0FBRyxJQUFJLENBQUMsTUFBTSxDQUFDLDJCQUEyQixDQUFDLENBQUMsQ0FBQzs0QkFDcEQsTUFBTSxVQUFVLEdBQVcsc0JBQXNCLENBQUMsS0FBSyxDQUFDLENBQUM7NEJBQ3pELE1BQU0sUUFBUSxHQUFXLFVBQVUsQ0FBQyxTQUFTLENBQUMsVUFBVSxDQUFDLENBQUM7NEJBQzFELE1BQU0sSUFBSSxHQUFlLFVBQVUsQ0FBQyxLQUFLLENBQUMsUUFBUSxDQUFDLENBQUM7NEJBQ3BELE1BQU0sV0FBVyxHQUFlLElBQUksQ0FBQyxNQUFNLENBQUMsUUFBUSxDQUFDLFFBQVEsQ0FBQyxDQUFDOzRCQUMvRCxNQUFNLFNBQVMsR0FBaUIsSUFBSSxDQUFDLE1BQU0sQ0FBQywyQkFBMkIsQ0FBQyxRQUFRLENBQUMsS0FBSyxHQUFHLEVBQUUsRUFBRSxDQUFDLEtBQUssR0FBRyxDQUFDLENBQUMsR0FBRyxFQUFFLENBQUMsQ0FBQzs0QkFDL0csVUFBVSxDQUFDLFNBQVMsRUFBRSxJQUFJLENBQUMsTUFBTSxDQUFDLFNBQVMsQ0FBQyxDQUFDOzRCQUM3QyxnQkFBZ0IsQ0FBQyxTQUFTLEVBQUUsSUFBSSxDQUFDLFdBQVcsQ0FBQyxDQUFDOzRCQUM5QyxnQkFBZ0IsQ0FBQyxTQUFTLEVBQUUsV0FBVyxDQUFDLFdBQVcsQ0FBQyxDQUFDOzRCQUNyRCw0QkFBNEIsQ0FBQyxTQUFTLEVBQUUsSUFBSSxDQUFDLENBQUM7d0JBQ2hELENBQUM7b0JBQ0gsQ0FBQztvQkFDRCxNQUFNLElBQUksR0FBZ0MsVUFBVSxDQUFDLElBQUksQ0FBQyxLQUFLLENBQUMsVUFBVSxDQUFDLFFBQVEsQ0FBQyxDQUFDO29CQUNyRixNQUFNLFlBQVksR0FBa0MsSUFBSSxJQUFJLElBQUksQ0FBQyxnQkFBZ0IsSUFBSSxJQUFJLENBQUMsZ0JBQWdCLENBQUMsVUFBVSxDQUFDLFFBQVEsQ0FBQyxDQUFDO29CQUNoSSxNQUFNLFFBQVEsR0FBOEIsWUFBWSxJQUFJLFlBQVksQ0FBQyxTQUFTLENBQUMsUUFBUSxDQUFDLENBQUM7b0JBQzdGLE1BQU0sY0FBYyxHQUFvQyxRQUFRLElBQUksUUFBUSxDQUFDLGVBQWUsQ0FBQyxjQUFjLENBQUMsQ0FBQztvQkFDN0csTUFBTSxhQUFhLEdBQW9DLGNBQWMsSUFBSSxjQUFjLENBQUMsYUFBYSxDQUFDO29CQUN0RyxNQUFNLG1CQUFtQixHQUFXLEtBQUssQ0FBQyxRQUFRLENBQUMsSUFBSSxDQUFDLGFBQWEsRUFBRSxVQUFVLENBQUMsSUFBSSxDQUFDLENBQUM7b0JBQ3hGLE1BQU0sbUJBQW1CLEdBQVcsbUJBQW1CLEdBQUcsQ0FBQyxJQUFJLG1CQUFtQixDQUFDO29CQUNuRixNQUFNLGFBQWEsR0FBa0MsYUFBYSxJQUFJLGFBQWEsQ0FBQyxtQkFBbUIsQ0FBQyxDQUFDO29CQUN6RyxNQUFNLGFBQWEsR0FBa0MsYUFBYSxJQUFJLGFBQWEsQ0FBQyxtQkFBbUIsQ0FBQyxJQUFJLGFBQWEsQ0FBQztvQkFDMUgsTUFBTSxNQUFNLEdBQWlCLENBQUMsYUFBYSxDQUFDLEdBQUcsSUFBSSxDQUFDLE1BQU0sQ0FBQyxlQUFlLEdBQUcsSUFBSSxDQUFDLE1BQU0sQ0FBQyxXQUFXLENBQUM7b0JBQ3JHLEVBQUUsQ0FBQyxVQUFVLENBQUMsTUFBTSxDQUFDLE9BQU8sQ0FBQyxDQUFDO29CQUM5QixFQUFFLENBQUMsZ0JBQWdCLENBQUMsTUFBTSxDQUFDLFFBQVEsQ0FBQyxhQUFhLENBQUMsRUFBRSxLQUFLLEVBQUUsSUFBSSxDQUFDLE1BQU0sQ0FBQyxVQUFVLENBQUMsQ0FBQztvQkFDbkYsRUFBRSxDQUFDLGdCQUFnQixDQUFDLE1BQU0sQ0FBQyxRQUFRLENBQUMsb0JBQW9CLENBQUMsRUFBRSxLQUFLLEVBQUUsSUFBSSxDQUFDLE1BQU0sQ0FBQywyQkFBMkIsQ0FBQyxDQUFDO29CQUMzRyxFQUFFLENBQUMsZ0JBQWdCLENBQUMsTUFBTSxDQUFDLFFBQVEsQ0FBQyxZQUFZLENBQUMsRUFBRSxLQUFLLEVBQUUsSUFBSSxDQUFDLE1BQU0sQ0FBQyxTQUFTLENBQUMsQ0FBQztvQkFDakYsRUFBRSxDQUFDLFVBQVUsQ0FBQyxNQUFNLENBQUMsUUFBUSxDQUFDLFFBQVEsQ0FBQyxFQUFFLElBQUksQ0FBQyxNQUFNLENBQUMsS0FBSyxDQUFDLENBQUM7b0JBQzVELEVBQUUsQ0FBQyxhQUFhLENBQUMsRUFBRSxDQUFDLFFBQVEsQ0FBQyxDQUFDO29CQUM5QixFQUFFLENBQUMsV0FBVyxDQUFDLEVBQUUsQ0FBQyxVQUFVLEVBQUUsT0FBTyxDQUFDLE9BQU8sQ0FBQyxDQUFDO29CQUMvQyxFQUFFLENBQUMsU0FBUyxDQUFDLE1BQU0sQ0FBQyxRQUFRLENBQUMsVUFBVSxDQUFDLEVBQUUsQ0FBQyxDQUFDLENBQUM7b0JBQzdDLGdCQUFnQixDQUFDLEVBQUUsRUFBRSxNQUFNLEVBQUUsV0FBVyxFQUFFLElBQUksQ0FBQyxlQUFlLENBQUMsQ0FBQztvQkFDaEUsZ0JBQWdCLENBQUMsRUFBRSxFQUFFLE1BQU0sRUFBRSxXQUFXLEVBQUUsSUFBSSxDQUFDLGVBQWUsQ0FBQyxDQUFDO29CQUNoRSxnQkFBZ0IsQ0FBQyxFQUFFLEVBQUUsTUFBTSxFQUFFLGtCQUFrQixFQUFFLElBQUksQ0FBQyxlQUFlLEVBQUUsSUFBSSxDQUFDLE1BQU0sQ0FBQywwQkFBMEIsQ0FBQyxDQUFDO29CQUMvRyxFQUFFLENBQUMsQ0FBQyxhQUFhLENBQUMsQ0FBQyxDQUFDO3dCQUNsQixNQUFNLE1BQU0sR0FBVyxDQUFDLGFBQWEsQ0FBQyxJQUFJLEtBQUssYUFBYSxDQUFDLElBQUksQ0FBQyxHQUFHLENBQUMsR0FBRyxhQUFhLENBQUMsS0FBSyxDQUFDLFFBQVEsQ0FBQyxDQUFDLFVBQVUsQ0FBQyxJQUFJLEdBQUcsYUFBYSxDQUFDLElBQUksQ0FBQyxHQUFHLENBQUMsYUFBYSxDQUFDLElBQUksR0FBRyxhQUFhLENBQUMsSUFBSSxDQUFDLENBQUMsQ0FBQzt3QkFDMUwsTUFBTSxxQkFBcUIsR0FBd0IsSUFBSSxDQUFDLGtCQUFrQixDQUFDLFVBQVUsQ0FBQyxRQUFRLENBQUMsQ0FBQzt3QkFDaEcsTUFBTSxvQkFBb0IsR0FBc0IscUJBQXFCLENBQUMsYUFBYSxDQUFDLG1CQUFtQixDQUFDLENBQUM7d0JBQ3pHLE1BQU0sb0JBQW9CLEdBQXNCLHFCQUFxQixDQUFDLGFBQWEsQ0FBQyxtQkFBbUIsQ0FBQyxJQUFJLG9CQUFvQixDQUFDO3dCQUNqSSxFQUFFLENBQUMsU0FBUyxDQUFDLE1BQU0sQ0FBQyxRQUFRLENBQUMsY0FBYyxDQUFDLEVBQUUsTUFBTSxDQUFDLENBQUM7d0JBQ3RELGdCQUFnQixDQUFDLEVBQUUsRUFBRSxNQUFNLEVBQUUsaUJBQWlCLEVBQUUsb0JBQW9CLENBQUMscUJBQXFCLENBQUMsQ0FBQzt3QkFDNUYsZ0JBQWdCLENBQUMsRUFBRSxFQUFFLE1BQU0sRUFBRSxpQkFBaUIsRUFBRSxvQkFBb0IsQ0FBQyxxQkFBcUIsQ0FBQyxDQUFDO29CQUM5RixDQUFDO29CQUNELE1BQU0sZUFBZSxHQUFpQixJQUFJLENBQUMsZUFBZSxDQUFDO29CQUMzRCxFQUFFLENBQUMsVUFBVSxDQUFDLEVBQUUsQ0FBQyxvQkFBb0IsRUFBRSxlQUFlLENBQUMsTUFBTSxDQUFDLENBQUM7b0JBQy9ELEVBQUUsQ0FBQyxZQUFZLENBQUMsRUFBRSxDQUFDLFNBQVMsRUFBRSxlQUFlLENBQUMsS0FBSyxFQUFFLGVBQWUsQ0FBQyxJQUFJLEVBQUUsQ0FBQyxDQUFDLENBQUM7Z0JBQ2hGLENBQUM7YUFDRixDQUFBO1lBRUQsVUFBQTtnQkFBQTtvQkFDRSxhQUFRLEdBQWlCLElBQUksS0FBSyxDQUFDLE1BQU0sRUFBRSxDQUFDO29CQUM1QyxlQUFVLEdBQVcsQ0FBQyxDQUFDLENBQUM7b0JBQ3hCLFdBQU0sR0FBVyxDQUFDLENBQUM7Z0JBQ3JCLENBQUM7YUFBQSxDQUFBO1lBRUQsc0JBQUE7Z0JBQUE7b0JBQ0Usa0JBQWEsR0FBd0IsRUFBRSxDQUFDO2dCQUMxQyxDQUFDO2FBQUEsQ0FBQTtZQUVELG9CQUFBO2FBRUMsQ0FBQTtZQWlCRCxlQUFBO2FBUUMsQ0FBQTtZQUVELGVBQUE7YUFRQyxDQUFBO1lBRUQsZ0JBQUE7YUFFQyxDQUFBO1FBZ1ZELENBQUMifQ==

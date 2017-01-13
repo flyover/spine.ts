@@ -30,99 +30,117 @@
  * A TypeScript API for the Spine JSON animation data format.
  */
 
-export function loadBool(json: any, key: string|number, def?: boolean): boolean {
+export let EPSILON: number = 1e-6;
+
+export function loadBool(json: any, key: string | number, def: boolean = false): boolean {
   const value: any = json[key];
   switch (typeof(value)) {
     case "string": return (value === "true") ? true : false;
     case "boolean": return value;
-    default: return def || false;
+    default: return def;
   }
 }
 
-export function saveBool(json: any, key: string|number, value: boolean, def?: boolean): void {
+export function saveBool(json: any, key: string | number, value: boolean, def: boolean = false): void {
   if ((typeof(def) !== "boolean") || (value !== def)) {
     json[key] = value;
   }
 }
 
-export function loadFloat(json: any, key: string|number, def?: number): number {
+export function loadFloat(json: any, key: string | number, def: number = 0): number {
   const value: any = json[key];
   switch (typeof(value)) {
     case "string": return parseFloat(value);
     case "number": return value;
-    default: return def || 0;
+    default: return def;
   }
 }
 
-export function saveFloat(json: any, key: string|number, value: number, def?: number): void {
+export function saveFloat(json: any, key: string | number, value: number, def: number = 0): void {
   if ((typeof(def) !== "number") || (value !== def)) {
     json[key] = value;
   }
 }
 
-export function loadInt(json: any, key: string|number, def?: number): number {
+export function loadInt(json: any, key: string | number, def: number = 0): number {
   const value: any = json[key];
   switch (typeof(value)) {
     case "string": return parseInt(value, 10);
     case "number": return 0 | value;
-    default: return def || 0;
+    default: return def;
   }
 }
 
-export function saveInt(json: any, key: string|number, value: number, def?: number): void {
+export function saveInt(json: any, key: string | number, value: number, def: number = 0): void {
   if ((typeof(def) !== "number") || (value !== def)) {
     json[key] = value;
   }
 }
 
-export function loadString(json: any, key: string|number, def?: string): string {
+export function loadString(json: any, key: string | number, def: string = ""): string {
   const value: any = json[key];
   switch (typeof(value)) {
     case "string": return value;
-    default: return def || "";
+    default: return def;
   }
 }
 
-export function saveString(json: any, key: string|number, value: string, def?: string): void {
+export function saveString(json: any, key: string | number, value: string, def: string = ""): void {
   if ((typeof(def) !== "string") || (value !== def)) {
     json[key] = value;
   }
 }
 
 export class Color {
-  public r: number = 1.0;
-  public g: number = 1.0;
-  public b: number = 1.0;
-  public a: number = 1.0;
-  public copy(other: Color): Color {
-    this.r = other.r;
-    this.g = other.g;
-    this.b = other.b;
-    this.a = other.a;
-    return this;
+  public r: number = 1;
+  public g: number = 1;
+  public b: number = 1;
+  public a: number = 1;
+
+  public static copy(color: Color, out: Color = new Color()): Color {
+    out.r = color.r;
+    out.g = color.g;
+    out.b = color.b;
+    out.a = color.a;
+    return out;
   }
+
+  public copy(other: Color): Color {
+    return Color.copy(other, this);
+  }
+
   public load(json: any): Color {
-    const color: Color = this;
     let rgba: number = 0xffffffff;
     switch (typeof(json)) {
       case "string": rgba = parseInt(json, 16); break;
       case "number": rgba = 0 | json; break;
-      default: rgba = 0xffffffff; break;
     }
-    color.r = ((rgba >> 24) & 0xff) / 255;
-    color.g = ((rgba >> 16) & 0xff) / 255;
-    color.b = ((rgba >> 8) & 0xff) / 255;
-    color.a = (rgba & 0xff) / 255;
-    return color;
+    this.r = ((rgba >> 24) & 0xff) / 255;
+    this.g = ((rgba >> 16) & 0xff) / 255;
+    this.b = ((rgba >> 8) & 0xff) / 255;
+    this.a = (rgba & 0xff) / 255;
+    return this;
   }
+
   public toString(): string {
-    const color: Color = this;
-    return "rgba(" + (color.r * 255).toFixed(0) + "," + (color.g * 255).toFixed(0) + "," + (color.b * 255).toFixed(0) + "," + color.a + ")";
+    return "rgba(" + (this.r * 255).toFixed(0) + "," + (this.g * 255).toFixed(0) + "," + (this.b * 255).toFixed(0) + "," + this.a + ")";
+  }
+
+  public static tween(a: Color, b: Color, pct: number, out: Color = new Color()): Color {
+    out.r = tween(a.r, b.r, pct);
+    out.g = tween(a.g, b.g, pct);
+    out.b = tween(a.b, b.b, pct);
+    out.a = tween(a.a, b.a, pct);
+    return out;
+  }
+
+  public tween(other: Color, pct: number, out: Color = new Color()): Color {
+    return Color.tween(this, other, pct, out);
   }
 }
 
 // from: http://github.com/arian/cubic-bezier
-function BezierCurve(x1: number, y1: number, x2: number, y2: number, epsilon: number = 1e-6): (t: number) => number {
+export function BezierCurve(x1: number, y1: number, x2: number, y2: number, epsilon: number = EPSILON): (t: number) => number {
 
   /*
   function orig_curveX(t) {
@@ -158,7 +176,7 @@ function BezierCurve(x1: number, y1: number, x2: number, y2: number, epsilon: nu
     const v: number = 1 - t;
     const v2: number = v * v;
     return 3 * x1 * v2 * t + 3 * x2 * v * t2 + t3;
-  };
+  }
 
   function curveY(t: number): number {
     const t2: number = t * t;
@@ -166,15 +184,15 @@ function BezierCurve(x1: number, y1: number, x2: number, y2: number, epsilon: nu
     const v: number = 1 - t;
     const v2: number = v * v;
     return 3 * y1 * v2 * t + 3 * y2 * v * t2 + t3;
-  };
+  }
 
   function derivativeCurveX(t: number): number {
     const t2: number = t * t;
     const t3: number = t2 * t;
     return 3 * x1 * t - 3 * (2 * x1 - x2) * t2 + (3 * x1 - 3 * x2 + 1) * t3;
-  };
+  }
 
-  return function (percent: number): number {
+  return function(percent: number): number {
     const x: number = percent; let t0: number, t1: number, t2: number, x2: number, d2: number, i: number;
 
     // First try a few iterations of Newton"s method -- normally very fast.
@@ -234,7 +252,7 @@ export function StepBezierCurve(cx1: number, cy1: number, cx2: number, cy2: numb
     const dddfx: number = curves_4;
     const dddfy: number = curves_5;
 
-    let x: number = dfx, y = dfy;
+    let x: number = dfx, y: number = dfy;
     let i: number = bezierSegments - 2;
     while (true) {
       if (x >= percent) {
@@ -257,6 +275,7 @@ export function StepBezierCurve(cx1: number, cy1: number, cx2: number, cy2: numb
 
 export class Curve {
   public evaluate: (t: number) => number = function (t: number): number { return t; };
+
   public load(json: any): Curve {
     // default: linear
     this.evaluate = function (t: number): number { return t; };
@@ -306,83 +325,396 @@ export function tweenAngle(a: number, b: number, t: number): number {
   return wrapAngleRadians(a + (wrapAngleRadians(b - a) * t));
 }
 
-class Angle {
-  public rad: number = 0.0;
-  constructor(rad?: number) {
-    this.rad = rad || 0.0;
+export class Angle {
+  public _rad: number = 0;
+  public _cos: number = 1;
+  public _sin: number = 0;
+
+  constructor (rad: number = 0) {
+    this.rad = rad;
   }
-  get deg(): number { return this.rad * 180.0 / Math.PI; }
-  set deg(value: number){ this.rad = value * Math.PI / 180.0; }
-  get cos(): number { return Math.cos(this.rad); }
-  get sin(): number { return Math.sin(this.rad); }
-  selfIdentity(): Angle { this.rad = 0.0; return this; }
-  copy(other: Angle): Angle { this.rad = other.rad; return this; }
+
+  public get rad(): number { return this._rad; }
+  public set rad(value: number) {
+    if (this._rad !== value) {
+      this._rad = value;
+      this._cos = Math.cos(value);
+      this._sin = Math.sin(value);
+    }
+  }
+  public get deg(): number { return this.rad * 180 / Math.PI; }
+  public set deg(value: number) { this.rad = value * Math.PI / 180; }
+  public get cos(): number { return this._cos; }
+  public get sin(): number { return this._sin; }
+
+  public static copy(angle: Angle, out: Angle = new Angle()) {
+    out._rad = angle._rad;
+    out._cos = angle._cos;
+    out._sin = angle._sin;
+    return out;
+  }
+
+  public copy(other: Angle): Angle {
+    return Angle.copy(other, this);
+  }
+
+  public static equal(a: Angle, b: Angle, epsilon: number = EPSILON): boolean {
+    if (Math.abs(wrapAngleRadians(a.rad - b.rad)) > epsilon) { return false; }
+    return true;
+  }
+
+  public equal(other: Angle, epsilon: number = EPSILON): boolean {
+    return Angle.equal(this, other, epsilon);
+  }
+
+  public static tween(a: Angle, b: Angle, pct: number, out: Angle = new Angle()): Angle {
+    out.rad = tweenAngle(a.rad, b.rad, pct);
+    return out;
+  }
+
+  public tween(other: Angle, pct: number, out: Angle = new Angle()): Angle {
+    return Angle.tween(this, other, pct, out);
+  }
 }
 
 export class Vector {
-  public x: number = 0.0;
-  public y: number = 0.0;
-  constructor(x: number = 0.0, y: number = 0.0) {
+  public x: number = 0;
+  public y: number = 0;
+
+  constructor(x: number = 0, y: number = 0) {
     this.x = x;
     this.y = y;
   }
-  public copy(other: Vector): Vector {
-    this.x = other.x;
-    this.y = other.y;
-    return this;
+
+  public static copy(v: Vector, out: Vector = new Vector()): Vector {
+    out.x = v.x;
+    out.y = v.y;
+    return out;
   }
-  public static equal(a: Vector, b: Vector, epsilon: number = 1e-6): boolean {
+
+  public copy(other: Vector): Vector {
+    return Vector.copy(other, this);
+  }
+
+  public static equal(a: Vector, b: Vector, epsilon: number = EPSILON): boolean {
     if (Math.abs(a.x - b.x) > epsilon) { return false; }
     if (Math.abs(a.y - b.y) > epsilon) { return false; }
     return true;
   }
+
+  public equal(other: Vector, epsilon: number = EPSILON): boolean {
+    return Vector.equal(this, other, epsilon);
+  }
+
+  public static negate(v: Vector, out: Vector = new Vector()): Vector {
+    out.x = -v.x;
+    out.y = -v.y;
+    return out;
+  }
+
   public static add(a: Vector, b: Vector, out: Vector = new Vector()): Vector {
     out.x = a.x + b.x;
     out.y = a.y + b.y;
     return out;
   }
+
   public add(other: Vector, out: Vector = new Vector()): Vector {
     return Vector.add(this, other, out);
   }
+
   public selfAdd(other: Vector): Vector {
-    // return Vector.add(this, other, this);
+    ///return Vector.add(this, other, this);
     this.x += other.x;
     this.y += other.y;
     return this;
   }
-  public static tween(a: Vector, b: Vector, pct: number, out: Vector = new Vector()) {
+
+  public static subtract(a: Vector, b: Vector, out: Vector = new Vector()): Vector {
+    out.x = a.x - b.x;
+    out.y = a.y - b.y;
+    return out;
+  }
+
+  public subtract(other: Vector, out: Vector = new Vector()): Vector {
+    return Vector.subtract(this, other, out);
+  }
+
+  public selfSubtract(other: Vector): Vector {
+    ///return Vector.subtract(this, other, this);
+    this.x -= other.x;
+    this.y -= other.y;
+    return this;
+  }
+
+  public static scale(v: Vector, x: number, y: number = x, out: Vector = new Vector()): Vector {
+    out.x = v.x * x;
+    out.y = v.y * y;
+    return out;
+  }
+
+  public scale(x: number, y: number = x, out: Vector = new Vector()): Vector {
+    return Vector.scale(this, x, y, out);
+  }
+
+  public selfScale(x: number, y: number = x): Vector {
+    return Vector.scale(this, x, y, this);
+  }
+
+  public static tween(a: Vector, b: Vector, pct: number, out: Vector = new Vector()): Vector {
     out.x = tween(a.x, b.x, pct);
     out.y = tween(a.y, b.y, pct);
     return out;
   }
+
   public tween(other: Vector, pct: number, out: Vector = new Vector()): Vector {
     return Vector.tween(this, other, pct, out);
   }
-  public selfTween(other: Vector, pct: number): Vector {
-    return Vector.tween(this, other, pct, this);
+}
+
+export class Matrix {
+  public a: number = 1; public b: number = 0;
+  public c: number = 0; public d: number = 1;
+
+  public static copy(m: Matrix, out: Matrix = new Matrix()): Matrix {
+    out.a = m.a;
+    out.b = m.b;
+    out.c = m.c;
+    out.d = m.d;
+    return out;
+  }
+
+  public copy(other: Matrix): Matrix {
+    return Matrix.copy(other, this);
+  }
+
+  public static equal(a: Matrix, b: Matrix, epsilon: number = EPSILON): boolean {
+    if (Math.abs(a.a - b.a) > epsilon) { return false; }
+    if (Math.abs(a.b - b.b) > epsilon) { return false; }
+    if (Math.abs(a.c - b.c) > epsilon) { return false; }
+    if (Math.abs(a.d - b.d) > epsilon) { return false; }
+    return true;
+  }
+
+  public equal(other: Matrix, epsilon: number = EPSILON): boolean {
+    return Matrix.equal(this, other, epsilon);
+  }
+
+  public static determinant(m: Matrix): number {
+    return m.a * m.d - m.b * m.c;
+  }
+
+  public static identity(out: Matrix = new Matrix()): Matrix {
+    out.a = 1; out.b = 0;
+    out.c = 0; out.d = 1;
+    return out;
+  }
+
+  public static multiply(a: Matrix, b: Matrix, out: Matrix = new Matrix()): Matrix {
+    const a_a: number = a.a, a_b: number = a.b, a_c: number = a.c, a_d: number = a.d;
+    const b_a: number = b.a, b_b: number = b.b, b_c: number = b.c, b_d: number = b.d;
+    out.a = a_a * b_a + a_b * b_c;
+    out.b = a_a * b_b + a_b * b_d;
+    out.c = a_c * b_a + a_d * b_c;
+    out.d = a_c * b_b + a_d * b_d;
+    return out;
+  }
+
+  public static invert(m: Matrix, out: Matrix = new Matrix()): Matrix {
+    const a: number = m.a, b: number = m.b, c: number = m.c, d: number = m.d;
+    const inv_det: number = 1 / (a * d - b * c);
+    out.a = inv_det * d;
+    out.b = -inv_det * b;
+    out.c = -inv_det * c;
+    out.d = inv_det * a;
+    return out;
+  }
+
+  public static combine(a: Matrix, b: Matrix, out: Matrix): Matrix {
+    return Matrix.multiply(a, b, out);
+  }
+
+  public static extract(ab: Matrix, a: Matrix, out: Matrix): Matrix {
+    return Matrix.multiply(Matrix.invert(a, out), ab, out);
+  }
+
+  public static rotate(m: Matrix, cos: number, sin: number, out: Matrix = new Matrix()): Matrix {
+    const a: number = m.a, b: number = m.b, c: number = m.c, d: number = m.d;
+    out.a = a * cos + b * sin; out.b = b * cos - a * sin;
+    out.c = c * cos + d * sin; out.d = d * cos - c * sin;
+    return out;
+  }
+
+  public static scale(m: Matrix, x: number, y: number, out: Matrix = new Matrix()): Matrix {
+    out.a = m.a * x; out.b = m.b * y;
+    out.c = m.c * x; out.d = m.d * y;
+    return out;
+  }
+
+  public static transform(m: Matrix, v: Vector, out: Vector = new Vector()): Vector {
+    const x: number = v.x, y: number = v.y;
+    out.x = m.a * x + m.b * y;
+    out.y = m.c * x + m.d * y;
+    return out;
+  }
+
+  public static untransform(m: Matrix, v: Vector, out: Vector = new Vector()): Vector {
+    const a: number = m.a, b: number = m.b, c: number = m.c, d: number = m.d;
+    const x: number = v.x, y: number = v.y;
+    const inv_det: number = 1 / (a * d - b * c);
+    out.x = inv_det * (d * x - b * y);
+    out.y = inv_det * (a * y - c * x);
+    return out;
+  }
+
+  public static tween(a: Matrix, b: Matrix, pct: number, out: Matrix = new Matrix()): Matrix {
+    out.a = tween(a.a, b.a, pct);
+    out.b = tween(a.b, b.b, pct);
+    out.c = tween(a.c, b.c, pct);
+    out.d = tween(a.d, b.d, pct);
+    return out;
+  }
+
+  public tween(other: Matrix, pct: number, out: Matrix = new Matrix()): Matrix {
+    return Matrix.tween(this, other, pct, out);
+  }
+}
+
+export class Affine {
+  public vector: Vector = new Vector();
+  public matrix: Matrix = new Matrix();
+
+  public static copy(affine: Affine, out: Affine = new Affine()): Affine {
+    Vector.copy(affine.vector, out.vector);
+    Matrix.copy(affine.matrix, out.matrix);
+    return out;
+  }
+
+  public copy(other: Affine): Affine {
+    return Affine.copy(other, this);
+  }
+
+  public static equal(a: Affine, b: Affine, epsilon: number = EPSILON): boolean {
+    if (!a.vector.equal(b.vector, epsilon)) { return false; }
+    if (!a.matrix.equal(b.matrix, epsilon)) { return false; }
+    return true;
+  }
+
+  public equal(other: Affine, epsilon: number = EPSILON): boolean {
+    return Affine.equal(this, other, epsilon);
+  }
+
+  public static identity(out: Affine = new Affine()): Affine {
+    Matrix.identity(out.matrix);
+    out.vector.x = 0;
+    out.vector.y = 0;
+    return out;
+  }
+
+  public static invert(affine: Affine, out: Affine = new Affine()): Affine {
+    Matrix.invert(affine.matrix, out.matrix);
+    Vector.negate(affine.vector, out.vector);
+    Matrix.transform(out.matrix, out.vector, out.vector);
+    return out;
+  }
+
+  public static combine(a: Affine, b: Affine, out: Affine = new Affine()): Affine {
+    Affine.transform(a, b.vector, out.vector);
+    Matrix.combine(a.matrix, b.matrix, out.matrix);
+    return out;
+  }
+
+  public static extract(ab: Affine, a: Affine, out: Affine = new Affine()): Affine {
+    Matrix.extract(ab.matrix, a.matrix, out.matrix);
+    Affine.untransform(a, ab.vector, out.vector);
+    return out;
+  }
+
+  public static transform(affine: Affine, v: Vector, out: Vector = new Vector()): Vector {
+    Matrix.transform(affine.matrix, v, out);
+    Vector.add(affine.vector, out, out);
+    return out;
+  }
+
+  public static untransform(affine: Affine, v: Vector, out: Vector = new Vector()): Vector {
+    Vector.subtract(v, affine.vector, out);
+    Matrix.untransform(affine.matrix, out, out);
+    return out;
   }
 }
 
 export class Position extends Vector {
   constructor() {
-    super(0.0, 0.0);
+    super(0, 0);
   }
 }
 
 export class Rotation extends Angle {
+  public matrix: Matrix = new Matrix();
+
   constructor() {
-    super(0.0);
+    super(0);
+  }
+
+  public updateMatrix(m: Matrix = this.matrix): Matrix {
+    m.a = this.cos; m.b = -this.sin;
+    m.c = this.sin; m.d = this.cos;
+    return m;
   }
 }
 
-export class Scale extends Vector {
+export function signum(n: number): number { return (n < 0) ? (-1) : (n > 0) ? (1) : (n); }
+
+export class Scale extends Matrix {
   constructor() {
-    super(1.0, 1.0);
+    super();
   }
-  public selfIdentity(): Scale {
-    this.x = 1.0;
-    this.y = 1.0;
-    return this;
+
+  public get x(): number { return (this.c === 0) ? (this.a) : (signum(this.a) * Math.sqrt(this.a * this.a + this.c * this.c)); }
+  public set x(value: number) { this.a = value; this.c = 0; }
+
+  public get y(): number { return (this.b === 0) ? (this.d) : (signum(this.d) * Math.sqrt(this.b * this.b + this.d * this.d)); }
+  public set y(value: number) { this.b = 0; this.d = value; }
+}
+
+export class Shear {
+  public x: Angle = new Angle();
+  public y: Angle = new Angle();
+  public matrix: Matrix = new Matrix();
+
+  public updateMatrix(m: Matrix = this.matrix): Matrix {
+    m.a = this.x.cos; m.b = -this.y.sin;
+    m.c = this.x.sin; m.d = this.y.cos;
+    return m;
+  }
+
+  public static copy(shear: Shear, out: Shear = new Shear()): Shear {
+    out.x.copy(shear.x);
+    out.y.copy(shear.y);
+    return out;
+  }
+
+  public copy(other: Shear): Shear {
+    return Shear.copy(other, this);
+  }
+
+  public static equal(a: Shear, b: Shear, epsilon: number = EPSILON): boolean {
+    if (!a.x.equal(b.x, epsilon)) { return false; }
+    if (!a.y.equal(b.y, epsilon)) { return false; }
+    return true;
+  }
+
+  public equal(other: Shear, epsilon: number = EPSILON): boolean {
+    return Shear.equal(this, other, epsilon);
+  }
+
+  public static tween(a: Shear, b: Shear, pct: number, out: Shear = new Shear()): Shear {
+    Angle.tween(a.x, b.x, pct, out.x);
+    Angle.tween(a.y, b.y, pct, out.y);
+    return out;
+  }
+
+  public tween(other: Shear, pct: number, out: Shear = new Shear()): Shear {
+    return Shear.tween(this, other, pct, out);
   }
 }
 
@@ -390,210 +722,229 @@ export class Space {
   public position: Position = new Position();
   public rotation: Rotation = new Rotation();
   public scale: Scale = new Scale();
-  public copy(other: Space): Space {
-    this.position.copy(other.position);
-    this.rotation.copy(other.rotation);
-    this.scale.copy(other.scale);
-    return this;
+  public shear: Shear = new Shear();
+  public affine: Affine = new Affine();
+
+  public updateAffine(affine: Affine = this.affine): Affine {
+    Vector.copy(this.position, affine.vector);
+    Matrix.copy(this.rotation.updateMatrix(), affine.matrix);
+    Matrix.multiply(affine.matrix, this.shear.updateMatrix(), affine.matrix);
+    Matrix.multiply(affine.matrix, this.scale, affine.matrix);
+    return affine;
   }
+
+  public static copy(space: Space, out: Space = new Space()): Space {
+    out.position.copy(space.position);
+    out.rotation.copy(space.rotation);
+    out.scale.copy(space.scale);
+    out.shear.copy(space.shear);
+    return out;
+  }
+
+  public copy(other: Space): Space {
+    return Space.copy(other, this);
+  }
+
   public load(json: any): Space {
     this.position.x = loadFloat(json, "x", 0);
     this.position.y = loadFloat(json, "y", 0);
     this.rotation.deg = loadFloat(json, "rotation", 0);
     this.scale.x = loadFloat(json, "scaleX", 1);
     this.scale.y = loadFloat(json, "scaleY", 1);
+    this.shear.x.deg = loadFloat(json, "shearX", 0);
+    this.shear.y.deg = loadFloat(json, "shearY", 0);
     return this;
   }
-  public static equal(a: Space, b: Space, epsilon: number = 1e-6): boolean {
-    if (Math.abs(a.position.x - b.position.x) > epsilon) { return false; }
-    if (Math.abs(a.position.y - b.position.y) > epsilon) { return false; }
-    if (Math.abs(a.rotation.rad - b.rotation.rad) > epsilon) { return false; }
-    if (Math.abs(a.scale.x - b.scale.x) > epsilon) { return false; }
-    if (Math.abs(a.scale.y - b.scale.y) > epsilon) { return false; }
+
+  public static equal(a: Space, b: Space, epsilon: number = EPSILON): boolean {
+    if (!a.position.equal(b.position, epsilon)) { return false; }
+    if (!a.rotation.equal(b.rotation, epsilon)) { return false; }
+    if (!a.scale.equal(b.scale, epsilon)) { return false; }
+    if (!a.shear.equal(b.shear, epsilon)) { return false; }
     return true;
   }
+
+  public equal(other: Space, epsilon: number = EPSILON): boolean {
+    return Space.equal(this, other, epsilon);
+  }
+
   public static identity(out: Space = new Space()): Space {
     out.position.x = 0;
     out.position.y = 0;
     out.rotation.rad = 0;
     out.scale.x = 1;
     out.scale.y = 1;
+    out.shear.x.rad = 0;
+    out.shear.y.rad = 0;
     return out;
   }
+
   public static translate(space: Space, x: number, y: number): Space {
-    x *= space.scale.x;
-    y *= space.scale.y;
-    const rad: number = space.rotation.rad;
-    const c: number = Math.cos(rad);
-    const s: number = Math.sin(rad);
-    const tx: number = c * x - s * y;
-    const ty: number = s * x + c * y;
-    space.position.x += tx;
-    space.position.y += ty;
+    Space.transform(space, new Vector(x, y), space.position);
     return space;
   }
+
   public static rotate(space: Space, rad: number): Space {
-    space.rotation.rad += rad;
-    space.rotation.rad = wrapAngleRadians(space.rotation.rad);
+    if (Matrix.determinant(space.scale) < 0.0) {
+      space.rotation.rad = wrapAngleRadians(space.rotation.rad - rad);
+    } else {
+      space.rotation.rad = wrapAngleRadians(space.rotation.rad + rad);
+    }
     return space;
   }
+
   public static scale(space: Space, x: number, y: number): Space {
-    space.scale.x *= x;
-    space.scale.y *= y;
+    Matrix.scale(space.scale, x, y, space.scale);
     return space;
   }
+
   public static invert(space: Space, out: Space = new Space()): Space {
-    // invert
-    // out.sca = space.sca.inv();
-    // out.rot = space.rot.inv();
-    // out.pos = space.pos.neg().rotate(space.rot.inv()).mul(space.sca.inv());
-    const inv_scale_x: number = 1 / space.scale.x;
-    const inv_scale_y: number = 1 / space.scale.y;
-    const inv_rotation: number = -space.rotation.rad;
-    const inv_x: number = -space.position.x;
-    const inv_y: number = -space.position.y;
-    out.scale.x = inv_scale_x;
-    out.scale.y = inv_scale_y;
-    out.rotation.rad = inv_rotation;
-    const x: number = inv_x;
-    const y: number = inv_y;
-    const rad: number = inv_rotation;
-    const c: number = Math.cos(rad);
-    const s: number = Math.sin(rad);
-    const tx: number = c * x - s * y;
-    const ty: number = s * x + c * y;
-    out.position.x = tx * inv_scale_x;
-    out.position.y = ty * inv_scale_y;
+    if (space === out) { space = Space.copy(space, new Space()); }
+    Affine.invert(space.updateAffine(), out.affine);
+    out.position.copy(out.affine.vector);
+    out.shear.x.rad = -space.shear.x.rad;
+    out.shear.y.rad = -space.shear.y.rad;
+    const x_axis_rad = Math.atan2(out.affine.matrix.c, out.affine.matrix.a);
+    out.rotation.rad = wrapAngleRadians(x_axis_rad - out.shear.x.rad);
+    Matrix.combine(out.rotation.updateMatrix(), out.shear.updateMatrix(), out.scale);
+    Matrix.extract(out.affine.matrix, out.scale, out.scale);
     return out;
   }
-  public static combine(a: Space, b: Space, out: Space = new Space()): Space {
-    // combine
-    // out.pos = b.pos.mul(a.sca).rotate(a.rot).add(a.pos);
-    // out.rot = b.rot.mul(a.rot);
-    // out.sca = b.sca.mul(a.sca);
-    const x: number = b.position.x * a.scale.x;
-    const y: number = b.position.y * a.scale.y;
-    const rad: number = a.rotation.rad;
-    const c: number = Math.cos(rad);
-    const s: number = Math.sin(rad);
-    const tx: number = c * x - s * y;
-    const ty: number = s * x + c * y;
-    out.position.x = tx + a.position.x;
-    out.position.y = ty + a.position.y;
-    out.rotation.rad = wrapAngleRadians(b.rotation.rad + a.rotation.rad);
-    out.scale.x = b.scale.x * a.scale.x;
-    out.scale.y = b.scale.y * a.scale.y;
+
+  public static combine(a: Space, b: Space, out: Space= new Space()): Space {
+    if (a === out) { a = Space.copy(a, new Space()); }
+    if (b === out) { b = Space.copy(b, new Space()); }
+    Affine.combine(a.updateAffine(), b.updateAffine(), out.affine);
+    out.position.copy(out.affine.vector);
+    out.shear.x.rad = wrapAngleRadians(a.shear.x.rad + b.shear.x.rad);
+    out.shear.y.rad = wrapAngleRadians(a.shear.y.rad + b.shear.y.rad);
+    const x_axis_rad = Math.atan2(out.affine.matrix.c, out.affine.matrix.a);
+    out.rotation.rad = wrapAngleRadians(x_axis_rad - out.shear.x.rad);
+    Matrix.combine(out.rotation.updateMatrix(), out.shear.updateMatrix(), out.scale);
+    Matrix.extract(out.affine.matrix, out.scale, out.scale);
     return out;
   }
-  public static extract(ab: Space, a: Space, out: Space = new Space()): Space {
-    // extract
-    // out.sca = ab.sca.mul(a.sca.inv());
-    // out.rot = ab.rot.mul(a.rot.inv());
-    // out.pos = ab.pos.add(a.pos.neg()).rotate(a.rot.inv()).mul(a.sca.inv());
-    out.scale.x = ab.scale.x / a.scale.x;
-    out.scale.y = ab.scale.y / a.scale.y;
-    out.rotation.rad = wrapAngleRadians(ab.rotation.rad - a.rotation.rad);
-    const x: number = ab.position.x - a.position.x;
-    const y: number = ab.position.y - a.position.y;
-    const rad: number = -a.rotation.rad;
-    const c: number = Math.cos(rad);
-    const s: number = Math.sin(rad);
-    const tx: number = c * x - s * y;
-    const ty: number = s * x + c * y;
-    out.position.x = tx / a.scale.x;
-    out.position.y = ty / a.scale.y;
+
+  public static extract(ab: Space, a: Space, out: Space= new Space()): Space {
+    if (ab === out) { ab = Space.copy(ab, new Space()); }
+    if (a === out) { a = Space.copy(a, new Space()); }
+    Affine.extract(ab.updateAffine(), a.updateAffine(), out.affine);
+    out.position.copy(out.affine.vector);
+    out.shear.x.rad = wrapAngleRadians(ab.shear.x.rad - a.shear.x.rad);
+    out.shear.y.rad = wrapAngleRadians(ab.shear.y.rad - a.shear.y.rad);
+    const x_axis_rad = Math.atan2(out.affine.matrix.c, out.affine.matrix.a);
+    out.rotation.rad = wrapAngleRadians(x_axis_rad - out.shear.x.rad);
+    Matrix.combine(out.rotation.updateMatrix(), out.shear.updateMatrix(), out.scale);
+    Matrix.extract(out.affine.matrix, out.scale, out.scale);
     return out;
   }
+
   public static transform(space: Space, v: Vector, out: Vector = new Vector()): Vector {
-    const x: number = v.x * space.scale.x;
-    const y: number = v.y * space.scale.y;
-    const rad: number = space.rotation.rad;
-    const c: number = Math.cos(rad);
-    const s: number = Math.sin(rad);
-    const tx: number = c * x - s * y;
-    const ty: number = s * x + c * y;
-    out.x = tx + space.position.x;
-    out.y = ty + space.position.y;
-    return out;
+    return Affine.transform(space.updateAffine(), v, out);
   }
+
   public static untransform(space: Space, v: Vector, out: Vector = new Vector()): Vector {
-    const x: number = v.x - space.position.x;
-    const y: number = v.y - space.position.y;
-    const rad: number = -space.rotation.rad;
-    const c: number = Math.cos(rad);
-    const s: number = Math.sin(rad);
-    const tx: number = c * x - s * y;
-    const ty: number = s * x + c * y;
-    out.x = tx / space.scale.x;
-    out.y = ty / space.scale.y;
-    return out;
+    return Affine.untransform(space.updateAffine(), v, out);
   }
-  public static tween(a: Space, b: Space, t: number, out: Space = new Space()): Space {
-    out.position.x = tween(a.position.x, b.position.x, t);
-    out.position.y = tween(a.position.y, b.position.y, t);
-    out.rotation.rad = tweenAngle(a.rotation.rad, b.rotation.rad, t);
-    out.scale.x = tween(a.scale.x, b.scale.x, t);
-    out.scale.y = tween(a.scale.y, b.scale.y, t);
+
+  public static tween(a: Space, b: Space, tween: number, out: Space= new Space()): Space {
+    a.position.tween(b.position, tween, out.position);
+    a.rotation.tween(b.rotation, tween, out.rotation);
+    a.scale.tween(b.scale, tween, out.scale);
+    a.shear.tween(b.shear, tween, out.shear);
     return out;
   }
 }
 
 export class Bone {
+  public color: Color = new Color();
   public parent_key: string = "";
   public length: number = 0;
   public local_space: Space = new Space();
   public world_space: Space = new Space();
   public inherit_rotation: boolean = true;
   public inherit_scale: boolean = true;
+  public transform: string = "normal";
+
   public copy(other: Bone): Bone {
+    this.color.copy(other.color);
     this.parent_key = other.parent_key;
     this.length = other.length;
     this.local_space.copy(other.local_space);
     this.world_space.copy(other.world_space);
     this.inherit_rotation = other.inherit_rotation;
     this.inherit_scale = other.inherit_scale;
+    this.transform = other.transform;
     return this;
   }
+
   public load(json: any): Bone {
+    this.color.load(json.color || 0x9b9b9bff);
     this.parent_key = loadString(json, "parent", "");
     this.length = loadFloat(json, "length", 0);
     this.local_space.load(json);
-    this.world_space.copy(this.local_space);
     this.inherit_rotation = loadBool(json, "inheritRotation", true);
     this.inherit_scale = loadBool(json, "inheritScale", true);
+    this.transform = loadString(json, "transform", "normal");
+    if (json.transform) {
+      switch (json.transform) {
+        case "normal": this.inherit_rotation = this.inherit_scale = true; break;
+        case "onlyTranslation": this.inherit_rotation = this.inherit_scale = false; break;
+        case "noRotationOrReflection": this.inherit_rotation = false; break;
+        case "noScale": this.inherit_scale = false; break;
+        case "noScaleOrReflection": this.inherit_scale = false; break;
+        default: console.log("TODO: Space.transform", json.transform); break;
+      }
+    }
     return this;
   }
-  public static flatten(bone: Bone, bones: { [ key: string ]: Bone }): Bone {
-    const parent_bone: Bone = bones[bone.parent_key];
-    if (parent_bone) {
-      Bone.flatten(parent_bone, bones);
-      // Space.combine(parent_bone.world_space, bone.local_space, bone.world_space);
-      const a: Space = parent_bone.world_space;
-      const b: Space = bone.local_space;
-      const out: Space = bone.world_space;
-      const x: number = b.position.x * a.scale.x;
-      const y: number = b.position.y * a.scale.y;
-      const rad: number = a.rotation.rad;
-      const c: number = Math.cos(rad);
-      const s: number = Math.sin(rad);
-      const tx: number = c * x - s * y;
-      const ty: number = s * x + c * y;
-      out.position.x = tx + a.position.x;
-      out.position.y = ty + a.position.y;
-      if (bone.inherit_rotation) {
-        out.rotation.rad = wrapAngleRadians(b.rotation.rad + a.rotation.rad);
-      } else {
-        out.rotation.rad = b.rotation.rad;
-      }
-      if (bone.inherit_scale) {
-        out.scale.x = b.scale.x * a.scale.x;
-        out.scale.y = b.scale.y * a.scale.y;
-      } else {
-        out.scale.x = b.scale.x;
-        out.scale.y = b.scale.y;
-      }
+
+  public static flatten(bone: Bone, bones: {[key: string]: Bone}): Bone {
+    const bls: Space = bone.local_space;
+    const bws: Space = bone.world_space;
+    let parent: Bone = bones[bone.parent_key];
+    if (!parent) {
+      bws.copy(bls);
+      bws.updateAffine();
     } else {
-      bone.world_space.copy(bone.local_space);
+      Bone.flatten(parent, bones);
+      const pws: Space = parent.world_space;
+      // compute bone world space position vector
+      Space.transform(pws, bls.position, bws.position);
+      // compute bone world affine rotation/scale matrix based in inheritance
+      if (bone.inherit_rotation && bone.inherit_scale) {
+        Matrix.copy(pws.affine.matrix, bws.affine.matrix);
+      } else if (bone.inherit_rotation) {
+        Matrix.identity(bws.affine.matrix);
+        while (parent && parent.inherit_rotation) {
+          const pls: Space = parent.local_space;
+          Matrix.rotate(bws.affine.matrix, pls.rotation.cos, pls.rotation.sin, bws.affine.matrix);
+          parent = bones[parent.parent_key];
+        }
+      } else if (bone.inherit_scale) {
+        Matrix.identity(bws.affine.matrix);
+        while (parent && parent.inherit_scale) {
+          const pls: Space = parent.local_space;
+          let cos: number = pls.rotation.cos, sin: number = pls.rotation.sin;
+          Matrix.rotate(bws.affine.matrix, cos, sin, bws.affine.matrix);
+          Matrix.multiply(bws.affine.matrix, pls.scale, bws.affine.matrix);
+          if (pls.scale.x >= 0) { sin = -sin; }
+          Matrix.rotate(bws.affine.matrix, cos, sin, bws.affine.matrix);
+          parent = bones[parent.parent_key];
+        }
+      } else {
+        Matrix.identity(bws.affine.matrix);
+      }
+      // apply bone local space
+      bls.updateAffine();
+      Matrix.multiply(bws.affine.matrix, bls.affine.matrix, bws.affine.matrix);
+      // update bone world space
+      bws.shear.x.rad = wrapAngleRadians(pws.shear.x.rad + bls.shear.x.rad);
+      bws.shear.y.rad = wrapAngleRadians(pws.shear.y.rad + bls.shear.y.rad);
+      const x_axis_rad: number = Math.atan2(bws.affine.matrix.c, bws.affine.matrix.a);
+      bws.rotation.rad = wrapAngleRadians(x_axis_rad - bws.shear.x.rad);
+      Matrix.combine(bws.rotation.updateMatrix(), bws.shear.updateMatrix(), bws.scale);
+      Matrix.extract(bws.affine.matrix, bws.scale, bws.scale);
     }
     return bone;
   }
@@ -601,16 +952,84 @@ export class Bone {
 
 export class Ikc {
   public name: string = "";
+  public order: number = 0;
   public bone_keys: string[] = [];
   public target_key: string = "";
   public mix: number = 1;
   public bend_positive: boolean = true;
+
   public load(json: any): Ikc {
     this.name = loadString(json, "name", "");
+    this.order = loadInt(json, "order", 0);
     this.bone_keys = json["bones"] || [];
     this.target_key = loadString(json, "target", "");
     this.mix = loadFloat(json, "mix", 1);
     this.bend_positive = loadBool(json, "bendPositive", true);
+    return this;
+  }
+}
+
+export class Xfc {
+  public name: string = "";
+  public order: number = 0;
+  public bone_key: string = "";
+  public target_key: string = "";
+  public position_mix: number = 1;
+  public position: Position = new Position();
+  public rotation_mix: number = 1;
+  public rotation: Rotation = new Rotation();
+  public scale_mix: number = 1;
+  public scale: Scale = new Scale();
+  public shear_mix: number = 1;
+  public shear: Shear = new Shear();
+
+  public load(json: any): Xfc {
+    this.name = loadString(json, "name", "");
+    this.order = loadInt(json, "order", 0);
+    this.bone_key = loadString(json, "bone", "");
+    this.target_key = loadString(json, "target", "");
+    this.position_mix = loadFloat(json, "translateMix", 1);
+    this.position.x = loadFloat(json, "x", 0);
+    this.position.y = loadFloat(json, "y", 0);
+    this.rotation_mix = loadFloat(json, "rotateMix", 1);
+    this.rotation.deg = loadFloat(json, "rotation", 0);
+    this.scale_mix = loadFloat(json, "scaleMix", 1);
+    this.scale.x = loadFloat(json, "scaleX", 1);
+    this.scale.y = loadFloat(json, "scaleY", 1);
+    this.shear_mix = loadFloat(json, "shearMix", 1);
+    this.shear.x.deg = loadFloat(json, "shearX", 0);
+    this.shear.y.deg = loadFloat(json, "shearY", 0);
+    return this;
+  }
+}
+
+export class Ptc {
+  public name: string = "";
+  public order: number = 0;
+  public bone_keys: string[] = [];
+  public target_key: string = "";
+  public spacing_mode: string = "length"; // "length", "fixed", "percent"
+  public spacing: number = 0;
+  public position_mode: string = "percent"; // "fixed", "percent"
+  public position_mix: number = 1;
+  public position: number = 0;
+  public rotation_mode: string = "tangent"; // "tangent", "chain", "chainScale"
+  public rotation_mix: number = 1;
+  public rotation: Rotation = new Rotation();
+
+  public load(json: any): Ptc {
+    this.name = loadString(json, "name", "");
+    this.order = loadInt(json, "order", 0);
+    this.bone_keys = json["bones"] || [];
+    this.target_key = loadString(json, "target", "");
+    this.spacing_mode = loadString(json, "spacingMode", "length");
+    this.spacing = loadFloat(json, "spacing", 0);
+    this.position_mode = loadString(json, "positionMode", "percent");
+    this.position_mix = loadFloat(json, "translateMix", 1);
+    this.position = loadFloat(json, "position", 0);
+    this.rotation_mode = loadString(json, "rotateMode", "tangent");
+    this.rotation_mix = loadFloat(json, "rotateMix", 1);
+    this.rotation.deg = loadFloat(json, "rotation", 0);
     return this;
   }
 }
@@ -620,6 +1039,7 @@ export class Slot {
   public color: Color = new Color();
   public attachment_key: string = "";
   public blend: string = "normal";
+
   public copy(other: Slot): Slot {
     this.bone_key = other.bone_key;
     this.color.copy(other.color);
@@ -627,6 +1047,7 @@ export class Slot {
     this.blend = other.blend;
     return this;
   }
+
   public load(json: any): Slot {
     this.bone_key = loadString(json, "bone", "");
     this.color.load(json.color);
@@ -637,15 +1058,19 @@ export class Slot {
 }
 
 export class Attachment {
-  public type: string = "region";
+  public type: string = "";
   public name: string = "";
   public path: string = "";
+
   constructor(type: string) {
     this.type = type;
   }
+
   public load(json: any): Attachment {
-    const type = loadString(json, "type", "region");
-    if (type !== this.type) { throw new Error(); }
+    const attachment_type = loadString(json, "type", "region");
+    if (attachment_type !== this.type) {
+      throw new Error();
+    }
     this.name = loadString(json, "name", "");
     this.path = loadString(json, "path", "");
     return this;
@@ -653,14 +1078,18 @@ export class Attachment {
 }
 
 export class RegionAttachment extends Attachment {
+  public color: Color = new Color();
   public local_space: Space = new Space();
   public width: number = 0;
   public height: number = 0;
+
   constructor() {
     super("region");
   }
+
   public load(json: any): RegionAttachment {
     super.load(json);
+    this.color.load(json.color);
     this.local_space.load(json);
     this.width = loadFloat(json, "width", 0);
     this.height = loadFloat(json, "height", 0);
@@ -669,12 +1098,15 @@ export class RegionAttachment extends Attachment {
 }
 
 export class BoundingBoxAttachment extends Attachment {
-  public vertices: number[] = []; /// The x/y pairs that make up the vertices of the polygon.
+  public vertices: number[] = [];
+
   constructor() {
     super("boundingbox");
   }
+
   public load(json: any): BoundingBoxAttachment {
     super.load(json);
+    /// The x/y pairs that make up the vertices of the polygon.
     this.vertices = json.vertices || [];
     return this;
   }
@@ -687,9 +1119,11 @@ export class MeshAttachment extends Attachment {
   public vertices: number[] = [];
   public uvs: number[] = [];
   public hull: number = 0;
+
   constructor() {
     super("mesh");
   }
+
   public load(json: any): MeshAttachment {
     super.load(json);
     this.color.load(json.color);
@@ -702,17 +1136,43 @@ export class MeshAttachment extends Attachment {
   }
 }
 
-export class SkinnedMeshAttachment extends Attachment {
+export class LinkedMeshAttachment extends Attachment {
+  public color: Color = new Color();
+  public skin_key: string = "";
+  public parent_key: string = "";
+  public inherit_deform: boolean = true;
+  public width: number = 0;
+  public height: number = 0;
+
+  constructor() {
+    super("linkedmesh");
+  }
+
+  public load(json: any): LinkedMeshAttachment {
+    super.load(json);
+    this.color.load(json.color);
+    this.skin_key = loadString(json, "skin", "");
+    this.parent_key = loadString(json, "parent", "");
+    this.inherit_deform = loadBool(json, "deform", true);
+    this.width = loadInt(json, "width", 0);
+    this.height = loadInt(json, "height", 0);
+    return this;
+  }
+}
+
+export class WeightedMeshAttachment extends Attachment {
   public color: Color = new Color();
   public triangles: number[] = [];
   public edges: number[] = [];
   public vertices: number[] = [];
   public uvs: number[] = [];
   public hull: number = 0;
+
   constructor() {
-    super("skinnedmesh");
+    super("weightedmesh");
   }
-  public load(json: any): SkinnedMeshAttachment {
+
+  public load(json: any): any {
     super.load(json);
     this.color.load(json.color);
     this.triangles = json.triangles || [];
@@ -724,26 +1184,93 @@ export class SkinnedMeshAttachment extends Attachment {
   }
 }
 
+export class WeightedLinkedMeshAttachment extends Attachment {
+  public skin_key: string = "";
+  public parent_key: string = "";
+  public inherit_deform: boolean = true;
+  public width: number = 0;
+  public height: number = 0;
+
+  constructor() {
+    super("weightedlinkedmesh");
+  }
+
+  public load(json: any): WeightedLinkedMeshAttachment {
+    super.load(json);
+    this.skin_key = loadString(json, "skin", "");
+    this.parent_key = loadString(json, "parent", "");
+    this.inherit_deform = loadBool(json, "ffd", true);
+    this.width = loadInt(json, "width", 0);
+    this.height = loadInt(json, "height", 0);
+    return this;
+  }
+}
+
+export class PathAttachment extends Attachment {
+  public color: Color = new Color();
+  public closed: boolean = false;
+  public accurate: boolean = true;
+  public lengths: number[] = [];
+  public vertex_count: number = 0;
+  public vertices: number[] = [];
+
+  constructor() {
+    super("path");
+  }
+
+  public load(json: any): PathAttachment {
+    super.load(json);
+    this.color.load(json.color);
+    this.closed = loadBool(json, "closed", false);
+    this.accurate = loadBool(json, "constantSpeed", true);
+    this.lengths = json.lengths || [];
+    this.vertex_count = loadInt(json, "vertexCount", 0);
+    this.vertices = json.vertices || [];
+    return this;
+  }
+}
+
 export class SkinSlot {
-  public attachments: { [ key: string ]: Attachment } = {};
+  public attachments: {[key: string]: Attachment} = {};
   public attachment_keys: string[] = [];
+
   public load(json: any): SkinSlot {
-    this.attachment_keys = Object.keys(json);
+    this.attachment_keys = Object.keys(json || {});
     this.attachment_keys.forEach((attachment_key: string): void => {
       const json_attachment = json[attachment_key];
       switch (json_attachment.type) {
-        case "region":
-        default:
+        default: case "region":
           this.attachments[attachment_key] = new RegionAttachment().load(json_attachment);
           break;
         case "boundingbox":
           this.attachments[attachment_key] = new BoundingBoxAttachment().load(json_attachment);
           break;
         case "mesh":
-          this.attachments[attachment_key] = new MeshAttachment().load(json_attachment);
+          if (json_attachment.vertices.length === json_attachment.uvs.length) {
+            this.attachments[attachment_key] = new MeshAttachment().load(json_attachment);
+          } else {
+            json_attachment.type = "weightedmesh";
+            this.attachments[attachment_key] = new WeightedMeshAttachment().load(json_attachment);
+          }
+          break;
+        case "linkedmesh":
+          if (json_attachment.vertices.length === json_attachment.uvs.length) {
+            this.attachments[attachment_key] = new LinkedMeshAttachment().load(json_attachment);
+          } else {
+            json_attachment.type = "weightedlinkedmesh";
+            this.attachments[attachment_key] = new WeightedLinkedMeshAttachment().load(json_attachment);
+          }
           break;
         case "skinnedmesh":
-          this.attachments[attachment_key] = new SkinnedMeshAttachment().load(json_attachment);
+          json_attachment.type = "weightedmesh";
+        case "weightedmesh":
+          this.attachments[attachment_key] = new WeightedMeshAttachment().load(json_attachment);
+          break;
+        case "weightedlinkedmesh":
+          this.attachments[attachment_key] = new WeightedLinkedMeshAttachment().load(json_attachment);
+          break;
+        case "path":
+          this.attachments[attachment_key] = new PathAttachment().load(json_attachment);
           break;
       }
     });
@@ -753,22 +1280,24 @@ export class SkinSlot {
 
 export class Skin {
   public name: string = "";
-  public slots: { [key: string]: SkinSlot } = {};
+  public slots: {[key: string]: SkinSlot} = {};
   public slot_keys: string[] = [];
-  public load(json): Skin {
+
+  public load(json: any): Skin {
     this.name = loadString(json, "name", "");
-    this.slot_keys = Object.keys(json);
+    this.slot_keys = Object.keys(json || {});
     this.slot_keys.forEach((slot_key: string): void => {
       this.slots[slot_key] = new SkinSlot().load(json[slot_key]);
     });
     return this;
   }
+
   public iterateAttachments(callback: (slot_key: string, skin_slot: SkinSlot, attachment_key: string, attachment: Attachment) => void): void {
     this.slot_keys.forEach((slot_key: string): void => {
-      const skin_slot: SkinSlot = this.slots[slot_key];
+      const skin_slot = this.slots[slot_key];
       skin_slot.attachment_keys.forEach((attachment_key: string): void => {
-        const attachment: Attachment = skin_slot.attachments[attachment_key];
-        callback(slot_key, skin_slot, attachment.path || attachment.name || attachment_key, attachment);
+        const attachment = skin_slot.attachments[attachment_key];
+        callback(slot_key, skin_slot, attachment.name || attachment_key, attachment);
       });
     });
   }
@@ -779,6 +1308,7 @@ export class Event {
   public int_value: number = 0;
   public float_value: number = 0;
   public string_value: string = "";
+
   public copy(other: Event): Event {
     this.name = other.name;
     this.int_value = other.int_value;
@@ -786,6 +1316,7 @@ export class Event {
     this.string_value = other.string_value;
     return this;
   }
+
   public load(json: any): Event {
     this.name = loadString(json, "name", "");
     if (typeof(json["int"]) === "number") {
@@ -797,40 +1328,62 @@ export class Event {
     if (typeof(json["string"]) === "string") {
       this.string_value = loadString(json, "string", "");
     }
+
     return this;
   }
 }
 
 export class Keyframe {
   public time: number = 0;
+
   public drop(): Keyframe {
     this.time = 0;
     return this;
   }
+
   public load(json: any): Keyframe {
     this.time = 1000 * loadFloat(json, "time", 0); // convert to ms
     return this;
   }
+
   public save(json: any): Keyframe {
     saveFloat(json, "time", this.time / 1000, 0); // convert to s
     return this;
   }
+
   public static find(array: Keyframe[], time: number): number {
-    if (!array) { return -1; }
-    if (array.length <= 0) { return -1; }
-    if (time < array[0].time) { return -1; }
+    if (!array) {
+      return -1;
+    }
+    if (array.length <= 0) {
+      return -1;
+    }
+    if (time < array[0].time) {
+      return -1;
+    }
     const last = array.length - 1;
-    if (time >= array[last].time) { return last; }
+    if (time >= array[last].time) {
+      return last;
+    }
     let lo = 0;
     let hi = last;
-    if (hi === 0) { return 0; }
+    if (hi === 0) {
+      return 0;
+    }
     let current = hi >> 1;
     while (true) {
-      if (array[current + 1].time <= time) { lo = current + 1; } else { hi = current; }
-      if (lo === hi) { return lo; }
+      if (array[current + 1].time <= time) {
+        lo = current + 1;
+      } else {
+        hi = current;
+      }
+      if (lo === hi) {
+        return lo;
+      }
       current = (lo + hi) >> 1;
     }
   }
+
   public static compare(a: Keyframe, b: Keyframe): number {
     return a.time - b.time;
   }
@@ -838,6 +1391,11 @@ export class Keyframe {
 
 export class BoneKeyframe extends Keyframe {
   public curve: Curve = new Curve();
+
+  constructor() {
+    super();
+  }
+
   public load(json: any): BoneKeyframe {
     super.load(json);
     this.curve.load(json.curve);
@@ -845,9 +1403,14 @@ export class BoneKeyframe extends Keyframe {
   }
 }
 
-export class TranslateKeyframe extends BoneKeyframe {
+export class PositionKeyframe extends BoneKeyframe {
   public position: Position = new Position();
-  public load(json: any): TranslateKeyframe {
+
+  constructor() {
+    super();
+  }
+
+  public load(json: any): PositionKeyframe {
     super.load(json);
     this.position.x = loadFloat(json, "x", 0);
     this.position.y = loadFloat(json, "y", 0);
@@ -855,9 +1418,14 @@ export class TranslateKeyframe extends BoneKeyframe {
   }
 }
 
-export class RotateKeyframe extends BoneKeyframe {
+export class RotationKeyframe extends BoneKeyframe {
   public rotation: Rotation = new Rotation();
-  public load(json: any): RotateKeyframe {
+
+  constructor() {
+    super();
+  }
+
+  public load(json: any): RotationKeyframe {
     super.load(json);
     this.rotation.deg = loadFloat(json, "angle", 0);
     return this;
@@ -866,6 +1434,11 @@ export class RotateKeyframe extends BoneKeyframe {
 
 export class ScaleKeyframe extends BoneKeyframe {
   public scale: Scale = new Scale();
+
+  constructor() {
+    super();
+  }
+
   public load(json: any): ScaleKeyframe {
     super.load(json);
     this.scale.x = loadFloat(json, "x", 1);
@@ -874,74 +1447,123 @@ export class ScaleKeyframe extends BoneKeyframe {
   }
 }
 
-export class AnimBone {
+export class ShearKeyframe extends BoneKeyframe {
+  public shear: Shear = new Shear();
+
+  constructor() {
+    super();
+  }
+
+  public load(json: any): ShearKeyframe {
+    super.load(json);
+    this.shear.x.deg = loadFloat(json, "x", 0);
+    this.shear.y.deg = loadFloat(json, "y", 0);
+    return this;
+  }
+}
+
+export class BoneTimeline {
   public min_time: number = 0;
   public max_time: number = 0;
-  public translate_keyframes: TranslateKeyframe[];
-  public rotate_keyframes: RotateKeyframe[];
+  public position_keyframes: PositionKeyframe[];
+  public rotation_keyframes: RotationKeyframe[];
   public scale_keyframes: ScaleKeyframe[];
-  public load(json: any): AnimBone {
+  public shear_keyframes: ShearKeyframe[];
+
+  public load(json: any): BoneTimeline {
     this.min_time = 0;
     this.max_time = 0;
-    this.translate_keyframes = null;
-    this.rotate_keyframes = null;
-    this.scale_keyframes = null;
-    Object.keys(json).forEach((key: string): void => {
+    delete this.position_keyframes;
+    delete this.rotation_keyframes;
+    delete this.scale_keyframes;
+    delete this.shear_keyframes;
+
+    Object.keys(json || {}).forEach((key: string): void => {
       switch (key) {
         case "translate":
-          this.translate_keyframes = [];
+          this.position_keyframes = [];
           json.translate.forEach((translate_json: any): void => {
-            const translate_keyframe: TranslateKeyframe = new TranslateKeyframe().load(translate_json);
-            this.translate_keyframes.push(translate_keyframe);
-            this.min_time = Math.min(this.min_time, translate_keyframe.time);
-            this.max_time = Math.max(this.max_time, translate_keyframe.time);
+            const position_keyframe = new PositionKeyframe().load(translate_json);
+            this.position_keyframes.push(position_keyframe);
+            this.min_time = Math.min(this.min_time, position_keyframe.time);
+            this.max_time = Math.max(this.max_time, position_keyframe.time);
           });
-          this.translate_keyframes.sort(Keyframe.compare);
+          this.position_keyframes.sort(Keyframe.compare);
           break;
         case "rotate":
-          this.rotate_keyframes = [];
+          this.rotation_keyframes = [];
           json.rotate.forEach((rotate_json: any): void => {
-            const rotate_keyframe: RotateKeyframe = new RotateKeyframe().load(rotate_json);
-            this.rotate_keyframes.push(rotate_keyframe);
-            this.min_time = Math.min(this.min_time, rotate_keyframe.time);
-            this.max_time = Math.max(this.max_time, rotate_keyframe.time);
+            const rotation_keyframe = new RotationKeyframe().load(rotate_json);
+            this.rotation_keyframes.push(rotation_keyframe);
+            this.min_time = Math.min(this.min_time, rotation_keyframe.time);
+            this.max_time = Math.max(this.max_time, rotation_keyframe.time);
           });
-          this.rotate_keyframes.sort(Keyframe.compare);
+          this.rotation_keyframes.sort(Keyframe.compare);
           break;
         case "scale":
           this.scale_keyframes = [];
           json.scale.forEach((scale_json: any): void => {
-            const scale_keyframe: ScaleKeyframe = new ScaleKeyframe().load(scale_json);
+            const scale_keyframe = new ScaleKeyframe().load(scale_json);
             this.scale_keyframes.push(scale_keyframe);
             this.min_time = Math.min(this.min_time, scale_keyframe.time);
             this.max_time = Math.max(this.max_time, scale_keyframe.time);
           });
           this.scale_keyframes.sort(Keyframe.compare);
           break;
+        case "shear":
+          this.shear_keyframes = [];
+          json.shear.forEach((shear_json: any): void => {
+            const shear_keyframe = new ShearKeyframe().load(shear_json);
+            this.shear_keyframes.push(shear_keyframe);
+            this.min_time = Math.min(this.min_time, shear_keyframe.time);
+            this.max_time = Math.max(this.max_time, shear_keyframe.time);
+          });
+          this.shear_keyframes.sort(Keyframe.compare);
+          break;
         default:
-          console.log("TODO: AnimBone::load", key);
+          console.log("TODO: BoneTimeline::load", key);
           break;
       }
     });
+
     return this;
   }
 }
 
-export class SlotKeyframe extends Keyframe {}
+export class SlotKeyframe extends Keyframe {
+  constructor() {
+    super();
+  }
+
+  public load(json: any): SlotKeyframe {
+    super.load(json);
+    return this;
+  }
+}
 
 export class ColorKeyframe extends SlotKeyframe {
-  public color: Color = new Color();
   public curve: Curve = new Curve();
+  public color: Color = new Color();
+
+  constructor() {
+    super();
+  }
+
   public load(json: any): ColorKeyframe {
     super.load(json);
-    this.color.load(json.color);
     this.curve.load(json.curve);
+    this.color.load(json.color);
     return this;
   }
 }
 
 export class AttachmentKeyframe extends SlotKeyframe {
   public name: string = "";
+
+  constructor() {
+    super();
+  }
+
   public load(json: any): AttachmentKeyframe {
     super.load(json);
     this.name = loadString(json, "name", "");
@@ -949,22 +1571,24 @@ export class AttachmentKeyframe extends SlotKeyframe {
   }
 }
 
-export class AnimSlot {
+export class SlotTimeline {
   public min_time: number = 0;
   public max_time: number = 0;
   public color_keyframes: ColorKeyframe[];
   public attachment_keyframes: AttachmentKeyframe[];
-  public load(json: any): AnimSlot {
+
+  public load(json: any): SlotTimeline {
     this.min_time = 0;
     this.max_time = 0;
-    this.color_keyframes = null;
-    this.attachment_keyframes = null;
-    Object.keys(json).forEach((key: string): void => {
+    delete this.color_keyframes;
+    delete this.attachment_keyframes;
+
+    Object.keys(json || {}).forEach((key: string): void => {
       switch (key) {
         case "color":
           this.color_keyframes = [];
           json[key].forEach((color: any): void => {
-            const color_keyframe: ColorKeyframe = new ColorKeyframe().load(color);
+            const color_keyframe = new ColorKeyframe().load(color);
             this.min_time = Math.min(this.min_time, color_keyframe.time);
             this.max_time = Math.max(this.max_time, color_keyframe.time);
             this.color_keyframes.push(color_keyframe);
@@ -974,7 +1598,7 @@ export class AnimSlot {
         case "attachment":
           this.attachment_keyframes = [];
           json[key].forEach((attachment: any): void => {
-            const attachment_keyframe: AttachmentKeyframe = new AttachmentKeyframe().load(attachment);
+            const attachment_keyframe = new AttachmentKeyframe().load(attachment);
             this.min_time = Math.min(this.min_time, attachment_keyframe.time);
             this.max_time = Math.max(this.max_time, attachment_keyframe.time);
             this.attachment_keyframes.push(attachment_keyframe);
@@ -982,10 +1606,11 @@ export class AnimSlot {
           this.attachment_keyframes.sort(Keyframe.compare);
           break;
         default:
-          console.log("TODO: AnimSlot::load", key);
+          console.log("TODO: SlotTimeline::load", key);
           break;
       }
     });
+
     return this;
   }
 }
@@ -995,6 +1620,11 @@ export class EventKeyframe extends Keyframe {
   public int_value: number = 0;
   public float_value: number = 0;
   public string_value: string = "";
+
+  constructor() {
+    super();
+  }
+
   public load(json: any): EventKeyframe {
     super.load(json);
     this.name = loadString(json, "name", "");
@@ -1014,6 +1644,7 @@ export class EventKeyframe extends Keyframe {
 export class SlotOffset {
   public slot_key: string = "";
   public offset: number = 0;
+
   public load(json: any): SlotOffset {
     this.slot_key = loadString(json, "slot", "");
     this.offset = loadInt(json, "offset", 0);
@@ -1023,10 +1654,16 @@ export class SlotOffset {
 
 export class OrderKeyframe extends Keyframe {
   public slot_offsets: SlotOffset[] = [];
+
+  constructor() {
+    super();
+  }
+
   public load(json: any): OrderKeyframe {
     super.load(json);
     this.slot_offsets = [];
-    Object.keys(json).forEach((key: string): void => {
+
+    Object.keys(json || {}).forEach((key: string): void => {
       switch (key) {
         case "offsets":
           json[key].forEach((offset: any): void => {
@@ -1035,6 +1672,7 @@ export class OrderKeyframe extends Keyframe {
           break;
       }
     });
+
     return this;
   }
 }
@@ -1043,41 +1681,211 @@ export class IkcKeyframe extends Keyframe {
   public curve: Curve = new Curve();
   public mix: number = 1;
   public bend_positive: boolean = true;
+
+  constructor() {
+    super();
+  }
+
   public load(json: any): IkcKeyframe {
     super.load(json);
-    this.curve.load(json);
+    this.curve.load(json.curve);
     this.mix = loadFloat(json, "mix", 1);
     this.bend_positive = loadBool(json, "bendPositive", true);
     return this;
   }
 }
 
-export class AnimIkc {
+export class IkcTimeline {
   public min_time: number = 0;
   public max_time: number = 0;
   public ikc_keyframes: IkcKeyframe[];
-  public load(json: any): AnimIkc {
+
+  public load(json: any): IkcTimeline {
     this.min_time = 0;
     this.max_time = 0;
     this.ikc_keyframes = [];
+
     json.forEach((ikc: any): void => {
-      const ikc_keyframe: IkcKeyframe = new IkcKeyframe().load(ikc);
+      const ikc_keyframe = new IkcKeyframe().load(ikc);
       this.min_time = Math.min(this.min_time, ikc_keyframe.time);
       this.max_time = Math.max(this.max_time, ikc_keyframe.time);
       this.ikc_keyframes.push(ikc_keyframe);
     });
     this.ikc_keyframes.sort(Keyframe.compare);
+
+    return this;
+  }
+}
+
+export class XfcKeyframe extends Keyframe {
+  public curve: Curve = new Curve();
+  public position_mix: number = 1;
+  public rotation_mix: number = 1;
+  public scale_mix: number = 1;
+  public shear_mix: number = 1;
+
+  constructor() {
+    super();
+  }
+
+  public load(json: any): XfcKeyframe {
+    super.load(json);
+    this.curve.load(json.curve);
+    this.position_mix = loadFloat(json, "translateMix", 1);
+    this.rotation_mix = loadFloat(json, "rotateMix", 1);
+    this.scale_mix = loadFloat(json, "scaleMix", 1);
+    this.shear_mix = loadFloat(json, "shearMix", 1);
+    return this;
+  }
+}
+
+export class XfcTimeline {
+  public min_time: number = 0;
+  public max_time: number = 0;
+  public xfc_keyframes: XfcKeyframe[];
+
+  public load(json: any): XfcTimeline {
+    this.min_time = 0;
+    this.max_time = 0;
+    this.xfc_keyframes = [];
+
+    json.forEach((xfc: any): void => {
+      const xfc_keyframe = new XfcKeyframe().load(xfc);
+      this.min_time = Math.min(this.min_time, xfc_keyframe.time);
+      this.max_time = Math.max(this.max_time, xfc_keyframe.time);
+      this.xfc_keyframes.push(xfc_keyframe);
+    });
+    this.xfc_keyframes.sort(Keyframe.compare);
+
+    return this;
+  }
+}
+
+export class PtcKeyframe extends Keyframe {
+  public curve: Curve = new Curve();
+
+  constructor() {
+    super();
+  }
+
+  public load(json: any): PtcKeyframe {
+    super.load(json);
+    this.curve.load(json.curve);
+    return this;
+  }
+}
+
+export class PtcSpacingKeyframe extends PtcKeyframe {
+  public spacing: number = 0;
+
+  constructor() {
+    super();
+  }
+
+  public load(json: any): PtcSpacingKeyframe {
+    super.load(json);
+    this.spacing = loadFloat(json, "spacing", 0);
+    return this;
+  }
+}
+
+export class PtcPositionKeyframe extends PtcKeyframe {
+  public position_mix: number = 1;
+  public position: number = 0;
+
+  constructor() {
+    super();
+  }
+
+  public load(json: any): PtcPositionKeyframe {
+    super.load(json);
+    this.position_mix = loadFloat(json, "positionMix", 1);
+    this.position = loadFloat(json, "position", 0);
+    return this;
+  }
+}
+
+export class PtcRotationKeyframe extends PtcKeyframe {
+  public rotation_mix = 1;
+  public rotation = 0;
+
+  constructor() {
+    super();
+  }
+
+  public load(json: any): PtcRotationKeyframe {
+    super.load(json);
+    this.rotation_mix = loadFloat(json, "rotationMix", 1);
+    this.rotation = loadFloat(json, "rotation", 0);
+    return this;
+  }
+}
+
+export class PtcTimeline {
+  public min_time = 0;
+  public max_time = 0;
+  public ptc_spacing_keyframes: PtcSpacingKeyframe[];
+  public ptc_position_keyframes: PtcPositionKeyframe[];
+  public ptc_rotation_keyframes: PtcRotationKeyframe[];
+
+  public load(json: any): PtcTimeline {
+    this.min_time = 0;
+    this.max_time = 0;
+    this.ptc_spacing_keyframes = [];
+    this.ptc_position_keyframes = [];
+    this.ptc_rotation_keyframes = [];
+
+    Object.keys(json || {}).forEach((key: string): void => {
+      switch (key) {
+        case "spacing":
+          json[key].forEach((spacing_json: any): void => {
+            const ptc_spacing_keyframe = new PtcSpacingKeyframe().load(spacing_json);
+            this.min_time = Math.min(this.min_time, ptc_spacing_keyframe.time);
+            this.max_time = Math.max(this.max_time, ptc_spacing_keyframe.time);
+            this.ptc_spacing_keyframes.push(ptc_spacing_keyframe);
+          });
+          this.ptc_spacing_keyframes.sort(Keyframe.compare);
+          break;
+        case "position":
+          json[key].forEach((position_json: any): void => {
+            const ptc_position_keyframe = new PtcPositionKeyframe().load(position_json);
+            this.min_time = Math.min(this.min_time, ptc_position_keyframe.time);
+            this.max_time = Math.max(this.max_time, ptc_position_keyframe.time);
+            this.ptc_position_keyframes.push(ptc_position_keyframe);
+          });
+          this.ptc_position_keyframes.sort(Keyframe.compare);
+          break;
+        case "rotation":
+          json[key].forEach((rotation_json: any): void => {
+            const ptc_rotation_keyframe = new PtcRotationKeyframe().load(rotation_json);
+            this.min_time = Math.min(this.min_time, ptc_rotation_keyframe.time);
+            this.max_time = Math.max(this.max_time, ptc_rotation_keyframe.time);
+            this.ptc_rotation_keyframes.push(ptc_rotation_keyframe);
+          });
+          this.ptc_rotation_keyframes.sort(Keyframe.compare);
+          break;
+        default:
+          console.log("TODO: PtcTimeline::load", key);
+          break;
+      }
+    });
+
     return this;
   }
 }
 
 export class FfdKeyframe extends Keyframe {
-  public curve: Curve = new Curve();
-  public offset: number = 0;
-  public vertices: number[];
+  public curve = new Curve();
+  public offset = 0;
+  public vertices: number[] = [];
+
+  constructor() {
+    super();
+  }
+
   public load(json: any): FfdKeyframe {
     super.load(json);
-    this.curve.load(json);
+    this.curve.load(json.curve);
     this.offset = loadInt(json, "offset", 0);
     this.vertices = json.vertices || [];
     return this;
@@ -1088,12 +1896,13 @@ export class FfdAttachment {
   public min_time: number = 0;
   public max_time: number = 0;
   public ffd_keyframes: FfdKeyframe[];
+
   public load(json: any): FfdAttachment {
     this.min_time = 0;
     this.max_time = 0;
     this.ffd_keyframes = [];
     json.forEach((ffd_keyframe_json: any): void => {
-      const ffd_keyframe: FfdKeyframe = new FfdKeyframe().load(ffd_keyframe_json);
+      const ffd_keyframe = new FfdKeyframe().load(ffd_keyframe_json);
       this.min_time = Math.min(this.min_time, ffd_keyframe.time);
       this.max_time = Math.max(this.max_time, ffd_keyframe.time);
       this.ffd_keyframes.push(ffd_keyframe);
@@ -1104,48 +1913,52 @@ export class FfdAttachment {
 }
 
 export class FfdSlot {
-  public ffd_attachments: { [ key: string ]: FfdAttachment };
-  public ffd_attachment_keys: string[];
+  public ffd_attachments: {[key: string]: FfdAttachment} = {};
+  public ffd_attachment_keys: string[] = [];
+
   public load(json: any): FfdSlot {
     this.ffd_attachments = {};
-    this.ffd_attachment_keys = Object.keys(json);
+    this.ffd_attachment_keys = Object.keys(json || {});
     this.ffd_attachment_keys.forEach((key: string): void => {
       this.ffd_attachments[key] = new FfdAttachment().load(json[key]);
     });
     return this;
   }
+
   public iterateAttachments(callback: (ffd_attachment_key: string, ffd_attachment: FfdAttachment) => void): void {
     this.ffd_attachment_keys.forEach((ffd_attachment_key: string): void => {
-      const ffd_attachment: FfdAttachment = this.ffd_attachments[ffd_attachment_key];
+      const ffd_attachment = this.ffd_attachments[ffd_attachment_key];
       callback(ffd_attachment_key, ffd_attachment);
     });
   }
 }
 
-export class AnimFfd {
+export class FfdTimeline {
   public min_time: number = 0;
   public max_time: number = 0;
-  public ffd_slots: { [ key: string ]: FfdSlot };
-  public ffd_slot_keys: string[];
-  public load(json: any): AnimFfd {
+  public ffd_slots: {[key: string]: FfdSlot} = {};
+  public ffd_slot_keys: string[] = [];
+
+  public load(json: any): FfdTimeline {
     this.min_time = 0;
     this.max_time = 0;
     this.ffd_slots = {};
-    this.ffd_slot_keys = Object.keys(json);
+    this.ffd_slot_keys = Object.keys(json || {});
     this.ffd_slot_keys.forEach((key: string): void => {
       this.ffd_slots[key] = new FfdSlot().load(json[key]);
     });
+
     this.iterateAttachments((ffd_slot_key: string, ffd_slot: FfdSlot, ffd_attachment_key: string, ffd_attachment: FfdAttachment): void => {
       this.min_time = Math.min(this.min_time, ffd_attachment.min_time);
       this.max_time = Math.max(this.max_time, ffd_attachment.max_time);
     });
+
     return this;
   }
+
   public iterateAttachments(callback: (ffd_slot_key: string, ffd_slot: FfdSlot, ffd_attachment_key: string, ffd_attachment: FfdAttachment) => void): void {
-    let ffd_slot_key: string;
-    let ffd_slot: FfdSlot;
     this.ffd_slot_keys.forEach((ffd_slot_key: string): void => {
-      ffd_slot = this.ffd_slots[ffd_slot_key];
+      const ffd_slot = this.ffd_slots[ffd_slot_key];
       ffd_slot.iterateAttachments((ffd_attachment_key: string, ffd_attachment: FfdAttachment): void => {
         callback(ffd_slot_key, ffd_slot, ffd_attachment_key, ffd_attachment);
       });
@@ -1155,46 +1968,53 @@ export class AnimFfd {
 
 export class Animation {
   public name: string = "";
-  public bones: { [ key: string ]: AnimBone };
-  public slots: { [ key: string ]: AnimSlot };
+  public bone_timeline_map: {[key: string]: BoneTimeline} = {};
+  public slot_timeline_map: {[key: string]: SlotTimeline} = {};
   public event_keyframes: EventKeyframe[];
   public order_keyframes: OrderKeyframe[];
-  public ikcs: { [ key: string ]: AnimIkc };
-  public ffds: { [ key: string ]: AnimFfd };
-  public min_time: number = 0;
-  public max_time: number = 0;
-  public length: number = 0;
+  public ikc_timeline_map: {[key: string]: IkcTimeline} = {};
+  public xfc_timeline_map: {[key: string]: XfcTimeline} = {};
+  public ptc_timeline_map: {[key: string]: PtcTimeline} = {};
+  public ffd_timeline_map: {[key: string]: FfdTimeline} = {};
+  public min_time = 0;
+  public max_time = 0;
+  public length = 0;
+
   public load(json: any): Animation {
-    this.bones = {};
-    this.slots = {};
-    this.event_keyframes = null;
-    this.order_keyframes = null;
-    this.ikcs = {};
-    this.ffds = {};
+    this.bone_timeline_map = {};
+    this.slot_timeline_map = {};
+    delete this.event_keyframes;
+    delete this.order_keyframes;
+    this.ikc_timeline_map = {};
+    this.xfc_timeline_map = {};
+    this.ptc_timeline_map = {};
+    this.ffd_timeline_map = {};
+
     this.min_time = 0;
     this.max_time = 0;
-    Object.keys(json).forEach((key: string): void => {
+
+    Object.keys(json || {}).forEach((key: string): void => {
       switch (key) {
         case "bones":
-          Object.keys(json[key]).forEach((bone_key: string): void => {
-            const anim_bone: AnimBone = new AnimBone().load(json[key][bone_key]);
-            this.min_time = Math.min(this.min_time, anim_bone.min_time);
-            this.max_time = Math.max(this.max_time, anim_bone.max_time);
-            this.bones[bone_key] = anim_bone;
+          Object.keys(json[key] || {}).forEach((bone_key: string): void => {
+            const bone_timeline = new BoneTimeline().load(json[key][bone_key]);
+            this.min_time = Math.min(this.min_time, bone_timeline.min_time);
+            this.max_time = Math.max(this.max_time, bone_timeline.max_time);
+            this.bone_timeline_map[bone_key] = bone_timeline;
           });
           break;
         case "slots":
-          Object.keys(json[key]).forEach((slot_key: string): void => {
-            const anim_slot: AnimSlot = new AnimSlot().load(json[key][slot_key]);
-            this.min_time = Math.min(this.min_time, anim_slot.min_time);
-            this.max_time = Math.max(this.max_time, anim_slot.max_time);
-            this.slots[slot_key] = anim_slot;
+          Object.keys(json[key] || {}).forEach((slot_key: string): void => {
+            const slot_timeline = new SlotTimeline().load(json[key][slot_key]);
+            this.min_time = Math.min(this.min_time, slot_timeline.min_time);
+            this.max_time = Math.max(this.max_time, slot_timeline.max_time);
+            this.slot_timeline_map[slot_key] = slot_timeline;
           });
           break;
         case "events":
           this.event_keyframes = [];
           json[key].forEach((event: any): void => {
-            const event_keyframe: EventKeyframe = new EventKeyframe().load(event);
+            const event_keyframe = new EventKeyframe().load(event);
             this.min_time = Math.min(this.min_time, event_keyframe.time);
             this.max_time = Math.max(this.max_time, event_keyframe.time);
             this.event_keyframes.push(event_keyframe);
@@ -1205,7 +2025,7 @@ export class Animation {
         case "draworder":
           this.order_keyframes = [];
           json[key].forEach((order: any): void => {
-            const order_keyframe: OrderKeyframe = new OrderKeyframe().load(order);
+            const order_keyframe = new OrderKeyframe().load(order);
             this.min_time = Math.min(this.min_time, order_keyframe.time);
             this.max_time = Math.max(this.max_time, order_keyframe.time);
             this.order_keyframes.push(order_keyframe);
@@ -1213,19 +2033,36 @@ export class Animation {
           this.order_keyframes.sort(Keyframe.compare);
           break;
         case "ik":
-          Object.keys(json[key]).forEach((ikc_key: string): void => {
-            const anim_ikc: AnimIkc = new AnimIkc().load(json[key][ikc_key]);
-            this.min_time = Math.min(this.min_time, anim_ikc.min_time);
-            this.max_time = Math.max(this.max_time, anim_ikc.max_time);
-            this.ikcs[ikc_key] = anim_ikc;
+          Object.keys(json[key] || {}).forEach((ikc_key: string): void => {
+            const ikc_timeline = new IkcTimeline().load(json[key][ikc_key]);
+            this.min_time = Math.min(this.min_time, ikc_timeline.min_time);
+            this.max_time = Math.max(this.max_time, ikc_timeline.max_time);
+            this.ikc_timeline_map[ikc_key] = ikc_timeline;
+          });
+          break;
+        case "transform":
+          Object.keys(json[key] || {}).forEach((xfc_key: string): void => {
+            const xfc_timeline = new XfcTimeline().load(json[key][xfc_key]);
+            this.min_time = Math.min(this.min_time, xfc_timeline.min_time);
+            this.max_time = Math.max(this.max_time, xfc_timeline.max_time);
+            this.xfc_timeline_map[xfc_key] = xfc_timeline;
+          });
+          break;
+        case "paths":
+          Object.keys(json[key] || {}).forEach((ptc_key: string): void => {
+            const ptc_timeline = new PtcTimeline().load(json[key][ptc_key]);
+            this.min_time = Math.min(this.min_time, ptc_timeline.min_time);
+            this.max_time = Math.max(this.max_time, ptc_timeline.max_time);
+            this.ptc_timeline_map[ptc_key] = ptc_timeline;
           });
           break;
         case "ffd":
-          Object.keys(json[key]).forEach((ffd_key: string): void => {
-            const anim_ffd: AnimFfd = new AnimFfd().load(json[key][ffd_key]);
-            this.min_time = Math.min(this.min_time, anim_ffd.min_time);
-            this.max_time = Math.max(this.max_time, anim_ffd.max_time);
-            this.ffds[ffd_key] = anim_ffd;
+        case "deform":
+          Object.keys(json[key] || {}).forEach((ffd_key: string): void => {
+            const ffd_timeline = new FfdTimeline().load(json[key][ffd_key]);
+            this.min_time = Math.min(this.min_time, ffd_timeline.min_time);
+            this.max_time = Math.max(this.max_time, ffd_timeline.max_time);
+            this.ffd_timeline_map[ffd_key] = ffd_timeline;
           });
           break;
         default:
@@ -1233,7 +2070,9 @@ export class Animation {
           break;
       }
     });
+
     this.length = this.max_time - this.min_time;
+
     return this;
   }
 }
@@ -1244,7 +2083,8 @@ export class Skeleton {
   public width: number = 0;
   public height: number = 0;
   public images: string = "";
-  public load(json: any): Skeleton {
+
+  public load(json: any): any {
     this.hash = loadString(json, "hash", "");
     this.spine = loadString(json, "spine", "");
     this.width = loadInt(json, "width", 0);
@@ -1257,23 +2097,32 @@ export class Skeleton {
 export class Data {
   public name: string = "";
   public skeleton: Skeleton = new Skeleton();
-  public bones: { [ key: string ]: Bone } = {};
+  public bones: {[key: string]: Bone} = {};
   public bone_keys: string[] = [];
-  public ikcs: { [ key: string ]: Ikc } = {};
+  public ikcs: {[key: string]: Ikc} = {};
   public ikc_keys: string[] = [];
-  public slots: { [ key: string ]: Slot } = {};
+  public xfcs: {[key: string]: Xfc} = {};
+  public xfc_keys: string[] = [];
+  public ptcs: {[key: string]: Ptc} = {};
+  public ptc_keys: string[] = [];
+  public slots: {[key: string]: Slot} = {};
   public slot_keys: string[] = [];
-  public skins: { [ key: string ]: Skin } = {};
+  public skins: {[key: string]: Skin} = {};
   public skin_keys: string[] = [];
-  public events: { [ key: string ]: Event } = {};
+  public events: {[key: string]: Event} = {};
   public event_keys: string[] = [];
-  public anims: { [ key: string ]: Animation } = {};
+  public anims: {[key: string]: Animation} = {};
   public anim_keys: string[] = [];
+
   public load(json: any): Data {
     this.bones = {};
     this.bone_keys = [];
     this.ikcs = {};
     this.ikc_keys = [];
+    this.xfcs = {};
+    this.xfc_keys = [];
+    this.ptcs = {};
+    this.ptc_keys = [];
     this.slots = {};
     this.slot_keys = [];
     this.skins = {};
@@ -1282,42 +2131,69 @@ export class Data {
     this.event_keys = [];
     this.anims = {};
     this.anim_keys = [];
-    Object.keys(json).forEach((key: string): void => {
+
+    Object.keys(json || {}).forEach((key: string): void => {
       switch (key) {
         case "skeleton":
           this.skeleton.load(json[key]);
           break;
         case "bones":
-          const json_bones = json[key];
+          const json_bones: any[] = json[key];
           json_bones.forEach((bone: any, bone_index: number): void => {
             this.bones[bone.name] = new Bone().load(bone);
             this.bone_keys[bone_index] = bone.name;
           });
           break;
         case "ik":
-          const json_ik = json[key];
+          const json_ik: any[] = json[key];
           json_ik.forEach((ikc: any, ikc_index: number): void => {
             this.ikcs[ikc.name] = new Ikc().load(ikc);
             this.ikc_keys[ikc_index] = ikc.name;
           });
+          // sort by order
+          this.ikc_keys.sort((a: string, b: string): number => {
+            const ikc_a: Ikc = this.ikcs[a];
+            const ikc_b: Ikc = this.ikcs[b];
+            return ikc_a.order - ikc_b.order;
+          });
+          break;
+        case "transform":
+          const json_transform: any[] = json[key];
+          json_transform.forEach((xfc: any, xfc_index: number): void => {
+            this.xfcs[xfc.name] = new Xfc().load(xfc);
+            this.xfc_keys[xfc_index] = xfc.name;
+          });
+          // sort by order
+          this.xfc_keys.sort((a: string, b: string): number => {
+            const xfc_a: Xfc = this.xfcs[a];
+            const xfc_b: Xfc = this.xfcs[b];
+            return xfc_a.order - xfc_b.order;
+          });
+          break;
+        case "path":
+          const json_path: any[] = json[key];
+          json_path.forEach((ptc: any, ptc_index: number): void => {
+            this.ptcs[ptc.name] = new Ptc().load(ptc);
+            this.ptc_keys[ptc_index] = ptc.name;
+          });
           break;
         case "slots":
-          const json_slots = json[key];
+          const json_slots: any[] = json[key];
           json_slots.forEach((slot: any, slot_index: number): void => {
             this.slots[slot.name] = new Slot().load(slot);
             this.slot_keys[slot_index] = slot.name;
           });
           break;
         case "skins":
-          const json_skins = json[key];
+          const json_skins: any = json[key] || {};
           this.skin_keys = Object.keys(json_skins);
           this.skin_keys.forEach((skin_key: string): void => {
-            const skin: Skin = this.skins[skin_key] = new Skin().load(json_skins[skin_key]);
+            const skin = this.skins[skin_key] = new Skin().load(json_skins[skin_key]);
             skin.name = skin.name || skin_key;
           });
           break;
         case "events":
-          const json_events = json[key];
+          const json_events: any = json[key] || {};
           this.event_keys = Object.keys(json_events);
           this.event_keys.forEach((event_key: string): void => {
             const event: Event = this.events[event_key] = new Event().load(json_events[event_key]);
@@ -1325,7 +2201,7 @@ export class Data {
           });
           break;
         case "animations":
-          const json_animations = json[key];
+          const json_animations: any = json[key] || {};
           this.anim_keys = Object.keys(json_animations);
           this.anim_keys.forEach((anim_key: string): void => {
             const anim: Animation = this.anims[anim_key] = new Animation().load(json_animations[anim_key]);
@@ -1341,54 +2217,76 @@ export class Data {
     this.iterateBones((bone_key: string, bone: Bone): void => {
       Bone.flatten(bone, this.bones);
     });
+
     return this;
   }
+
   public loadSkeleton(json: any): Data {
     this.skeleton.load(json);
     return this;
   }
+
   public loadEvent(name: string, json: any): Data {
     const event: Event = this.events[name] = new Event().load(json);
     event.name = event.name || name;
     return this;
   }
+
   public loadAnimation(name: string, json: any): Data {
-    const anim: Animation = this.anims[name] = new Animation().load(json);
+    const anim = this.anims[name] = new Animation().load(json);
     anim.name = anim.name || name;
     return this;
   }
-  public getSkins(): { [ key: string ]: Skin } { return this.skins; }
-  public getEvents(): { [ key: string ]: Event } { return this.events; }
-  public getAnims(): { [ key: string ]: Animation } { return this.anims; }
-  public iterateBones(callback): void {
+
+  public getSkins(): {[key: string]: Skin} {
+    return this.skins;
+  }
+
+  public getEvents(): {[key: string]: Event} {
+    return this.events;
+  }
+
+  public getAnims(): {[key: string]: Animation} {
+    return this.anims;
+  }
+
+  public iterateBones(callback: (bone_key: string, bone: Bone) => void): void {
     this.bone_keys.forEach((bone_key: string): void => {
       const data_bone: Bone = this.bones[bone_key];
       callback(bone_key, data_bone);
     });
   }
-  public iterateAttachments(skin_key, callback: (slot_key: string, data_slot: Slot, skin_slot: SkinSlot, attachment_key: string, attachment: Attachment) => void): void {
+
+  public iterateAttachments(skin_key: string, callback: (slot_key: string, data_slot: Slot, skin_slot: SkinSlot, attachment_key: string, attachment: Attachment) => void): void {
     const skin: Skin = this.skins[skin_key];
     const default_skin: Skin = this.skins["default"];
     this.slot_keys.forEach((slot_key: string): void => {
       const data_slot: Slot = this.slots[slot_key];
       const skin_slot: SkinSlot = skin && (skin.slots[slot_key] || default_skin.slots[slot_key]);
-      const attachment: Attachment = skin_slot && skin_slot.attachments[data_slot.attachment_key];
-      const attachment_key: string = (attachment && (attachment.path || attachment.name)) || data_slot.attachment_key;
+      let attachment: Attachment = skin_slot && skin_slot.attachments[data_slot.attachment_key];
+      let attachment_key: string = (attachment && attachment.name) || data_slot.attachment_key;
+      if (attachment && ((attachment.type === "linkedmesh") || (attachment.type === "weightedlinkedmesh"))) {
+        attachment_key = attachment && (<LinkedMeshAttachment>attachment).parent_key;
+        attachment = skin_slot && skin_slot.attachments[attachment_key];
+      }
       callback(slot_key, data_slot, skin_slot, attachment_key, attachment);
     });
   }
+
   public iterateSkins(callback: (skin_key: string, skin: Skin) => void): void {
     this.skin_keys.forEach((skin_key: string): void => {
       const skin: Skin = this.skins[skin_key];
       callback(skin_key, skin);
     });
   }
+
   public iterateEvents(callback: (event_key: string, event: Event) => void): void {
     this.event_keys.forEach((event_key: string): void => {
       const event: Event = this.events[event_key];
       callback(event_key, event);
     });
   }
+
   public iterateAnims(callback: (anim_key: string, anim: Animation) => void): void {
     this.anim_keys.forEach((anim_key: string): void => {
       const anim: Animation = this.anims[anim_key];
@@ -1404,196 +2302,216 @@ export class Pose {
   public time: number = 0;
   public elapsed_time: number = 0;
   public dirty: boolean = true;
-  public bones: { [ key: string ]: Bone } = {};
+  public bones: {[key: string]: Bone} = {};
   public bone_keys: string[] = [];
-  public slots: { [ key: string ]: Slot } = {};
+  public slots: {[key: string]: Slot} = {};
   public slot_keys: string[] = [];
   public events: Event[] = [];
-  constructor(data?: Data) {
+
+  constructor(data: Data) {
     this.data = data;
   }
+
   public curSkel(): Skeleton {
-    const pose: Pose = this;
-    const data: Data = pose.data;
+    const data: Data = this.data;
     return data && data.skeleton;
   }
-  public getSkins(): { [ key: string ]: Skin } {
-    const pose: Pose = this;
-    const data: Data = pose.data;
+
+  public getSkins(): {[key: string]: Skin} {
+    const data: Data = this.data;
     return data && data.skins;
   }
+
   public curSkin(): Skin {
-    const pose: Pose = this;
-    const data: Data = pose.data;
-    return data && data.skins[pose.skin_key];
+    const data: Data = this.data;
+    return data && data.skins[this.skin_key];
   }
+
   public getSkin(): string {
-    const pose: Pose = this;
-    return pose.skin_key;
+    return this.skin_key;
   }
+
   public setSkin(skin_key: string): void {
-    const pose: Pose = this;
-    if (pose.skin_key !== skin_key) {
-      pose.skin_key = skin_key;
+    if (this.skin_key !== skin_key) {
+      this.skin_key = skin_key;
     }
   }
-  public getEvents(): { [ key: string ]: Event } {
-    const pose: Pose = this;
-    const data: Data = pose.data;
+
+  public getEvents(): {[key: string]: Event} {
+    const data: Data = this.data;
     return data && data.events;
   }
-  public getAnims(): { [ key: string ]: Animation } {
-    const pose: Pose = this;
-    const data: Data = pose.data;
+
+  public getAnims(): {[key: string]: Animation} {
+    const data: Data = this.data;
     return data && data.anims;
   }
+
   public curAnim(): Animation {
-    const pose: Pose = this;
-    const data: Data = pose.data;
-    return data && data.anims[pose.anim_key];
+    const data: Data = this.data;
+    return data && data.anims[this.anim_key];
   }
+
   public curAnimLength(): number {
-    const pose: Pose = this;
-    const data: Data = pose.data;
-    const anim: Animation = data && data.anims[pose.anim_key];
+    const data: Data = this.data;
+    const anim: Animation = data && data.anims[this.anim_key];
     return (anim && anim.length) || 0;
   }
+
   public getAnim(): string {
-    const pose: Pose = this;
-    return pose.anim_key;
+    return this.anim_key;
   }
+
   public setAnim(anim_key: string): void {
-    const pose: Pose = this;
-    if (pose.anim_key !== anim_key) {
-      pose.anim_key = anim_key;
-      const data: Data = pose.data;
-      const anim: Animation = data && data.anims[pose.anim_key];
+    if (this.anim_key !== anim_key) {
+      this.anim_key = anim_key;
+      const data: Data = this.data;
+      const anim: Animation = data && data.anims[this.anim_key];
       if (anim) {
-        pose.time = wrap(pose.time, anim.min_time, anim.max_time);
+        this.time = wrap(this.time, anim.min_time, anim.max_time);
       }
-      pose.elapsed_time = 0;
-      pose.dirty = true;
+      this.elapsed_time = 0;
+      this.dirty = true;
     }
   }
+
   public getTime(): number {
-    const pose: Pose = this;
-    return pose.time;
+    return this.time;
   }
+
   public setTime(time: number): void {
-    const pose: Pose = this;
-    const data: Data = pose.data;
-    const anim: Animation = data && data.anims[pose.anim_key];
+    const data: Data = this.data;
+    const anim: Animation = data && data.anims[this.anim_key];
     if (anim) {
       time = wrap(time, anim.min_time, anim.max_time);
     }
-    if (pose.time !== time) {
-      pose.time = time;
-      pose.elapsed_time = 0;
-      pose.dirty = true;
+
+    if (this.time !== time) {
+      this.time = time;
+      this.elapsed_time = 0;
+      this.dirty = true;
     }
   }
+
   public update(elapsed_time: number): void {
-    const pose: Pose = this;
-    pose.elapsed_time += elapsed_time;
-    pose.dirty = true;
+    this.elapsed_time += elapsed_time;
+    this.dirty = true;
   }
+
   public strike(): void {
-    const pose: Pose = this;
-    if (!pose.dirty) { return; }
-    pose.dirty = false;
+    if (!this.dirty) {
+      return;
+    }
+    this.dirty = false;
 
-    const data: Data = pose.data;
+    const data: Data = this.data;
 
-    const anim: Animation = data && data.anims[pose.anim_key];
+    const anim: Animation = data && data.anims[this.anim_key];
 
-    const prev_time: number = pose.time;
-    const elapsed_time: number = pose.elapsed_time;
+    const prev_time: number = this.time;
+    const elapsed_time: number = this.elapsed_time;
 
-    pose.time = pose.time + pose.elapsed_time; // accumulate elapsed time
-    pose.elapsed_time = 0; // reset elapsed time for next strike
+    this.time = this.time + this.elapsed_time; // accumulate elapsed time
+    this.elapsed_time = 0; // reset elapsed time for next strike
 
     let wrapped_min: boolean = false;
     let wrapped_max: boolean = false;
     if (anim) {
-      wrapped_min = (elapsed_time < 0) && (pose.time <= anim.min_time);
-      wrapped_max = (elapsed_time > 0) && (pose.time >= anim.max_time);
-      pose.time = wrap(pose.time, anim.min_time, anim.max_time);
+      wrapped_min = (elapsed_time < 0) && (this.time <= anim.min_time);
+      wrapped_max = (elapsed_time > 0) && (this.time >= anim.max_time);
+      this.time = wrap(this.time, anim.min_time, anim.max_time);
     }
 
-    const time: number = pose.time;
+    const time: number = this.time;
+
     let keyframe_index: number;
+    let pct: number;
+
+    // bones
 
     data.bone_keys.forEach((bone_key: string): void => {
       const data_bone: Bone = data.bones[bone_key];
-      const pose_bone: Bone = pose.bones[bone_key] || (pose.bones[bone_key] = new Bone());
+      const pose_bone: Bone = this.bones[bone_key] || (this.bones[bone_key] = new Bone());
 
       // start with a copy of the data bone
       pose_bone.copy(data_bone);
 
       // tween anim bone if keyframes are available
-      const anim_bone: AnimBone = anim && anim.bones[bone_key];
-      if (anim_bone) {
-        keyframe_index = Keyframe.find(anim_bone.translate_keyframes, time);
+      const bone_timeline: BoneTimeline = anim && anim.bone_timeline_map[bone_key];
+      if (bone_timeline) {
+        keyframe_index = Keyframe.find(bone_timeline.position_keyframes, time);
         if (keyframe_index !== -1) {
-          const translate_keyframe0: TranslateKeyframe = anim_bone.translate_keyframes[keyframe_index];
-          const translate_keyframe1: TranslateKeyframe = anim_bone.translate_keyframes[keyframe_index + 1];
-          if (translate_keyframe1) {
-            const pct: number = translate_keyframe0.curve.evaluate((time - translate_keyframe0.time) / (translate_keyframe1.time - translate_keyframe0.time));
-            pose_bone.local_space.position.x += tween(translate_keyframe0.position.x, translate_keyframe1.position.x, pct);
-            pose_bone.local_space.position.y += tween(translate_keyframe0.position.y, translate_keyframe1.position.y, pct);
+          const position_keyframe0: PositionKeyframe = bone_timeline.position_keyframes[keyframe_index];
+          const position_keyframe1: PositionKeyframe = bone_timeline.position_keyframes[keyframe_index + 1];
+          if (position_keyframe1) {
+            pct = position_keyframe0.curve.evaluate((time - position_keyframe0.time) / (position_keyframe1.time - position_keyframe0.time));
+            pose_bone.local_space.position.x += tween(position_keyframe0.position.x, position_keyframe1.position.x, pct);
+            pose_bone.local_space.position.y += tween(position_keyframe0.position.y, position_keyframe1.position.y, pct);
           } else {
-            pose_bone.local_space.position.x += translate_keyframe0.position.x;
-            pose_bone.local_space.position.y += translate_keyframe0.position.y;
+            pose_bone.local_space.position.x += position_keyframe0.position.x;
+            pose_bone.local_space.position.y += position_keyframe0.position.y;
           }
         }
 
-        keyframe_index = Keyframe.find(anim_bone.rotate_keyframes, time);
+        keyframe_index = Keyframe.find(bone_timeline.rotation_keyframes, time);
         if (keyframe_index !== -1) {
-          const rotate_keyframe0: RotateKeyframe = anim_bone.rotate_keyframes[keyframe_index];
-          const rotate_keyframe1: RotateKeyframe = anim_bone.rotate_keyframes[keyframe_index + 1];
-          if (rotate_keyframe1) {
-            const pct: number = rotate_keyframe0.curve.evaluate((time - rotate_keyframe0.time) / (rotate_keyframe1.time - rotate_keyframe0.time));
-            pose_bone.local_space.rotation.rad += tweenAngle(rotate_keyframe0.rotation.rad, rotate_keyframe1.rotation.rad, pct);
+          const rotation_keyframe0: RotationKeyframe = bone_timeline.rotation_keyframes[keyframe_index];
+          const rotation_keyframe1: RotationKeyframe = bone_timeline.rotation_keyframes[keyframe_index + 1];
+          if (rotation_keyframe1) {
+            pct = rotation_keyframe0.curve.evaluate((time - rotation_keyframe0.time) / (rotation_keyframe1.time - rotation_keyframe0.time));
+            pose_bone.local_space.rotation.rad += tweenAngle(rotation_keyframe0.rotation.rad, rotation_keyframe1.rotation.rad, pct);
           } else {
-            pose_bone.local_space.rotation.rad += rotate_keyframe0.rotation.rad;
+            pose_bone.local_space.rotation.rad += rotation_keyframe0.rotation.rad;
           }
         }
 
-        keyframe_index = Keyframe.find(anim_bone.scale_keyframes, time);
+        keyframe_index = Keyframe.find(bone_timeline.scale_keyframes, time);
         if (keyframe_index !== -1) {
-          const scale_keyframe0: ScaleKeyframe = anim_bone.scale_keyframes[keyframe_index];
-          const scale_keyframe1: ScaleKeyframe = anim_bone.scale_keyframes[keyframe_index + 1];
+          const scale_keyframe0: ScaleKeyframe = bone_timeline.scale_keyframes[keyframe_index];
+          const scale_keyframe1: ScaleKeyframe = bone_timeline.scale_keyframes[keyframe_index + 1];
           if (scale_keyframe1) {
-            const pct: number = scale_keyframe0.curve.evaluate((time - scale_keyframe0.time) / (scale_keyframe1.time - scale_keyframe0.time));
-            pose_bone.local_space.scale.x += tween(scale_keyframe0.scale.x, scale_keyframe1.scale.x, pct) - 1;
-            pose_bone.local_space.scale.y += tween(scale_keyframe0.scale.y, scale_keyframe1.scale.y, pct) - 1;
+            pct = scale_keyframe0.curve.evaluate((time - scale_keyframe0.time) / (scale_keyframe1.time - scale_keyframe0.time));
+            pose_bone.local_space.scale.a *= tween(scale_keyframe0.scale.a, scale_keyframe1.scale.a, pct);
+            pose_bone.local_space.scale.d *= tween(scale_keyframe0.scale.d, scale_keyframe1.scale.d, pct);
           } else {
-            pose_bone.local_space.scale.x += scale_keyframe0.scale.x - 1;
-            pose_bone.local_space.scale.y += scale_keyframe0.scale.y - 1;
+            pose_bone.local_space.scale.a *= scale_keyframe0.scale.a;
+            pose_bone.local_space.scale.d *= scale_keyframe0.scale.d;
+          }
+        }
+
+        keyframe_index = Keyframe.find(bone_timeline.shear_keyframes, time);
+        if (keyframe_index !== -1) {
+          const shear_keyframe0: ShearKeyframe = bone_timeline.shear_keyframes[keyframe_index];
+          const shear_keyframe1: ShearKeyframe = bone_timeline.shear_keyframes[keyframe_index + 1];
+          if (shear_keyframe1) {
+            pct = shear_keyframe0.curve.evaluate((time - shear_keyframe0.time) / (shear_keyframe1.time - shear_keyframe0.time));
+            pose_bone.local_space.shear.x.rad += tweenAngle(shear_keyframe0.shear.x.rad, shear_keyframe1.shear.x.rad, pct);
+            pose_bone.local_space.shear.y.rad += tweenAngle(shear_keyframe0.shear.y.rad, shear_keyframe1.shear.y.rad, pct);
+          } else {
+            pose_bone.local_space.shear.x.rad += shear_keyframe0.shear.x.rad;
+            pose_bone.local_space.shear.y.rad += shear_keyframe0.shear.y.rad;
           }
         }
       }
     });
 
-    pose.bone_keys = data.bone_keys;
+    this.bone_keys = data.bone_keys;
 
     // ik constraints
 
     data.ikc_keys.forEach((ikc_key: string): void => {
-      function clamp (n: number, lo: number, hi: number): number { return (n < lo) ? lo : ((n > hi) ? hi : n); }
-
       const ikc: Ikc = data.ikcs[ikc_key];
       let ikc_mix: number = ikc.mix;
       let ikc_bend_positive: boolean = ikc.bend_positive;
 
-      const anim_ikc: AnimIkc = anim && anim.ikcs[ikc_key];
-      if (anim_ikc) {
-        keyframe_index = Keyframe.find(anim_ikc.ikc_keyframes, time);
+      const ikc_timeline: IkcTimeline = anim && anim.ikc_timeline_map[ikc_key];
+      if (ikc_timeline) {
+        keyframe_index = Keyframe.find(ikc_timeline.ikc_keyframes, time);
         if (keyframe_index !== -1) {
-          const ikc_keyframe0: IkcKeyframe = anim_ikc.ikc_keyframes[keyframe_index];
-          const ikc_keyframe1: IkcKeyframe = anim_ikc.ikc_keyframes[keyframe_index + 1];
+          const ikc_keyframe0: IkcKeyframe = ikc_timeline.ikc_keyframes[keyframe_index];
+          const ikc_keyframe1: IkcKeyframe = ikc_timeline.ikc_keyframes[keyframe_index + 1];
           if (ikc_keyframe1) {
-            const pct: number = ikc_keyframe0.curve.evaluate((time - ikc_keyframe0.time) / (ikc_keyframe1.time - ikc_keyframe0.time));
+            pct = ikc_keyframe0.curve.evaluate((time - ikc_keyframe0.time) / (ikc_keyframe1.time - ikc_keyframe0.time));
             ikc_mix = tween(ikc_keyframe0.mix, ikc_keyframe1.mix, pct);
           } else {
             ikc_mix = ikc_keyframe0.mix;
@@ -1603,144 +2521,309 @@ export class Pose {
         }
       }
 
-      const target: Bone = pose.bones[ikc.target_key];
-      Bone.flatten(target, pose.bones);
-      let target_x: number = target.world_space.position.x;
-      let target_y: number = target.world_space.position.y;
       const alpha: number = ikc_mix;
-      const bend_direction: number = ikc_bend_positive ? 1 : -1;
+      const bendDir: number = (ikc_bend_positive) ? (1) : (-1);
 
-      if (alpha === 0) { return; }
+      if (alpha === 0) {
+        return;
+      }
+
+      const target: Bone = this.bones[ikc.target_key];
+      Bone.flatten(target, this.bones);
 
       switch (ikc.bone_keys.length) {
-      case 1:
-        const bone: Bone = pose.bones[ikc.bone_keys[0]];
-        Bone.flatten(bone, pose.bones);
-        let parent_rotation: number = 0;
-        const bone_parent: Bone = pose.bones[bone.parent_key];
-        if (bone_parent && bone.inherit_rotation) {
-          Bone.flatten(bone_parent, pose.bones);
-          parent_rotation = bone_parent.world_space.rotation.rad;
+        case 1: {
+          const bone: Bone = this.bones[ikc.bone_keys[0]];
+          Bone.flatten(bone, this.bones);
+          let a1: number = Math.atan2(target.world_space.position.y - bone.world_space.position.y, target.world_space.position.x - bone.world_space.position.x);
+          const bone_parent: Bone = this.bones[bone.parent_key];
+          if (bone_parent) {
+            Bone.flatten(bone_parent, this.bones);
+            if (Matrix.determinant(bone_parent.world_space.scale) < 0) {
+              a1 += bone_parent.world_space.rotation.rad;
+            } else {
+              a1 -= bone_parent.world_space.rotation.rad;
+            }
+          }
+          bone.local_space.rotation.rad = tweenAngle(bone.local_space.rotation.rad, a1, alpha);
+          break;
         }
-        target_x -= bone.world_space.position.x;
-        target_y -= bone.world_space.position.y;
-        bone.local_space.rotation.rad = tweenAngle(bone.local_space.rotation.rad, Math.atan2(target_y, target_x) - parent_rotation, alpha);
-        break;
-      case 2:
-        const parent: Bone = pose.bones[ikc.bone_keys[0]];
-        Bone.flatten(parent, pose.bones);
-        const child: Bone = pose.bones[ikc.bone_keys[1]];
-        Bone.flatten(child, pose.bones);
-        const position: Vector = new Vector();
-        const parent_parent: Bone = pose.bones[parent.parent_key];
-        if (parent_parent) {
-          position.x = target_x;
-          position.y = target_y;
-          Bone.flatten(parent_parent, pose.bones);
-          Space.untransform(parent_parent.world_space, position, position); // world to local
-          target_x = (position.x - parent.local_space.position.x) * parent_parent.world_space.scale.x;
-          target_y = (position.y - parent.local_space.position.y) * parent_parent.world_space.scale.y;
-        } else {
-          target_x -= parent.local_space.position.x;
-          target_y -= parent.local_space.position.y;
+        case 2: {
+          const parent: Bone = this.bones[ikc.bone_keys[0]];
+          Bone.flatten(parent, this.bones);
+          const child: Bone = this.bones[ikc.bone_keys[1]];
+          Bone.flatten(child, this.bones);
+          ///const px: number = parent.local_space.position.x;
+          ///const py: number = parent.local_space.position.y;
+          let psx: number = parent.local_space.scale.x;
+          let psy: number = parent.local_space.scale.y;
+          let cy: number = child.local_space.position.y;
+          let csx: number = child.local_space.scale.x;
+          let offset1: number = 0, offset2: number = 0, sign2: number = 1;
+          if (psx < 0) {
+            psx = -psx;
+            offset1 = Math.PI;
+            sign2 = -1;
+          }
+          if (psy < 0) {
+            psy = -psy;
+            sign2 = -sign2;
+          }
+          if (csx < 0) {
+            csx = -csx;
+            offset2 = Math.PI;
+          }
+          const t: Vector = Vector.copy(target.world_space.position, new Vector());
+          const d: Vector = Vector.copy(child.world_space.position, new Vector());
+          const pp: Bone = this.bones[parent.parent_key];
+          if (pp) {
+            Bone.flatten(pp, this.bones);
+            Space.untransform(pp.world_space, t, t);
+            Space.untransform(pp.world_space, d, d);
+          }
+          Vector.subtract(t, parent.local_space.position, t);
+          Vector.subtract(d, parent.local_space.position, d);
+          const tx: number = t.x, ty: number = t.y;
+          const dx: number = d.x, dy: number = d.y;
+          let l1: number = Math.sqrt(dx * dx + dy * dy), l2: number = child.length * csx, a1: number, a2: number;
+          outer:
+          if (Math.abs(psx - psy) <= 0.0001) {
+            l2 *= psx;
+            let cos: number = (tx * tx + ty * ty - l1 * l1 - l2 * l2) / (2 * l1 * l2);
+            if (cos < -1) cos = -1; else if (cos > 1) cos = 1; // clamp
+            a2 = Math.acos(cos) * bendDir;
+            const adj: number = l1 + l2 * cos;
+            const opp: number = l2 * Math.sin(a2);
+            a1 = Math.atan2(ty * adj - tx * opp, tx * adj + ty * opp);
+          } else {
+            cy = 0;
+            const a: number = psx * l2;
+            const b: number = psy * l2;
+            const ta: number = Math.atan2(ty, tx);
+            const aa: number = a * a;
+            const bb: number = b * b;
+            const ll: number = l1 * l1;
+            const dd: number = tx * tx + ty * ty;
+            const c0: number = bb * ll + aa * dd - aa * bb;
+            const c1: number = -2 * bb * l1;
+            const c2: number = bb - aa;
+            const _d: number = c1 * c1 - 4 * c2 * c0;
+            if (_d >= 0) {
+              let q: number = Math.sqrt(_d);
+              if (c1 < 0) q = -q;
+              q = -(c1 + q) / 2;
+              const r0: number = q / c2, r1 = c0 / q;
+              const r: number = Math.abs(r0) < Math.abs(r1) ? r0 : r1;
+              if (r * r <= dd) {
+                const y: number = Math.sqrt(dd - r * r) * bendDir;
+                a1 = ta - Math.atan2(y, r);
+                a2 = Math.atan2(y / psy, (r - l1) / psx);
+                break outer;
+              }
+            }
+            let minAngle: number = 0, minDist: number = Number.MAX_VALUE, minX: number = 0, minY: number = 0;
+            let maxAngle: number = 0, maxDist: number = 0, maxX: number = 0, maxY: number = 0;
+            let angle: number, dist: number, x: number, y: number;
+            x = l1 + a; dist = x * x;
+            if (dist > maxDist) { maxAngle = 0; maxDist = dist; maxX = x; }
+            x = l1 - a; dist = x * x;
+            if (dist < minDist) { minAngle = Math.PI; minDist = dist; minX = x; }
+            angle = Math.acos(-a * l1 / (aa - bb));
+            x = a * Math.cos(angle) + l1;
+            y = b * Math.sin(angle);
+            dist = x * x + y * y;
+            if (dist < minDist) { minAngle = angle; minDist = dist; minX = x; minY = y; }
+            if (dist > maxDist) { maxAngle = angle; maxDist = dist; maxX = x; maxY = y; }
+            if (dd <= (minDist + maxDist) / 2) {
+              a1 = ta - Math.atan2(minY * bendDir, minX);
+              a2 = minAngle * bendDir;
+            } else {
+              a1 = ta - Math.atan2(maxY * bendDir, maxX);
+              a2 = maxAngle * bendDir;
+            }
+          }
+          const offset: number = Math.atan2(cy, child.local_space.position.x) * sign2;
+          a1 = (a1 - offset) + offset1;
+          a2 = (a2 + offset) * sign2 + offset2;
+          parent.local_space.rotation.rad = tweenAngle(parent.local_space.rotation.rad, a1, alpha);
+          child.local_space.rotation.rad = tweenAngle(child.local_space.rotation.rad, a2, alpha);
+          break;
         }
-        position.copy(child.local_space.position);
-        const child_parent: Bone = pose.bones[child.parent_key];
-        if (child_parent !== parent) {
-          Bone.flatten(child_parent, pose.bones);
-          Space.transform(child_parent.world_space, position, position); // local to world
-          Space.untransform(parent.world_space, position, position); // world to local
-        }
-        const child_x: number = position.x * parent.world_space.scale.x;
-        const child_y: number = position.y * parent.world_space.scale.y;
-        const offset: number = Math.atan2(child_y, child_x);
-        const len1: number = Math.sqrt(child_x * child_x + child_y * child_y);
-        const len2: number = child.length * child.world_space.scale.x;
-        const cos_denom: number = 2 * len1 * len2;
-        if (cos_denom < 0.0001) {
-          child.local_space.rotation.rad = tweenAngle(child.local_space.rotation.rad, Math.atan2(target_y, target_x) - parent.local_space.rotation.rad, alpha);
-          return;
-        }
-        const cos: number = clamp((target_x * target_x + target_y * target_y - len1 * len1 - len2 * len2) / cos_denom, -1, 1);
-        const rad: number = Math.acos(cos) * bend_direction;
-        const sin: number = Math.sin(rad);
-        const adjacent: number = len2 * cos + len1;
-        const opposite: number = len2 * sin;
-        const parent_angle: number = Math.atan2(target_y * adjacent - target_x * opposite, target_x * adjacent + target_y * opposite);
-        parent.local_space.rotation.rad = tweenAngle(parent.local_space.rotation.rad, (parent_angle - offset), alpha);
-        let child_angle: number = rad;
-        if (child_parent !== parent) {
-          child_angle += parent.world_space.rotation.rad - child_parent.world_space.rotation.rad;
-        }
-        child.local_space.rotation.rad = tweenAngle(child.local_space.rotation.rad, (child_angle + offset), alpha);
-        break;
       }
     });
 
-    pose.iterateBones((bone_key: string, bone: Bone): void => {
-      Bone.flatten(bone, pose.bones);
+    this.iterateBones((bone_key: string, bone: Bone): void => {
+      Bone.flatten(bone, this.bones);
     });
+
+    // transform constraints
+
+    data.xfc_keys.forEach((xfc_key: string): void => {
+      const xfc: Xfc = data.xfcs[xfc_key];
+      let xfc_position_mix: number = xfc.position_mix;
+      let xfc_rotation_mix: number = xfc.rotation_mix;
+      let xfc_scale_mix: number = xfc.scale_mix;
+      let xfc_shear_mix: number = xfc.shear_mix;
+
+      const xfc_timeline: XfcTimeline = anim && anim.xfc_timeline_map[xfc_key];
+      if (xfc_timeline) {
+        keyframe_index = Keyframe.find(xfc_timeline.xfc_keyframes, time);
+        if (keyframe_index !== -1) {
+          const xfc_keyframe0: XfcKeyframe = xfc_timeline.xfc_keyframes[keyframe_index];
+          const xfc_keyframe1: XfcKeyframe = xfc_timeline.xfc_keyframes[keyframe_index + 1];
+          if (xfc_keyframe1) {
+            pct = xfc_keyframe0.curve.evaluate((time - xfc_keyframe0.time) / (xfc_keyframe1.time - xfc_keyframe0.time));
+            xfc_position_mix = tween(xfc_keyframe0.position_mix, xfc_keyframe1.position_mix, pct);
+            xfc_rotation_mix = tween(xfc_keyframe0.rotation_mix, xfc_keyframe1.rotation_mix, pct);
+            xfc_scale_mix = tween(xfc_keyframe0.scale_mix, xfc_keyframe1.scale_mix, pct);
+            xfc_shear_mix = tween(xfc_keyframe0.shear_mix, xfc_keyframe1.shear_mix, pct);
+          } else {
+            xfc_position_mix = xfc_keyframe0.position_mix;
+            xfc_rotation_mix = xfc_keyframe0.rotation_mix;
+            xfc_scale_mix = xfc_keyframe0.scale_mix;
+            xfc_shear_mix = xfc_keyframe0.shear_mix;
+          }
+        }
+      }
+
+      const xfc_bone: Bone = this.bones[xfc.bone_key];
+      const xfc_target: Bone = this.bones[xfc.target_key];
+      const xfc_position: Vector = xfc.position;
+      ///const xfc_rotation = xfc.rotation;
+      ///const xfc_scale = xfc.scale;
+      ///const xfc_shear = xfc.shear;
+      const xfc_world_position: Vector = Space.transform(xfc_target.world_space, xfc_position, new Vector());
+      // TODO
+      xfc_bone.world_space.position.tween(xfc_world_position, xfc_position_mix, xfc_bone.world_space.position);
+    });
+
+    // slots
 
     data.slot_keys.forEach((slot_key: string): void => {
       const data_slot: Slot = data.slots[slot_key];
-      const pose_slot: Slot = pose.slots[slot_key] || (pose.slots[slot_key] = new Slot());
+      const pose_slot: Slot = this.slots[slot_key] || (this.slots[slot_key] = new Slot());
 
       // start with a copy of the data slot
       pose_slot.copy(data_slot);
 
       // tween anim slot if keyframes are available
-      const anim_slot: AnimSlot = anim && anim.slots[slot_key];
-      if (anim_slot) {
-        keyframe_index = Keyframe.find(anim_slot.color_keyframes, time);
+      const slot_timeline: SlotTimeline = anim && anim.slot_timeline_map[slot_key];
+      if (slot_timeline) {
+        keyframe_index = Keyframe.find(slot_timeline.color_keyframes, time);
         if (keyframe_index !== -1) {
-          const color_keyframe0: ColorKeyframe = anim_slot.color_keyframes[keyframe_index];
-          const color_keyframe1: ColorKeyframe = anim_slot.color_keyframes[keyframe_index + 1];
+          const color_keyframe0: ColorKeyframe = slot_timeline.color_keyframes[keyframe_index];
+          const color_keyframe1: ColorKeyframe = slot_timeline.color_keyframes[keyframe_index + 1];
           if (color_keyframe1) {
-            const pct: number = color_keyframe0.curve.evaluate((time - color_keyframe0.time) / (color_keyframe1.time - color_keyframe0.time));
-            pose_slot.color.r = tween(color_keyframe0.color.r, color_keyframe1.color.r, pct);
-            pose_slot.color.g = tween(color_keyframe0.color.g, color_keyframe1.color.g, pct);
-            pose_slot.color.b = tween(color_keyframe0.color.b, color_keyframe1.color.b, pct);
-            pose_slot.color.a = tween(color_keyframe0.color.a, color_keyframe1.color.a, pct);
+            pct = color_keyframe0.curve.evaluate((time - color_keyframe0.time) / (color_keyframe1.time - color_keyframe0.time));
+            color_keyframe0.color.tween(color_keyframe1.color, pct, pose_slot.color);
           } else {
-            pose_slot.color.r = color_keyframe0.color.r;
-            pose_slot.color.g = color_keyframe0.color.g;
-            pose_slot.color.b = color_keyframe0.color.b;
-            pose_slot.color.a = color_keyframe0.color.a;
+            pose_slot.color.copy(color_keyframe0.color);
           }
         }
 
-        keyframe_index = Keyframe.find(anim_slot.attachment_keyframes, time);
+        keyframe_index = Keyframe.find(slot_timeline.attachment_keyframes, time);
         if (keyframe_index !== -1) {
-          const attachment_keyframe0: AttachmentKeyframe = anim_slot.attachment_keyframes[keyframe_index];
+          const attachment_keyframe0: AttachmentKeyframe = slot_timeline.attachment_keyframes[keyframe_index];
           // no tweening attachments
           pose_slot.attachment_key = attachment_keyframe0.name;
         }
       }
     });
 
-    pose.slot_keys = data.slot_keys;
+    this.slot_keys = data.slot_keys;
 
     if (anim) {
       keyframe_index = Keyframe.find(anim.order_keyframes, time);
       if (keyframe_index !== -1) {
         const order_keyframe: OrderKeyframe = anim.order_keyframes[keyframe_index];
-        pose.slot_keys = data.slot_keys.slice(0); // copy array before reordering
+        this.slot_keys = data.slot_keys.slice(0); // copy array before reordering
         order_keyframe.slot_offsets.forEach((slot_offset: SlotOffset): void => {
-          const slot_index: number = pose.slot_keys.indexOf(slot_offset.slot_key);
+          const slot_index: number = this.slot_keys.indexOf(slot_offset.slot_key);
           if (slot_index !== -1) {
             // delete old position
-            pose.slot_keys.splice(slot_index, 1);
+            this.slot_keys.splice(slot_index, 1);
             // insert new position
-            pose.slot_keys.splice(slot_index + slot_offset.offset, 0, slot_offset.slot_key);
+            this.slot_keys.splice(slot_index + slot_offset.offset, 0, slot_offset.slot_key);
           }
         });
       }
     }
 
-    pose.events.length = 0;
+    // path constraints
+
+    data.ptc_keys.forEach((ptc_key: string): void => {
+      const ptc: Ptc = data.ptcs[ptc_key];
+      ///const ptc_spacing_mode: string = ptc.spacing_mode;
+      let ptc_spacing: number = ptc.spacing;
+      ///const ptc_position_mode: string = ptc.position_mode;
+      let ptc_position_mix: number = ptc.position_mix;
+      let ptc_position: number = ptc.position;
+      ///const ptc_rotation_mode: string = ptc.rotation_mode;
+      let ptc_rotation_mix: number = ptc.rotation_mix;
+      const ptc_rotation: Rotation = ptc.rotation;
+
+      const ptc_timeline: PtcTimeline = anim && anim.ptc_timeline_map[ptc_key];
+      if (ptc_timeline) {
+        keyframe_index = Keyframe.find(ptc_timeline.ptc_spacing_keyframes, time);
+        if (keyframe_index !== -1) {
+          const ptc_spacing_keyframe0: PtcSpacingKeyframe = ptc_timeline.ptc_spacing_keyframes[keyframe_index];
+          const ptc_spacing_keyframe1: PtcSpacingKeyframe = ptc_timeline.ptc_spacing_keyframes[keyframe_index + 1];
+          if (ptc_spacing_keyframe1) {
+            pct = ptc_spacing_keyframe0.curve.evaluate((time - ptc_spacing_keyframe0.time) / (ptc_spacing_keyframe1.time - ptc_spacing_keyframe0.time));
+            ptc_spacing = tween(ptc_spacing_keyframe0.spacing, ptc_spacing_keyframe1.spacing, pct);
+          } else {
+            ptc_spacing = ptc_spacing_keyframe0.spacing;
+          }
+        }
+
+        keyframe_index = Keyframe.find(ptc_timeline.ptc_position_keyframes, time);
+        if (keyframe_index !== -1) {
+          const ptc_position_keyframe0: PtcPositionKeyframe = ptc_timeline.ptc_position_keyframes[keyframe_index];
+          const ptc_position_keyframe1: PtcPositionKeyframe = ptc_timeline.ptc_position_keyframes[keyframe_index + 1];
+          if (ptc_position_keyframe1) {
+            pct = ptc_position_keyframe0.curve.evaluate((time - ptc_position_keyframe0.time) / (ptc_position_keyframe1.time - ptc_position_keyframe0.time));
+            ptc_position_mix = tween(ptc_position_keyframe0.position_mix, ptc_position_keyframe1.position_mix, pct);
+            ptc_position = tween(ptc_position_keyframe0.position, ptc_position_keyframe1.position, pct);
+          } else {
+            ptc_position_mix = ptc_position_keyframe0.position_mix;
+            ptc_position = ptc_position_keyframe0.position;
+          }
+        }
+
+        keyframe_index = Keyframe.find(ptc_timeline.ptc_rotation_keyframes, time);
+        if (keyframe_index !== -1) {
+          const ptc_rotation_keyframe0: PtcRotationKeyframe = ptc_timeline.ptc_rotation_keyframes[keyframe_index];
+          const ptc_rotation_keyframe1: PtcRotationKeyframe = ptc_timeline.ptc_rotation_keyframes[keyframe_index + 1];
+          if (ptc_rotation_keyframe1) {
+            pct = ptc_rotation_keyframe0.curve.evaluate((time - ptc_rotation_keyframe0.time) / (ptc_rotation_keyframe1.time - ptc_rotation_keyframe0.time));
+            ptc_rotation_mix = tween(ptc_rotation_keyframe0.rotation_mix, ptc_rotation_keyframe1.rotation_mix, pct);
+            ptc_rotation.deg = tween(ptc_rotation_keyframe0.rotation, ptc_rotation_keyframe1.rotation, pct);
+          } else {
+            ptc_rotation_mix = ptc_rotation_keyframe0.rotation_mix;
+            ptc_rotation.deg = ptc_rotation_keyframe0.rotation;
+          }
+        }
+      }
+
+      ///const skin = data && data.skins[pose.skin_key];
+      ///const default_skin = data && data.skins["default"];
+      ///const slot_key = ptc.target_key;
+      ///const pose_slot = pose.slots[slot_key];
+      ///const skin_slot = skin && (skin.slots[slot_key] || default_skin.slots[slot_key]);
+      ///const ptc_target = skin_slot && skin_slot.attachments[pose_slot.attachment_key];
+
+      ///ptc.bone_keys.forEach(function(bone_key) {
+      ///  const ptc_bone = pose.bones[bone_key];
+      ///  // TODO
+      ///});
+    });
+
+    // events
+
+    this.events.length = 0;
 
     if (anim && anim.event_keyframes) {
-      const add_event = function (event_keyframe: EventKeyframe): void {
+      function make_event(event_keyframe: EventKeyframe): Event {
         const pose_event: Event = new Event();
         const data_event: Event = data.events[event_keyframe.name];
         if (data_event) {
@@ -1749,7 +2832,7 @@ export class Pose {
         pose_event.int_value = event_keyframe.int_value || pose_event.int_value;
         pose_event.float_value = event_keyframe.float_value || pose_event.float_value;
         pose_event.string_value = event_keyframe.string_value || pose_event.string_value;
-        pose.events.push(pose_event);
+        return pose_event;
       };
 
       if (elapsed_time < 0) {
@@ -1762,7 +2845,7 @@ export class Pose {
           anim.event_keyframes.forEach((event_keyframe: EventKeyframe): void => {
             if (((anim.min_time <= event_keyframe.time) && (event_keyframe.time < prev_time)) ||
               ((time <= event_keyframe.time) && (event_keyframe.time <= anim.max_time))) {
-              add_event(event_keyframe);
+              this.events.push(make_event(event_keyframe));
             }
           });
         } else {
@@ -1772,7 +2855,7 @@ export class Pose {
           // all events between time and prev_time, not including prev_time
           anim.event_keyframes.forEach((event_keyframe: EventKeyframe): void => {
             if ((time <= event_keyframe.time) && (event_keyframe.time < prev_time)) {
-              add_event(event_keyframe);
+              this.events.push(make_event(event_keyframe));
             }
           });
         }
@@ -1786,7 +2869,7 @@ export class Pose {
           anim.event_keyframes.forEach((event_keyframe: EventKeyframe): void => {
             if (((anim.min_time <= event_keyframe.time) && (event_keyframe.time <= time)) ||
               ((prev_time < event_keyframe.time) && (event_keyframe.time <= anim.max_time))) {
-              add_event(event_keyframe);
+                this.events.push(make_event(event_keyframe));
             }
           });
         } else {
@@ -1796,7 +2879,7 @@ export class Pose {
           // all events between prev_time and time, not including prev_time
           anim.event_keyframes.forEach((event_keyframe: EventKeyframe): void => {
             if ((prev_time < event_keyframe.time) && (event_keyframe.time <= time)) {
-              add_event(event_keyframe);
+              this.events.push(make_event(event_keyframe));
             }
           });
         }
@@ -1805,23 +2888,25 @@ export class Pose {
   }
 
   public iterateBones(callback: (bone_key: string, bone: Bone) => void): void {
-    const pose: Pose = this;
-    pose.bone_keys.forEach((bone_key: string): void => {
-      const bone: Bone = pose.bones[bone_key];
+    this.bone_keys.forEach((bone_key: string): void => {
+      const bone: Bone = this.bones[bone_key];
       callback(bone_key, bone);
     });
   }
 
   public iterateAttachments(callback: (slot_key: string, pose_slot: Slot, skin_slot: SkinSlot, attachment_key: string, attachment: Attachment) => void): void {
-    const pose: Pose = this;
-    const data: Data = pose.data;
-    const skin: Skin = data && data.skins[pose.skin_key];
+    const data: Data = this.data;
+    const skin: Skin = data && data.skins[this.skin_key];
     const default_skin: Skin = data && data.skins["default"];
-    pose.slot_keys.forEach((slot_key: string): void => {
-      const pose_slot: Slot = pose.slots[slot_key];
+    this.slot_keys.forEach((slot_key: string): void => {
+      const pose_slot: Slot = this.slots[slot_key];
       const skin_slot: SkinSlot = skin && (skin.slots[slot_key] || default_skin.slots[slot_key]);
-      const attachment: Attachment = skin_slot && skin_slot.attachments[pose_slot.attachment_key];
-      const attachment_key: string = (attachment && (attachment.path || attachment.name)) || pose_slot.attachment_key;
+      let attachment: Attachment = skin_slot && skin_slot.attachments[pose_slot.attachment_key];
+      let attachment_key: string = (attachment && attachment.name) || pose_slot.attachment_key;
+      if (attachment && ((attachment.type === "linkedmesh") || (attachment.type === "weightedlinkedmesh"))) {
+        attachment_key = attachment && (<LinkedMeshAttachment>attachment).parent_key;
+        attachment = skin_slot && skin_slot.attachments[attachment_key];
+      }
       callback(slot_key, pose_slot, skin_slot, attachment_key, attachment);
     });
   }

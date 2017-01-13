@@ -1,7 +1,15 @@
 {
     "compilerOptions": {
-        "target": "es5",
-        "module": "system"
+        "target": "es6",
+        "module": "system",
+        "inlineSourceMap": true,
+        "noImplicitAny": true,
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "noImplicitUseStrict": true,
+        "strictNullChecks": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": false
     },
     "files": [
         "main.ts",

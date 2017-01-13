@@ -1,9 +1,17 @@
 {
-    "compilerOptions": {
-        "target": "es5",
-        "module": "system"
-    },
-    "files": [
-        "spine.ts"
-    ]
+  "compilerOptions": {
+    "target": "es6",
+    "module": "system",
+    "inlineSourceMap": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noImplicitUseStrict": true,
+    "strictNullChecks": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": false
+  },
+  "files": [
+    "spine.ts"
+  ]
 }

@@ -1,62 +1,11 @@
-import * as spine from '../spine.ts';
-import * as atlas from './atlas.ts';
-import { mat3x3Identity, mat3x3Scale, mat3x3Transform, mat3x3ApplyAtlasPageTexcoord, mat3x3ApplyAtlasSiteTexcoord } from './render-webgl.ts';
-
-class BoneInfo {
-}
-
-class SkinInfo {
-  public slot_info_map: {[key: string]: SlotInfo} = {};
-}
-
-class SlotInfo {
-  public attachment_info_map: {[key: string]: AttachmentInfo} = {};
-}
-
-class AttachmentInfo {
-  public type: string;
-  constructor(type: string) {
-    this.type = type;
-  }
-}
-
-class RegionAttachmentInfo extends AttachmentInfo {
-  constructor() {
-    super('region');
-  }
-}
-
-class BoundingBoxAttachmentInfo extends AttachmentInfo {
-  constructor() {
-    super('boundingbox');
-  }
-}
-
-class MeshAttachmentInfo extends AttachmentInfo {
-  public vertex_count: number;
-  public vertex_position: Float32Array;
-  public vertex_texcoord: Float32Array;
-  public vertex_triangle: Uint16Array;
-  constructor() {
-    super('mesh');
-  }
-}
-
-class SkinnedMeshAttachmentInfo extends AttachmentInfo {
-  public vertex_count: number;
-  public vertex_setup_position: Float32Array;
-  public vertex_blend_position: Float32Array;
-  public vertex_texcoord: Float32Array;
-  public vertex_triangle: Uint16Array;
-  constructor() {
-    super('skinnedmesh');
-  }
-}
+import * as Spine from "../spine";
+import * as Atlas from "./atlas";
+import { mat3x3Identity, mat3x3Scale, mat3x3Transform, mat3x3ApplyAtlasPageTexcoord, mat3x3ApplyAtlasSiteTexcoord } from "./render-webgl";
 
 export class RenderCtx2D {
   public ctx: CanvasRenderingContext2D;
   public images: {[key: string]: HTMLImageElement} = {};
-  public skin_info_map: {[key: string]: SkinInfo} = {};
+  public skin_map: {[key: string]: RenderSkin} = {};
   public region_vertex_position: Float32Array = new Float32Array([-1, -1, 1, -1, 1, 1, -1, 1]); // [ x, y ]
   public region_vertex_texcoord: Float32Array = new Float32Array([0, 1, 1, 1, 1, 0, 0, 0]); // [ u, v ]
   public region_vertex_triangle: Uint16Array = new Uint16Array([0, 1, 2, 0, 2, 3]); // [ i0, i1, i2 ]
@@ -65,308 +14,105 @@ export class RenderCtx2D {
     this.ctx = ctx;
   }
 
-  public dropData(spine_data: spine.Data, atlas_data: atlas.Data): void {
-    const render: RenderCtx2D = this;
-    render.images = {};
-    render.skin_info_map = {};
-  }
-
-  public loadData(spine_data: spine.Data, atlas_data: atlas.Data, images: {[key: string]: HTMLImageElement}): void {
-    const render: RenderCtx2D = this;
-    spine_data.iterateSkins(function(skin_key: string, skin: spine.Skin): void {
-      const skin_info: SkinInfo = render.skin_info_map[skin_key] = new SkinInfo();
-      skin.iterateAttachments(function(slot_key: string, skin_slot: spine.SkinSlot, attachment_key: string, attachment: spine.Attachment): void {
+  public loadData(spine_data: Spine.Data, atlas_data: Atlas.Data | null = null, images: {[key: string]: HTMLImageElement}): void {
+    this.images = images;
+    spine_data.iterateSkins((skin_key: string, skin: Spine.Skin): void => {
+      const render_skin: RenderSkin = this.skin_map[skin_key] = new RenderSkin();
+      skin.iterateAttachments((slot_key: string, skin_slot: Spine.SkinSlot, attachment_key: string, attachment: Spine.Attachment): void => {
         if (!attachment) { return; }
-        const slot_info: SlotInfo = skin_info.slot_info_map[slot_key] = skin_info.slot_info_map[slot_key] || new SlotInfo();
+        const render_slot: RenderSlot = render_skin.slot_map[slot_key] = render_skin.slot_map[slot_key] || new RenderSlot();
         switch (attachment.type) {
-          case 'mesh': {
-            const mesh_attachment: spine.MeshAttachment = <spine.MeshAttachment>attachment;
-            const mesh_attachment_info: MeshAttachmentInfo = slot_info.attachment_info_map[attachment_key] = new MeshAttachmentInfo();
-            const vertex_count: number = mesh_attachment_info.vertex_count = mesh_attachment.vertices.length / 2;
-            const vertex_position: Float32Array = mesh_attachment_info.vertex_position = new Float32Array(mesh_attachment.vertices);
-            const vertex_texcoord: Float32Array = mesh_attachment_info.vertex_texcoord = new Float32Array(mesh_attachment.uvs);
-            const vertex_triangle: Uint16Array = mesh_attachment_info.vertex_triangle = new Uint16Array(mesh_attachment.triangles);
+          case "region":
+            render_slot.attachment_map[attachment_key] = new RenderRegionAttachment(this).loadData(spine_data, <Spine.RegionAttachment> attachment);
             break;
-          }
-          case 'skinnedmesh': {
-            const skinned_mesh_attachment: spine.SkinnedMeshAttachment = <spine.SkinnedMeshAttachment>attachment;
-            const skinned_mesh_attachment_info: SkinnedMeshAttachmentInfo = slot_info.attachment_info_map[attachment_key] = new SkinnedMeshAttachmentInfo();
-            const vertex_count: number = skinned_mesh_attachment_info.vertex_count = skinned_mesh_attachment.uvs.length / 2;
-            const vertex_setup_position: Float32Array = skinned_mesh_attachment_info.vertex_setup_position = new Float32Array(2 * vertex_count);
-            const vertex_blend_position: Float32Array = skinned_mesh_attachment_info.vertex_blend_position = new Float32Array(2 * vertex_count);
-            const vertex_texcoord: Float32Array = skinned_mesh_attachment_info.vertex_texcoord = new Float32Array(skinned_mesh_attachment.uvs);
-            const vertex_triangle: Uint16Array = skinned_mesh_attachment_info.vertex_triangle = new Uint16Array(skinned_mesh_attachment.triangles);
-            const position: spine.Vector = new spine.Vector();
-            for (let vertex_index = 0, index = 0; vertex_index < vertex_count; ++vertex_index) {
-              const blender_count: number = skinned_mesh_attachment.vertices[index++];
-              let setup_position_x: number = 0;
-              let setup_position_y: number = 0;
-              for (let blender_index = 0; blender_index < blender_count; ++blender_index) {
-                const bone_index: number = skinned_mesh_attachment.vertices[index++];
-                const x: number = position.x = skinned_mesh_attachment.vertices[index++];
-                const y: number = position.y = skinned_mesh_attachment.vertices[index++];
-                const weight: number = skinned_mesh_attachment.vertices[index++];
-                const bone_key: string = spine_data.bone_keys[bone_index];
-                const bone: spine.Bone = spine_data.bones[bone_key];
-                spine.Space.transform(bone.world_space, position, position);
-                setup_position_x += position.x * weight;
-                setup_position_y += position.y * weight;
-              }
-              let vertex_setup_position_offset: number = vertex_index * 2;
-              vertex_setup_position[vertex_setup_position_offset++] = setup_position_x;
-              vertex_setup_position[vertex_setup_position_offset++] = setup_position_y;
-            }
-            vertex_blend_position.set(vertex_setup_position);
+          case "boundingbox":
+            render_slot.attachment_map[attachment_key] = new RenderBoundingBoxAttachment(this).loadData(spine_data, <Spine.BoundingBoxAttachment> attachment);
             break;
-          }
-          default:
+          case "mesh":
+            render_slot.attachment_map[attachment_key] = new RenderMeshAttachment(this).loadData(spine_data, <Spine.MeshAttachment> attachment);
+            break;
+          case "weightedmesh":
+            render_slot.attachment_map[attachment_key] = new RenderWeightedMeshAttachment(this).loadData(spine_data, <Spine.WeightedMeshAttachment> attachment);
             break;
         }
       });
     });
-    render.images = images;
   }
 
-  public updatePose(spine_pose: spine.Pose, atlas_data: atlas.Data): void {
-    const render: RenderCtx2D = this;
-    spine_pose.iterateAttachments(function(slot_key: string, slot: spine.Slot, skin_slot: spine.SkinSlot, attachment_key: string, attachment: spine.Attachment): void {
+  public dropData(spine_data: Spine.Data, atlas_data: Atlas.Data | null = null): void {
+    this.images = {};
+    spine_data.iterateSkins((skin_key: string, skin: Spine.Skin): void => {
+      const render_skin: RenderSkin = this.skin_map[skin_key];
+      skin.iterateAttachments((slot_key: string, skin_slot: Spine.SkinSlot, attachment_key: string, attachment: Spine.Attachment): void => {
+        if (!attachment) { return; }
+        const render_slot: RenderSlot = render_skin.slot_map[slot_key];
+        const render_attachment: RenderAttachment = render_slot.attachment_map[attachment_key];
+        if (render_attachment) {
+          render_attachment.dropData(spine_data, attachment);
+        }
+      });
+    });
+    this.skin_map = {};
+  }
+
+  public updatePose(spine_pose: Spine.Pose, atlas_data: Atlas.Data | null): void {
+    spine_pose.iterateAttachments((slot_key: string, slot: Spine.Slot, skin_slot: Spine.SkinSlot, attachment_key: string, attachment: Spine.Attachment): void => {
       if (!attachment) { return; }
-      const skin_info: SkinInfo = render.skin_info_map[spine_pose.skin_key];
-      const default_skin_info: SkinInfo = render.skin_info_map['default'];
-      const slot_info: SlotInfo = skin_info.slot_info_map[slot_key] || default_skin_info.slot_info_map[slot_key];
-      switch (attachment.type) {
-        case 'mesh': {
-          const mesh_attachment: spine.MeshAttachment = <spine.MeshAttachment>attachment;
-          const mesh_attachment_info: MeshAttachmentInfo = <MeshAttachmentInfo>slot_info.attachment_info_map[attachment_key];
-          const anim: spine.Animation = spine_pose.data.anims[spine_pose.anim_key];
-          const anim_ffd: spine.AnimFfd = anim && anim.ffds && anim.ffds[spine_pose.skin_key];
-          const ffd_slot: spine.FfdSlot = anim_ffd && anim_ffd.ffd_slots[slot_key];
-          const ffd_attachment: spine.FfdAttachment = ffd_slot && ffd_slot.ffd_attachments[attachment_key];
-          const ffd_keyframes: spine.FfdKeyframe[] = ffd_attachment && ffd_attachment.ffd_keyframes;
-          const ffd_keyframe_index: number = spine.Keyframe.find(ffd_keyframes, spine_pose.time);
-          if (ffd_keyframe_index !== -1) {
-            // ffd
-            let pct: number = 0;
-            const ffd_keyframe0: spine.FfdKeyframe = ffd_keyframes[ffd_keyframe_index];
-            let ffd_keyframe1: spine.FfdKeyframe = ffd_keyframes[ffd_keyframe_index + 1];
-            if (ffd_keyframe1) {
-              pct = ffd_keyframe0.curve.evaluate((spine_pose.time - ffd_keyframe0.time) / (ffd_keyframe1.time - ffd_keyframe0.time));
-            }
-            else {
-              ffd_keyframe1 = ffd_keyframe0;
-            }
-            for (let index = 0; index < mesh_attachment_info.vertex_position.length; ++index) {
-              const v0: number = ffd_keyframe0.vertices[index - ffd_keyframe0.offset] || 0;
-              const v1: number = ffd_keyframe1.vertices[index - ffd_keyframe1.offset] || 0;
-              mesh_attachment_info.vertex_position[index] = mesh_attachment.vertices[index] + spine.tween(v0, v1, pct);
-            }
-          }
-          break;
-        }
-        case 'skinnedmesh': {
-          const skinned_mesh_attachment: spine.SkinnedMeshAttachment = <spine.SkinnedMeshAttachment>attachment;
-          const skinned_mesh_attachment_info: SkinnedMeshAttachmentInfo = <SkinnedMeshAttachmentInfo>slot_info.attachment_info_map[attachment_key];
-          const anim: spine.Animation = spine_pose.data.anims[spine_pose.anim_key];
-          const anim_ffd: spine.AnimFfd = anim && anim.ffds && anim.ffds[spine_pose.skin_key];
-          const ffd_slot: spine.FfdSlot = anim_ffd && anim_ffd.ffd_slots[slot_key];
-          const ffd_attachment: spine.FfdAttachment = ffd_slot && ffd_slot.ffd_attachments[attachment_key];
-          const ffd_keyframes: spine.FfdKeyframe[] = ffd_attachment && ffd_attachment.ffd_keyframes;
-          const ffd_keyframe_index: number = spine.Keyframe.find(ffd_keyframes, spine_pose.time);
-          if (ffd_keyframe_index !== -1) {
-            // ffd
-            let pct: number = 0;
-            const ffd_keyframe0: spine.FfdKeyframe = ffd_keyframes[ffd_keyframe_index];
-            let ffd_keyframe1: spine.FfdKeyframe = ffd_keyframes[ffd_keyframe_index + 1];
-            if (ffd_keyframe1) {
-              pct = ffd_keyframe0.curve.evaluate((spine_pose.time - ffd_keyframe0.time) / (ffd_keyframe1.time - ffd_keyframe0.time));
-            } else {
-              ffd_keyframe1 = ffd_keyframe0;
-            }
-            const vertex_blend_position: Float32Array = skinned_mesh_attachment_info.vertex_blend_position;
-            const position: spine.Vector = new spine.Vector();
-            for (let vertex_index = 0, index = 0, ffd_index = 0; vertex_index < skinned_mesh_attachment_info.vertex_count; ++vertex_index) {
-              const blender_count: number = skinned_mesh_attachment.vertices[index++];
-              let blend_position_x: number = 0;
-              let blend_position_y: number = 0;
-              for (let blender_index = 0; blender_index < blender_count; ++blender_index) {
-                const bone_index: number = skinned_mesh_attachment.vertices[index++];
-                position.x = skinned_mesh_attachment.vertices[index++];
-                position.y = skinned_mesh_attachment.vertices[index++];
-                const weight: number = skinned_mesh_attachment.vertices[index++];
-                const bone_key: string = spine_pose.bone_keys[bone_index];
-                const bone: spine.Bone = spine_pose.bones[bone_key];
-                const x0: number = ffd_keyframe0.vertices[ffd_index - ffd_keyframe0.offset] || 0;
-                const x1: number = ffd_keyframe1.vertices[ffd_index - ffd_keyframe1.offset] || 0;
-                position.x += spine.tween(x0, x1, pct); ++ffd_index;
-                const y0: number = ffd_keyframe0.vertices[ffd_index - ffd_keyframe0.offset] || 0;
-                const y1: number = ffd_keyframe1.vertices[ffd_index - ffd_keyframe1.offset] || 0;
-                position.y += spine.tween(y0, y1, pct); ++ffd_index;
-                spine.Space.transform(bone.world_space, position, position);
-                blend_position_x += position.x * weight;
-                blend_position_y += position.y * weight;
-              }
-              let vertex_position_offset: number = vertex_index * 2;
-              vertex_blend_position[vertex_position_offset++] = blend_position_x;
-              vertex_blend_position[vertex_position_offset++] = blend_position_y;
-            }
-          } else {
-            // no ffd
-            const vertex_blend_position: Float32Array = skinned_mesh_attachment_info.vertex_blend_position;
-            const position: spine.Vector = new spine.Vector();
-            for (let vertex_index = 0, index = 0; vertex_index < skinned_mesh_attachment_info.vertex_count; ++vertex_index) {
-              const blender_count: number = skinned_mesh_attachment.vertices[index++];
-              let blend_position_x: number = 0;
-              let blend_position_y: number = 0;
-              for (let blender_index = 0; blender_index < blender_count; ++blender_index) {
-                const bone_index: number = skinned_mesh_attachment.vertices[index++];
-                position.x = skinned_mesh_attachment.vertices[index++];
-                position.y = skinned_mesh_attachment.vertices[index++];
-                const weight: number = skinned_mesh_attachment.vertices[index++];
-                const bone_key: string = spine_pose.bone_keys[bone_index];
-                const bone: spine.Bone = spine_pose.bones[bone_key];
-                spine.Space.transform(bone.world_space, position, position);
-                blend_position_x += position.x * weight;
-                blend_position_y += position.y * weight;
-              }
-              let vertex_position_offset: number = vertex_index * 2;
-              vertex_blend_position[vertex_position_offset++] = blend_position_x;
-              vertex_blend_position[vertex_position_offset++] = blend_position_y;
-            }
-          }
-          break;
-        }
-        default:
-          break;
+      const render_skin: RenderSkin = this.skin_map[spine_pose.skin_key];
+      const render_slot: RenderSlot = render_skin.slot_map[slot_key] || this.skin_map["default"].slot_map[slot_key];
+      const render_attachment: RenderAttachment = render_slot.attachment_map[attachment_key];
+      if (render_attachment) {
+        render_attachment.updatePose(spine_pose, atlas_data, slot_key, attachment_key, attachment);
       }
     });
   }
 
-  public drawPose(spine_pose: spine.Pose, atlas_data: atlas.Data): void {
-    const render: RenderCtx2D = this;
-    const ctx: CanvasRenderingContext2D = render.ctx;
-    render.updatePose(spine_pose, atlas_data);
-    spine_pose.iterateAttachments(function(slot_key: string, slot: spine.Slot, skin_slot: spine.SkinSlot, attachment_key: string, attachment: spine.Attachment): void {
+  public drawPose(spine_pose: Spine.Pose, atlas_data: Atlas.Data | null): void {
+    const ctx: CanvasRenderingContext2D = this.ctx;
+    this.updatePose(spine_pose, atlas_data);
+    spine_pose.iterateAttachments((slot_key: string, slot: Spine.Slot, skin_slot: Spine.SkinSlot, attachment_key: string, attachment: Spine.Attachment): void => {
       if (!attachment) { return; }
-      if (attachment.type === 'boundingbox') { return; }
-      const site: atlas.Site = atlas_data && atlas_data.sites[attachment_key];
-      const page: atlas.Page = site && site.page;
-      const image_key: string = (page && page.name) || attachment_key;
-      const image: HTMLImageElement = render.images[image_key];
-      if (!image || !image.complete) { return; }
-      ctx.save();
-      // slot.color.rgb
-      ctx.globalAlpha *= slot.color.a;
-      switch (slot.blend) {
-        default:
-        case 'normal': ctx.globalCompositeOperation = 'source-over'; break;
-        case 'additive': ctx.globalCompositeOperation = 'lighter'; break;
-        case 'multiply': ctx.globalCompositeOperation = 'multiply'; break;
-        case 'screen': ctx.globalCompositeOperation = 'screen'; break;
+      const render_skin: RenderSkin = this.skin_map[spine_pose.skin_key];
+      const render_slot: RenderSlot = render_skin.slot_map[slot_key] || this.skin_map["default"].slot_map[slot_key];
+      const render_attachment: RenderAttachment = render_slot.attachment_map[attachment_key];
+      if (render_attachment) {
+        const site: Atlas.Site | null = atlas_data && atlas_data.sites[attachment.path || attachment.name || attachment_key];
+        const page: Atlas.Page | null = site && site.page;
+        const image_key: string = (page && page.name) || attachment.path || attachment.name || attachment_key;
+        const image: HTMLImageElement = this.images[image_key];
+        if (!image || !image.complete) { return; }
+        ctx.save();
+        // slot.color.rgb
+        ctx.globalAlpha *= slot.color.a;
+        switch (slot.blend) {
+          default: case "normal": ctx.globalCompositeOperation = "source-over"; break;
+          case "additive": ctx.globalCompositeOperation = "lighter"; break;
+          case "multiply": ctx.globalCompositeOperation = "multiply"; break;
+          case "screen": ctx.globalCompositeOperation = "screen"; break;
+        }
+        render_attachment.drawPose(spine_pose, slot, attachment, image, site, page);
+        ctx.restore();
       }
-      const skin_info: SkinInfo = render.skin_info_map[spine_pose.skin_key];
-      const default_skin_info: SkinInfo = render.skin_info_map['default'];
-      const slot_info: SlotInfo = skin_info.slot_info_map[slot_key] || default_skin_info.slot_info_map[slot_key];
-      switch (attachment.type) {
-        case 'region': {
-          const bone: spine.Bone = spine_pose.bones[slot.bone_key];
-          const region_attachment: spine.RegionAttachment = <spine.RegionAttachment>attachment;
-          const region_attachment_info: RegionAttachmentInfo = <RegionAttachmentInfo>slot_info.attachment_info_map[attachment_key];
-          ctxApplySpace(ctx, bone.world_space);
-          ctxApplySpace(ctx, region_attachment.local_space);
-          ctxApplyAtlasSitePosition(ctx, site);
-          ctx.scale(region_attachment.width / 2, region_attachment.height / 2);
-          ctxDrawImageMesh(ctx, render.region_vertex_triangle, render.region_vertex_position, render.region_vertex_texcoord, image, site, page);
-          break;
-        }
-        case 'mesh': {
-          const bone: spine.Bone = spine_pose.bones[slot.bone_key];
-          const mesh_attachment: spine.MeshAttachment = <spine.MeshAttachment>attachment;
-          const mesh_attachment_info: MeshAttachmentInfo = <MeshAttachmentInfo>slot_info.attachment_info_map[attachment_key];
-          ctxApplySpace(ctx, bone.world_space);
-          ctxApplyAtlasSitePosition(ctx, site);
-          ctxDrawImageMesh(ctx, mesh_attachment_info.vertex_triangle, mesh_attachment_info.vertex_position, mesh_attachment_info.vertex_texcoord, image, site, page);
-          break;
-        }
-        case 'skinnedmesh': {
-          const skinned_mesh_attachment: spine.SkinnedMeshAttachment = <spine.SkinnedMeshAttachment>attachment;
-          const skinned_mesh_attachment_info: SkinnedMeshAttachmentInfo = <SkinnedMeshAttachmentInfo>slot_info.attachment_info_map[attachment_key];
-          ctxApplyAtlasSitePosition(ctx, site);
-          ctxDrawImageMesh(ctx, skinned_mesh_attachment_info.vertex_triangle, skinned_mesh_attachment_info.vertex_blend_position, skinned_mesh_attachment_info.vertex_texcoord, image, site, page);
-          break;
-        }
-        default:
-          break;
-      }
-      ctx.restore();
     });
   }
 
-  public drawDebugPose(spine_pose: spine.Pose, atlas_data: atlas.Data): void {
-    const render: RenderCtx2D = this;
-    const ctx: CanvasRenderingContext2D = render.ctx;
-    render.updatePose(spine_pose, atlas_data);
-    spine_pose.iterateAttachments(function(slot_key: string, slot: spine.Slot, skin_slot: spine.SkinSlot, attachment_key: string, attachment: spine.Attachment): void {
+  public drawDebugPose(spine_pose: Spine.Pose, atlas_data: Atlas.Data | null): void {
+    const ctx: CanvasRenderingContext2D = this.ctx;
+    this.updatePose(spine_pose, atlas_data);
+    spine_pose.iterateAttachments((slot_key: string, slot: Spine.Slot, skin_slot: Spine.SkinSlot, attachment_key: string, attachment: Spine.Attachment): void => {
       if (!attachment) { return; }
-      ctx.save();
-      const skin_info: SkinInfo = render.skin_info_map[spine_pose.skin_key];
-      const default_skin_info: SkinInfo = render.skin_info_map['default'];
-      const slot_info: SlotInfo = skin_info.slot_info_map[slot_key] || default_skin_info.slot_info_map[slot_key];
-      switch (attachment.type) {
-        case 'region': {
-          const bone: spine.Bone = spine_pose.bones[slot.bone_key];
-          const site: atlas.Site = atlas_data && atlas_data.sites[attachment_key];
-          const region_attachment: spine.RegionAttachment = <spine.RegionAttachment>attachment;
-          const region_attachment_info: RegionAttachmentInfo = <RegionAttachmentInfo>slot_info.attachment_info_map[attachment_key];
-          ctxApplySpace(ctx, bone.world_space);
-          ctxApplySpace(ctx, region_attachment.local_space);
-          ctxApplyAtlasSitePosition(ctx, site);
-          ctx.beginPath();
-          ctx.rect(-region_attachment.width / 2, -region_attachment.height / 2, region_attachment.width, region_attachment.height);
-          ctx.fillStyle = 'rgba(127,127,127,0.25)';
-          ctx.fill();
-          ctx.strokeStyle = 'rgba(127,127,127,1.0)';
-          ctx.stroke();
-          break;
-        }
-        case 'boundingbox': {
-          const bone: spine.Bone = spine_pose.bones[slot.bone_key];
-          const bounding_box_attachment: spine.BoundingBoxAttachment = <spine.BoundingBoxAttachment>attachment;
-          const bounding_box_attachment_info: BoundingBoxAttachmentInfo = <BoundingBoxAttachmentInfo>slot_info.attachment_info_map[attachment_key];
-          ctxApplySpace(ctx, bone.world_space);
-          ctx.beginPath();
-          let x: number = 0;
-          bounding_box_attachment.vertices.forEach(function(value: number, index: number): void {
-            if (index & 1) { ctx.lineTo(x, value); } else { x = value; }
-          });
-          ctx.closePath();
-          ctx.strokeStyle = 'yellow';
-          ctx.stroke();
-          break;
-        }
-        case 'mesh': {
-          const bone: spine.Bone = spine_pose.bones[slot.bone_key];
-          const site: atlas.Site = atlas_data && atlas_data.sites[attachment_key];
-          const mesh_attachment: spine.MeshAttachment = <spine.MeshAttachment>attachment;
-          const mesh_attachment_info: MeshAttachmentInfo = <MeshAttachmentInfo>slot_info.attachment_info_map[attachment_key];
-          ctxApplySpace(ctx, bone.world_space);
-          ctxApplyAtlasSitePosition(ctx, site);
-          ctxDrawMesh(ctx, mesh_attachment_info.vertex_triangle, mesh_attachment_info.vertex_position, 'rgba(127,127,127,1.0)', 'rgba(127,127,127,0.25)');
-          break;
-        }
-        case 'skinnedmesh': {
-          const site: atlas.Site = atlas_data && atlas_data.sites[attachment_key];
-          const skinned_mesh_attachment: spine.SkinnedMeshAttachment = <spine.SkinnedMeshAttachment>attachment;
-          const skinned_mesh_attachment_info: SkinnedMeshAttachmentInfo = <SkinnedMeshAttachmentInfo>slot_info.attachment_info_map[attachment_key];
-          ctxApplyAtlasSitePosition(ctx, site);
-          ctxDrawMesh(ctx, skinned_mesh_attachment_info.vertex_triangle, skinned_mesh_attachment_info.vertex_blend_position, 'rgba(127,127,127,1.0)', 'rgba(127,127,127,0.25)');
-          break;
-        }
-        default:
-          break;
+      const render_skin: RenderSkin = this.skin_map[spine_pose.skin_key];
+      const render_slot: RenderSlot = render_skin.slot_map[slot_key] || this.skin_map["default"].slot_map[slot_key];
+      const render_attachment: RenderAttachment = render_slot.attachment_map[attachment_key];
+      if (render_attachment) {
+        const site: Atlas.Site | null = atlas_data && atlas_data.sites[attachment.path || attachment.name || attachment_key];
+        const page: Atlas.Page | null = site && site.page;
+        const image_key: string = (page && page.name) || attachment.path || attachment.name || attachment_key;
+        const image: HTMLImageElement = this.images[image_key];
+        render_attachment.drawDebugPose(spine_pose, slot, attachment, image, site, page);
       }
-      ctx.restore();
     });
-    spine_pose.iterateBones(function(bone_key: string, bone: spine.Bone): void {
+    spine_pose.iterateBones(function(bone_key: string, bone: Spine.Bone): void {
       ctx.save();
       ctxApplySpace(ctx, bone.world_space);
       ctxDrawPoint(ctx);
@@ -375,71 +121,22 @@ export class RenderCtx2D {
     ctxDrawIkConstraints(ctx, spine_pose.data, spine_pose.bones);
   }
 
-  public drawDebugData(spine_pose: spine.Pose, atlas_data: atlas.Data): void {
-    const render: RenderCtx2D = this;
-    const ctx: CanvasRenderingContext2D = render.ctx;
-    spine_pose.data.iterateAttachments(spine_pose.skin_key, function(slot_key: string, slot: spine.Slot, skin_slot: spine.SkinSlot, attachment_key: string, attachment: spine.Attachment): void {
+  public drawDebugData(spine_pose: Spine.Pose, atlas_data: Atlas.Data | null): void {
+    const ctx: CanvasRenderingContext2D = this.ctx;
+    spine_pose.data.iterateAttachments(spine_pose.skin_key, (slot_key: string, slot: Spine.Slot, skin_slot: Spine.SkinSlot, attachment_key: string, attachment: Spine.Attachment): void => {
       if (!attachment) { return; }
-      ctx.save();
-      const skin_info: SkinInfo = render.skin_info_map[spine_pose.skin_key];
-      const default_skin_info: SkinInfo = render.skin_info_map['default'];
-      const slot_info: SlotInfo = skin_info.slot_info_map[slot_key] || default_skin_info.slot_info_map[slot_key];
-      switch (attachment.type) {
-        case 'region': {
-          const bone: spine.Bone = spine_pose.data.bones[slot.bone_key];
-          const site: atlas.Site = atlas_data && atlas_data.sites[attachment_key];
-          const region_attachment: spine.RegionAttachment = <spine.RegionAttachment>attachment;
-          const region_attachment_info: RegionAttachmentInfo = <RegionAttachmentInfo>slot_info.attachment_info_map[attachment_key];
-          ctxApplySpace(ctx, bone.world_space);
-          ctxApplySpace(ctx, region_attachment.local_space);
-          ctxApplyAtlasSitePosition(ctx, site);
-          ctx.beginPath();
-          ctx.rect(-region_attachment.width / 2, -region_attachment.height / 2, region_attachment.width, region_attachment.height);
-          ctx.fillStyle = 'rgba(127,127,127,0.25)';
-          ctx.fill();
-          ctx.strokeStyle = 'rgba(127,127,127,1.0)';
-          ctx.stroke();
-          break;
-        }
-        case 'boundingbox': {
-          const bone: spine.Bone = spine_pose.data.bones[slot.bone_key];
-          const bounding_box_attachment: spine.BoundingBoxAttachment = <spine.BoundingBoxAttachment>attachment;
-          const bounding_box_attachment_info: BoundingBoxAttachmentInfo = <BoundingBoxAttachmentInfo>slot_info.attachment_info_map[attachment_key];
-          ctxApplySpace(ctx, bone.world_space);
-          ctx.beginPath();
-          let x: number = 0;
-          bounding_box_attachment.vertices.forEach(function(value: number, index: number): void {
-            if (index & 1) { ctx.lineTo(x, value); } else { x = value; }
-          });
-          ctx.closePath();
-          ctx.strokeStyle = 'yellow';
-          ctx.stroke();
-          break;
-        }
-        case 'mesh': {
-          const bone: spine.Bone = spine_pose.data.bones[slot.bone_key];
-          const site: atlas.Site = atlas_data && atlas_data.sites[attachment_key];
-          const mesh_attachment: spine.MeshAttachment = <spine.MeshAttachment>attachment;
-          const mesh_attachment_info: MeshAttachmentInfo = <MeshAttachmentInfo>slot_info.attachment_info_map[attachment_key];
-          ctxApplySpace(ctx, bone.world_space);
-          ctxApplyAtlasSitePosition(ctx, site);
-          ctxDrawMesh(ctx, mesh_attachment_info.vertex_triangle, mesh_attachment_info.vertex_position, 'rgba(127,127,127,1.0)', 'rgba(127,127,127,0.25)');
-          break;
-        }
-        case 'skinnedmesh': {
-          const site: atlas.Site = atlas_data && atlas_data.sites[attachment_key];
-          const skinned_mesh_attachment: spine.SkinnedMeshAttachment = <spine.SkinnedMeshAttachment>attachment;
-          const skinned_mesh_attachment_info: SkinnedMeshAttachmentInfo = <SkinnedMeshAttachmentInfo>slot_info.attachment_info_map[attachment_key];
-          ctxApplyAtlasSitePosition(ctx, site);
-          ctxDrawMesh(ctx, skinned_mesh_attachment_info.vertex_triangle, skinned_mesh_attachment_info.vertex_setup_position, 'rgba(127,127,127,1.0)', 'rgba(127,127,127,0.25)');
-          break;
-        }
-        default:
-          break;
+      const render_skin: RenderSkin = this.skin_map[spine_pose.skin_key];
+      const render_slot: RenderSlot = render_skin.slot_map[slot_key] || this.skin_map["default"].slot_map[slot_key];
+      const render_attachment: RenderAttachment = render_slot.attachment_map[attachment_key];
+      if (render_attachment) {
+        const site: Atlas.Site | null = atlas_data && atlas_data.sites[attachment.path || attachment.name || attachment_key];
+        const page: Atlas.Page | null = site && site.page;
+        const image_key: string = (page && page.name) || attachment.path || attachment.name || attachment_key;
+        const image: HTMLImageElement = this.images[image_key];
+        render_attachment.drawDebugData(spine_pose, slot, attachment, image, site, page);
       }
-      ctx.restore();
     });
-    spine_pose.data.iterateBones(function(bone_key: string, bone: spine.Bone): void {
+    spine_pose.data.iterateBones(function(bone_key: string, bone: Spine.Bone): void {
       ctx.save();
       ctxApplySpace(ctx, bone.world_space);
       ctxDrawPoint(ctx);
@@ -449,7 +146,350 @@ export class RenderCtx2D {
   }
 }
 
-function ctxApplySpace(ctx: CanvasRenderingContext2D, space: spine.Space): void {
+class RenderSkin {
+  public slot_map: {[key: string]: RenderSlot} = {};
+}
+
+class RenderSlot {
+  public attachment_map: {[key: string]: RenderAttachment} = {};
+}
+
+interface RenderAttachment {
+  loadData(spine_data: Spine.Data, attachment: Spine.Attachment): RenderAttachment;
+  dropData(spine_data: Spine.Data, attachment: Spine.Attachment): RenderAttachment;
+  updatePose(spine_pose: Spine.Pose, atlas_data: Atlas.Data | null, slot_key: string, attachment_key: string, attachment: Spine.Attachment): void;
+  drawPose(spine_pose: Spine.Pose, slot: Spine.Slot, attachment: Spine.Attachment, image: HTMLImageElement, site: Atlas.Site | null, page: Atlas.Page | null): void;
+  drawDebugPose(spine_pose: Spine.Pose, slot: Spine.Slot, attachment: Spine.Attachment, image: HTMLImageElement, site: Atlas.Site | null, page: Atlas.Page | null): void;
+  drawDebugData(spine_pose: Spine.Pose, slot: Spine.Slot, attachment: Spine.Attachment, image: HTMLImageElement, site: Atlas.Site | null, page: Atlas.Page | null): void;
+}
+
+class RenderRegionAttachment implements RenderAttachment {
+  public render: RenderCtx2D;
+
+  constructor(render: RenderCtx2D) {
+    this.render = render;
+  }
+
+  loadData(spine_data: Spine.Data, attachment: Spine.RegionAttachment): RenderRegionAttachment {
+    return this;
+  }
+
+  dropData(spine_data: Spine.Data, attachment: Spine.RegionAttachment): RenderRegionAttachment {
+    return this;
+  }
+
+  updatePose(spine_pose: Spine.Pose, atlas_data: Atlas.Data | null, slot_key: string, attachment_key: string, attachment: Spine.Attachment): void {
+  }
+
+  drawPose(spine_pose: Spine.Pose, slot: Spine.Slot, attachment: Spine.RegionAttachment, image: HTMLImageElement, site: Atlas.Site | null, page: Atlas.Page | null): void {
+    const render: RenderCtx2D = this.render;
+    const ctx: CanvasRenderingContext2D = this.render.ctx;
+    const bone: Spine.Bone = spine_pose.bones[slot.bone_key];
+    ctx.save();
+    ctxApplySpace(ctx, bone.world_space);
+    ctxApplySpace(ctx, attachment.local_space);
+    ctxApplyAtlasSitePosition(ctx, site);
+    ctx.scale(attachment.width / 2, attachment.height / 2);
+    ctxDrawImageMesh(ctx, render.region_vertex_triangle, render.region_vertex_position, render.region_vertex_texcoord, image, site, page);
+    ctx.restore();
+  }
+
+  drawDebugPose(spine_pose: Spine.Pose, slot: Spine.Slot, attachment: Spine.RegionAttachment, image: HTMLImageElement, site: Atlas.Site | null, page: Atlas.Page | null): void {
+    const ctx: CanvasRenderingContext2D = this.render.ctx;
+    const bone: Spine.Bone = spine_pose.bones[slot.bone_key];
+    ctx.save();
+    ctxApplySpace(ctx, bone.world_space);
+    ctxApplySpace(ctx, attachment.local_space);
+    ctxApplyAtlasSitePosition(ctx, site);
+    ctx.beginPath();
+    ctx.rect(-attachment.width / 2, -attachment.height / 2, attachment.width, attachment.height);
+    ctx.fillStyle = "rgba(127,127,127,0.25)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(127,127,127,1.0)";
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  drawDebugData(spine_pose: Spine.Pose, slot: Spine.Slot, attachment: Spine.RegionAttachment, image: HTMLImageElement, site: Atlas.Site | null, page: Atlas.Page | null): void {
+    const ctx: CanvasRenderingContext2D = this.render.ctx;
+    const bone: Spine.Bone = spine_pose.data.bones[slot.bone_key];
+    ctx.save();
+    ctxApplySpace(ctx, bone.world_space);
+    ctxApplySpace(ctx, attachment.local_space);
+    ctxApplyAtlasSitePosition(ctx, site);
+    ctx.beginPath();
+    ctx.rect(-attachment.width / 2, -attachment.height / 2, attachment.width, attachment.height);
+    ctx.fillStyle = "rgba(127,127,127,0.25)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(127,127,127,1.0)";
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+class RenderBoundingBoxAttachment implements RenderAttachment {
+  public render: RenderCtx2D;
+
+  constructor(render: RenderCtx2D) {
+    this.render = render;
+  }
+
+  loadData(spine_data: Spine.Data, attachment: Spine.BoundingBoxAttachment): RenderBoundingBoxAttachment {
+    return this;
+  }
+
+  dropData(spine_data: Spine.Data, attachment: Spine.BoundingBoxAttachment): RenderBoundingBoxAttachment {
+    return this;
+  }
+
+  updatePose(spine_pose: Spine.Pose, atlas_data: Atlas.Data | null, slot_key: string, attachment_key: string, attachment: Spine.Attachment): void {
+  }
+
+  drawPose(spine_pose: Spine.Pose, slot: Spine.Slot, attachment: Spine.BoundingBoxAttachment, image: HTMLImageElement, site: Atlas.Site | null, page: Atlas.Page | null): void {
+  }
+
+  drawDebugPose(spine_pose: Spine.Pose, slot: Spine.Slot, attachment: Spine.BoundingBoxAttachment, image: HTMLImageElement, site: Atlas.Site | null, page: Atlas.Page | null): void {
+    const ctx: CanvasRenderingContext2D = this.render.ctx;
+    const bone: Spine.Bone = spine_pose.bones[slot.bone_key];
+    ctx.save();
+    ctxApplySpace(ctx, bone.world_space);
+    ctx.beginPath();
+    let x: number = 0;
+    attachment.vertices.forEach(function(value: number, index: number): void {
+      if (index & 1) { ctx.lineTo(x, value); } else { x = value; }
+    });
+    ctx.closePath();
+    ctx.strokeStyle = "yellow";
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  drawDebugData(spine_pose: Spine.Pose, slot: Spine.Slot, attachment: Spine.BoundingBoxAttachment, image: HTMLImageElement, site: Atlas.Site | null, page: Atlas.Page | null): void {
+    const ctx: CanvasRenderingContext2D = this.render.ctx;
+    const bone: Spine.Bone = spine_pose.data.bones[slot.bone_key];
+    ctx.save();
+    ctxApplySpace(ctx, bone.world_space);
+    ctx.beginPath();
+    let x: number = 0;
+    attachment.vertices.forEach(function(value: number, index: number): void {
+      if (index & 1) { ctx.lineTo(x, value); } else { x = value; }
+    });
+    ctx.closePath();
+    ctx.strokeStyle = "yellow";
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+class RenderMeshAttachment implements RenderAttachment {
+  public render: RenderCtx2D;
+  public vertex_count: number;
+  public vertex_position: Float32Array;
+  public vertex_texcoord: Float32Array;
+  public vertex_triangle: Uint16Array;
+
+  constructor(render: RenderCtx2D) {
+    this.render = render;
+  }
+
+  loadData(spine_data: Spine.Data, attachment: Spine.MeshAttachment): RenderMeshAttachment {
+    this.vertex_count = attachment.vertices.length / 2;
+    this.vertex_position = new Float32Array(attachment.vertices);
+    this.vertex_texcoord = new Float32Array(attachment.uvs);
+    this.vertex_triangle = new Uint16Array(attachment.triangles);
+    return this;
+  }
+
+  dropData(spine_data: Spine.Data, attachment: Spine.MeshAttachment): RenderMeshAttachment {
+    return this;
+  }
+
+  updatePose(spine_pose: Spine.Pose, atlas_data: Atlas.Data | null, slot_key: string, attachment_key: string, attachment: Spine.MeshAttachment): void {
+    const anim: Spine.Animation | undefined = spine_pose.data.anims[spine_pose.anim_key];
+    const ffd_timeline: Spine.FfdTimeline | undefined = anim && anim.ffd_timeline_map && anim.ffd_timeline_map[spine_pose.skin_key];
+    const ffd_slot: Spine.FfdSlot | undefined = ffd_timeline && ffd_timeline.ffd_slots[slot_key];
+    const ffd_attachment: Spine.FfdAttachment | undefined = ffd_slot && ffd_slot.ffd_attachments[attachment_key];
+    const ffd_keyframes: Spine.FfdKeyframe[] | undefined = ffd_attachment && ffd_attachment.ffd_keyframes;
+    const ffd_keyframe0_index: number = Spine.Keyframe.find(ffd_keyframes, spine_pose.time);
+    const ffd_keyframe1_index: number = ffd_keyframe0_index + 1 || ffd_keyframe0_index;
+    const ffd_keyframe0: Spine.FfdKeyframe | undefined = ffd_keyframes && ffd_keyframes[ffd_keyframe0_index];
+    const ffd_keyframe1: Spine.FfdKeyframe | undefined = ffd_keyframes && ffd_keyframes[ffd_keyframe1_index] || ffd_keyframe0;
+    if (ffd_keyframe0) {
+      const ffd_weight: number = (ffd_keyframe0.time === ffd_keyframe1.time) ? 0 : ffd_keyframe0.curve.evaluate((spine_pose.time - ffd_keyframe0.time) / (ffd_keyframe1.time - ffd_keyframe0.time));
+      for (let index = 0; index < this.vertex_position.length; ++index) {
+        const v0: number = ffd_keyframe0.vertices[index - ffd_keyframe0.offset] || 0;
+        const v1: number = ffd_keyframe1.vertices[index - ffd_keyframe1.offset] || 0;
+        this.vertex_position[index] = attachment.vertices[index] + Spine.tween(v0, v1, ffd_weight);
+      }
+    }
+  }
+
+  drawPose(spine_pose: Spine.Pose, slot: Spine.Slot, attachment: Spine.MeshAttachment, image: HTMLImageElement, site: Atlas.Site | null, page: Atlas.Page | null): void {
+    const ctx: CanvasRenderingContext2D = this.render.ctx;
+    const bone: Spine.Bone = spine_pose.bones[slot.bone_key];
+    ctx.save();
+    ctxApplySpace(ctx, bone.world_space);
+    ctxApplyAtlasSitePosition(ctx, site);
+    ctxDrawImageMesh(ctx, this.vertex_triangle, this.vertex_position, this.vertex_texcoord, image, site, page);
+    ctx.restore();
+  }
+
+  drawDebugPose(spine_pose: Spine.Pose, slot: Spine.Slot, attachment: Spine.MeshAttachment, image: HTMLImageElement, site: Atlas.Site | null, page: Atlas.Page | null): void {
+    const ctx: CanvasRenderingContext2D = this.render.ctx;
+    const bone: Spine.Bone = spine_pose.bones[slot.bone_key];
+    ctx.save();
+    ctxApplySpace(ctx, bone.world_space);
+    ctxApplyAtlasSitePosition(ctx, site);
+    ctxDrawMesh(ctx, this.vertex_triangle, this.vertex_position, "rgba(127,127,127,1.0)", "rgba(127,127,127,0.25)");
+    ctx.restore();
+  }
+
+  drawDebugData(spine_pose: Spine.Pose, slot: Spine.Slot, attachment: Spine.MeshAttachment, image: HTMLImageElement, site: Atlas.Site | null, page: Atlas.Page | null): void {
+    const ctx: CanvasRenderingContext2D = this.render.ctx;
+    const bone: Spine.Bone = spine_pose.data.bones[slot.bone_key];
+    ctx.save();
+    ctxApplySpace(ctx, bone.world_space);
+    ctxApplyAtlasSitePosition(ctx, site);
+    ctxDrawMesh(ctx, this.vertex_triangle, this.vertex_position, "rgba(127,127,127,1.0)", "rgba(127,127,127,0.25)");
+    ctx.restore();
+  }
+}
+
+class RenderWeightedMeshAttachment implements RenderAttachment {
+  public render: RenderCtx2D;
+  public vertex_count: number;
+  public vertex_setup_position: Float32Array;
+  public vertex_blend_position: Float32Array;
+  public vertex_texcoord: Float32Array;
+  public vertex_triangle: Uint16Array;
+
+  constructor(render: RenderCtx2D) {
+    this.render = render;
+  }
+
+  loadData(spine_data: Spine.Data, attachment: Spine.WeightedMeshAttachment): RenderWeightedMeshAttachment {
+    const vertex_count: number = this.vertex_count = attachment.uvs.length / 2;
+    const vertex_setup_position: Float32Array = this.vertex_setup_position = new Float32Array(2 * vertex_count);
+    const vertex_blend_position: Float32Array = this.vertex_blend_position = new Float32Array(2 * vertex_count);
+    this.vertex_texcoord = new Float32Array(attachment.uvs);
+    this.vertex_triangle = new Uint16Array(attachment.triangles);
+    const position: Spine.Vector = new Spine.Vector();
+    for (let vertex_index = 0, index = 0; vertex_index < vertex_count; ++vertex_index) {
+      const blender_count: number = attachment.vertices[index++];
+      let setup_position_x: number = 0;
+      let setup_position_y: number = 0;
+      for (let blender_index = 0; blender_index < blender_count; ++blender_index) {
+        const bone_index: number = attachment.vertices[index++];
+        position.x = attachment.vertices[index++];
+        position.y = attachment.vertices[index++];
+        const weight: number = attachment.vertices[index++];
+        const bone_key: string = spine_data.bone_keys[bone_index];
+        const bone: Spine.Bone = spine_data.bones[bone_key];
+        Spine.Space.transform(bone.world_space, position, position);
+        setup_position_x += position.x * weight;
+        setup_position_y += position.y * weight;
+      }
+      let vertex_setup_position_offset: number = vertex_index * 2;
+      vertex_setup_position[vertex_setup_position_offset++] = setup_position_x;
+      vertex_setup_position[vertex_setup_position_offset++] = setup_position_y;
+    }
+    vertex_blend_position.set(vertex_setup_position);
+    return this;
+  }
+
+  dropData(spine_data: Spine.Data, attachment: Spine.WeightedMeshAttachment): RenderWeightedMeshAttachment {
+    return this;
+  }
+
+  updatePose(spine_pose: Spine.Pose, atlas_data: Atlas.Data | null, slot_key: string, attachment_key: string, attachment: Spine.WeightedMeshAttachment): void {
+    const anim: Spine.Animation | undefined = spine_pose.data.anims[spine_pose.anim_key];
+    const ffd_timeline: Spine.FfdTimeline | undefined = anim && anim.ffd_timeline_map && anim.ffd_timeline_map[spine_pose.skin_key];
+    const ffd_slot: Spine.FfdSlot | undefined = ffd_timeline && ffd_timeline.ffd_slots[slot_key];
+    const ffd_attachment: Spine.FfdAttachment | undefined = ffd_slot && ffd_slot.ffd_attachments[attachment_key];
+    const ffd_keyframes: Spine.FfdKeyframe[] | undefined = ffd_attachment && ffd_attachment.ffd_keyframes;
+    const ffd_keyframe0_index: number = Spine.Keyframe.find(ffd_keyframes, spine_pose.time);
+    const ffd_keyframe1_index: number = ffd_keyframe0_index + 1 || ffd_keyframe0_index;
+    const ffd_keyframe0: Spine.FfdKeyframe | undefined = ffd_keyframes && ffd_keyframes[ffd_keyframe0_index];
+    const ffd_keyframe1: Spine.FfdKeyframe | undefined = ffd_keyframes && ffd_keyframes[ffd_keyframe1_index] || ffd_keyframe0;
+    if (ffd_keyframe0) {
+      const ffd_weight: number = (ffd_keyframe0.time === ffd_keyframe1.time) ? 0 : ffd_keyframe0.curve.evaluate((spine_pose.time - ffd_keyframe0.time) / (ffd_keyframe1.time - ffd_keyframe0.time));
+      const vertex_blend_position: Float32Array = this.vertex_blend_position;
+      const position: Spine.Vector = new Spine.Vector();
+      for (let vertex_index = 0, index = 0, ffd_index = 0; vertex_index < this.vertex_count; ++vertex_index) {
+        const blender_count: number = attachment.vertices[index++];
+        let blend_position_x: number = 0;
+        let blend_position_y: number = 0;
+        for (let blender_index = 0; blender_index < blender_count; ++blender_index) {
+          const bone_index: number = attachment.vertices[index++];
+          position.x = attachment.vertices[index++];
+          position.y = attachment.vertices[index++];
+          const weight: number = attachment.vertices[index++];
+          const bone_key: string = spine_pose.bone_keys[bone_index];
+          const bone: Spine.Bone = spine_pose.bones[bone_key];
+          const x0: number = ffd_keyframe0.vertices[ffd_index - ffd_keyframe0.offset] || 0;
+          const x1: number = ffd_keyframe1.vertices[ffd_index - ffd_keyframe1.offset] || 0;
+          position.x += Spine.tween(x0, x1, ffd_weight); ++ffd_index;
+          const y0: number = ffd_keyframe0.vertices[ffd_index - ffd_keyframe0.offset] || 0;
+          const y1: number = ffd_keyframe1.vertices[ffd_index - ffd_keyframe1.offset] || 0;
+          position.y += Spine.tween(y0, y1, ffd_weight); ++ffd_index;
+          Spine.Space.transform(bone.world_space, position, position);
+          blend_position_x += position.x * weight;
+          blend_position_y += position.y * weight;
+        }
+        vertex_blend_position[vertex_index * 2 + 0] = blend_position_x;
+        vertex_blend_position[vertex_index * 2 + 1] = blend_position_y;
+      }
+    } else {
+      const vertex_blend_position: Float32Array = this.vertex_blend_position;
+      const position: Spine.Vector = new Spine.Vector();
+      for (let vertex_index = 0, index = 0; vertex_index < this.vertex_count; ++vertex_index) {
+        const blender_count: number = attachment.vertices[index++];
+        let blend_position_x: number = 0;
+        let blend_position_y: number = 0;
+        for (let blender_index = 0; blender_index < blender_count; ++blender_index) {
+          const bone_index: number = attachment.vertices[index++];
+          position.x = attachment.vertices[index++];
+          position.y = attachment.vertices[index++];
+          const weight: number = attachment.vertices[index++];
+          const bone_key: string = spine_pose.bone_keys[bone_index];
+          const bone: Spine.Bone = spine_pose.bones[bone_key];
+          Spine.Space.transform(bone.world_space, position, position);
+          blend_position_x += position.x * weight;
+          blend_position_y += position.y * weight;
+        }
+        let vertex_position_offset: number = vertex_index * 2;
+        vertex_blend_position[vertex_position_offset++] = blend_position_x;
+        vertex_blend_position[vertex_position_offset++] = blend_position_y;
+      }
+    }
+  }
+
+  drawPose(spine_pose: Spine.Pose, slot: Spine.Slot, attachment: Spine.WeightedMeshAttachment, image: HTMLImageElement, site: Atlas.Site | null, page: Atlas.Page | null): void {
+    const ctx: CanvasRenderingContext2D = this.render.ctx;
+    ctx.save();
+    ctxApplyAtlasSitePosition(ctx, site);
+    ctxDrawImageMesh(ctx, this.vertex_triangle, this.vertex_blend_position, this.vertex_texcoord, image, site, page);
+    ctx.restore();
+  }
+
+  drawDebugPose(spine_pose: Spine.Pose, slot: Spine.Slot, attachment: Spine.Attachment, image: HTMLImageElement, site: Atlas.Site | null, page: Atlas.Page | null): void {
+    const ctx: CanvasRenderingContext2D = this.render.ctx;
+    ctx.save();
+    ctxApplyAtlasSitePosition(ctx, site);
+    ctxDrawMesh(ctx, this.vertex_triangle, this.vertex_blend_position, "rgba(127,127,127,1.0)", "rgba(127,127,127,0.25)");
+    ctx.restore();
+  }
+
+  drawDebugData(spine_pose: Spine.Pose, slot: Spine.Slot, attachment: Spine.Attachment, image: HTMLImageElement, site: Atlas.Site | null, page: Atlas.Page | null): void {
+    const ctx: CanvasRenderingContext2D = this.render.ctx;
+    ctx.save();
+    ctxApplyAtlasSitePosition(ctx, site);
+    ctxDrawMesh(ctx, this.vertex_triangle, this.vertex_setup_position, "rgba(127,127,127,1.0)", "rgba(127,127,127,0.25)");
+    ctx.restore();
+  }
+}
+
+function ctxApplySpace(ctx: CanvasRenderingContext2D, space: Spine.Space): void {
   if (space) {
     ctx.translate(space.position.x, space.position.y);
     ctx.rotate(space.rotation.rad);
@@ -457,7 +497,7 @@ function ctxApplySpace(ctx: CanvasRenderingContext2D, space: spine.Space): void 
   }
 }
 
-function ctxApplyAtlasSitePosition(ctx: CanvasRenderingContext2D, site: atlas.Site): void {
+function ctxApplyAtlasSitePosition(ctx: CanvasRenderingContext2D, site: Atlas.Site | null): void {
   if (site) {
     ctx.scale(1 / site.original_w, 1 / site.original_h);
     ctx.translate(2 * site.offset_x - (site.original_w - site.w), (site.original_h - site.h) - 2 * site.offset_y);
@@ -465,14 +505,14 @@ function ctxApplyAtlasSitePosition(ctx: CanvasRenderingContext2D, site: atlas.Si
   }
 }
 
-function ctxDrawCircle(ctx: CanvasRenderingContext2D, color: string = 'grey', scale: number = 1): void {
+function ctxDrawCircle(ctx: CanvasRenderingContext2D, color: string = "grey", scale: number = 1): void {
   ctx.beginPath();
   ctx.arc(0, 0, 12 * scale, 0, 2 * Math.PI, false);
   ctx.strokeStyle = color;
   ctx.stroke();
 }
 
-function ctxDrawPoint(ctx: CanvasRenderingContext2D, color: string = 'blue', scale: number = 1): void {
+function ctxDrawPoint(ctx: CanvasRenderingContext2D, color: string = "blue", scale: number = 1): void {
   ctx.beginPath();
   ctx.arc(0, 0, 12 * scale, 0, 2 * Math.PI, false);
   ctx.strokeStyle = color;
@@ -480,16 +520,16 @@ function ctxDrawPoint(ctx: CanvasRenderingContext2D, color: string = 'blue', sca
   ctx.beginPath();
   ctx.moveTo(0, 0);
   ctx.lineTo(24 * scale, 0);
-  ctx.strokeStyle = 'red';
+  ctx.strokeStyle = "red";
   ctx.stroke();
   ctx.beginPath();
   ctx.moveTo(0, 0);
   ctx.lineTo(0, 24 * scale);
-  ctx.strokeStyle = 'green';
+  ctx.strokeStyle = "green";
   ctx.stroke();
 }
 
-function ctxDrawMesh(ctx: CanvasRenderingContext2D, triangles: Float32Array, positions: Float32Array, stroke_style: string = 'grey', fill_style: string = ''): void {
+function ctxDrawMesh(ctx: CanvasRenderingContext2D, triangles: Uint16Array, positions: Float32Array, stroke_style: string = "grey", fill_style: string = ""): void {
   ctx.beginPath();
   for (let index = 0; index < triangles.length; ) {
     const triangle0: number = triangles[index++] * 2;
@@ -514,7 +554,7 @@ function ctxDrawMesh(ctx: CanvasRenderingContext2D, triangles: Float32Array, pos
   ctx.stroke();
 }
 
-function ctxDrawImageMesh(ctx: CanvasRenderingContext2D, triangles: Uint16Array, positions: Float32Array, texcoords: Float32Array, image: HTMLImageElement, site: atlas.Site, page: atlas.Page): void {
+function ctxDrawImageMesh(ctx: CanvasRenderingContext2D, triangles: Uint16Array, positions: Float32Array, texcoords: Float32Array, image: HTMLImageElement, site: Atlas.Site | null, page: Atlas.Page | null): void {
   const site_texmatrix: Float32Array = new Float32Array(9);
   const site_texcoord: Float32Array = new Float32Array(2);
   mat3x3Identity(site_texmatrix);
@@ -572,57 +612,55 @@ function ctxDrawImageMesh(ctx: CanvasRenderingContext2D, triangles: Uint16Array,
   }
 }
 
-function ctxDrawIkConstraints(ctx: CanvasRenderingContext2D, data: spine.Data, bones: {[key: string]: spine.Bone}): void {
-  data.ikc_keys.forEach(function(ikc_key: string): void {
-    const ikc: spine.Ikc = data.ikcs[ikc_key];
-    const target: spine.Bone = bones[ikc.target_key];
+function ctxDrawIkConstraints(ctx: CanvasRenderingContext2D, spine_data: Spine.Data, bones: {[key: string]: Spine.Bone}): void {
+  spine_data.ikc_keys.forEach(function(ikc_key: string): void {
+    const ikc: Spine.Ikc = spine_data.ikcs[ikc_key];
+    const target: Spine.Bone = bones[ikc.target_key];
     switch (ikc.bone_keys.length) {
       case 1:
-        const bone: spine.Bone = bones[ikc.bone_keys[0]];
+        const bone: Spine.Bone = bones[ikc.bone_keys[0]];
 
         ctx.beginPath();
         ctx.moveTo(target.world_space.position.x, target.world_space.position.y);
         ctx.lineTo(bone.world_space.position.x, bone.world_space.position.y);
-        ctx.strokeStyle = 'yellow';
+        ctx.strokeStyle = "yellow";
         ctx.stroke();
 
         ctx.save();
         ctxApplySpace(ctx, target.world_space);
-        ctxDrawCircle(ctx, 'yellow', 1.5);
+        ctxDrawCircle(ctx, "yellow", 1.5);
         ctx.restore();
 
         ctx.save();
         ctxApplySpace(ctx, bone.world_space);
-        ctxDrawCircle(ctx, 'yellow', 0.5);
+        ctxDrawCircle(ctx, "yellow", 0.5);
         ctx.restore();
         break;
       case 2:
-        const parent: spine.Bone = bones[ikc.bone_keys[0]];
-        const child: spine.Bone = bones[ikc.bone_keys[1]];
+        const parent: Spine.Bone = bones[ikc.bone_keys[0]];
+        const child: Spine.Bone = bones[ikc.bone_keys[1]];
 
         ctx.beginPath();
         ctx.moveTo(target.world_space.position.x, target.world_space.position.y);
         ctx.lineTo(child.world_space.position.x, child.world_space.position.y);
         ctx.lineTo(parent.world_space.position.x, parent.world_space.position.y);
-        ctx.strokeStyle = 'yellow';
+        ctx.strokeStyle = "yellow";
         ctx.stroke();
 
         ctx.save();
         ctxApplySpace(ctx, target.world_space);
-        ctxDrawCircle(ctx, 'yellow', 1.5);
+        ctxDrawCircle(ctx, "yellow", 1.5);
         ctx.restore();
 
         ctx.save();
         ctxApplySpace(ctx, child.world_space);
-        ctxDrawCircle(ctx, 'yellow', 0.75);
+        ctxDrawCircle(ctx, "yellow", 0.75);
         ctx.restore();
 
         ctx.save();
         ctxApplySpace(ctx, parent.world_space);
-        ctxDrawCircle(ctx, 'yellow', 0.5);
+        ctxDrawCircle(ctx, "yellow", 0.5);
         ctx.restore();
-        break;
-      default:
         break;
     }
   });
