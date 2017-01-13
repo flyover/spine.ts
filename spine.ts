@@ -2823,7 +2823,7 @@ export class Pose {
     this.events.length = 0;
 
     if (anim && anim.event_keyframes) {
-      function make_event(event_keyframe: EventKeyframe): Event {
+      const make_event = function(event_keyframe: EventKeyframe): Event {
         const pose_event: Event = new Event();
         const data_event: Event = data.events[event_keyframe.name];
         if (data_event) {
