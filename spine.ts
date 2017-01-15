@@ -323,7 +323,7 @@ export function wrapAngleRadians(angle: number): number {
   }
 }
 
-export function tweenAngle(a: number, b: number, t: number): number {
+export function tweenAngleRadians(a: number, b: number, t: number): number {
   return wrapAngleRadians(a + (wrapAngleRadians(b - a) * t));
 }
 
@@ -370,12 +370,16 @@ export class Angle {
   }
 
   public static tween(a: Angle, b: Angle, pct: number, out: Angle = new Angle()): Angle {
-    out.rad = tweenAngle(a.rad, b.rad, pct);
+    out.rad = tweenAngleRadians(a.rad, b.rad, pct);
     return out;
   }
 
   public tween(other: Angle, pct: number, out: Angle = new Angle()): Angle {
     return Angle.tween(this, other, pct, out);
+  }
+
+  public selfTween(other: Angle, pct: number): Angle {
+    return Angle.tween(this, other, pct, this);
   }
 }
 
@@ -669,10 +673,10 @@ export class Scale extends Matrix {
     super();
   }
 
-  public get x(): number { return (this.c === 0) ? (this.a) : (signum(this.a) * Math.sqrt(this.a * this.a + this.c * this.c)); }
+  public get x(): number { return (Math.abs(this.c) < EPSILON) ? (this.a) : (signum(this.a) * Math.sqrt(this.a * this.a + this.c * this.c)); }
   public set x(value: number) { this.a = value; this.c = 0; }
 
-  public get y(): number { return (this.b === 0) ? (this.d) : (signum(this.d) * Math.sqrt(this.b * this.b + this.d * this.d)); }
+  public get y(): number { return (Math.abs(this.b) < EPSILON) ? (this.d) : (signum(this.d) * Math.sqrt(this.b * this.b + this.d * this.d)); }
   public set y(value: number) { this.b = 0; this.d = value; }
 }
 
@@ -811,7 +815,7 @@ export class Space {
     return out;
   }
 
-  public static combine(a: Space, b: Space, out: Space= new Space()): Space {
+  public static combine(a: Space, b: Space, out: Space = new Space()): Space {
     if (a === out) { a = Space.copy(a, new Space()); }
     if (b === out) { b = Space.copy(b, new Space()); }
     Affine.combine(a.updateAffine(), b.updateAffine(), out.affine);
@@ -825,7 +829,7 @@ export class Space {
     return out;
   }
 
-  public static extract(ab: Space, a: Space, out: Space= new Space()): Space {
+  public static extract(ab: Space, a: Space, out: Space = new Space()): Space {
     if (ab === out) { ab = Space.copy(ab, new Space()); }
     if (a === out) { a = Space.copy(a, new Space()); }
     Affine.extract(ab.updateAffine(), a.updateAffine(), out.affine);
@@ -972,7 +976,7 @@ export class Ikc {
 export class Xfc {
   public name: string = "";
   public order: number = 0;
-  public bone_key: string = "";
+  public bone_keys: string[] = [];
   public target_key: string = "";
   public position_mix: number = 1;
   public position: Position = new Position();
@@ -986,7 +990,7 @@ export class Xfc {
   public load(json: any): Xfc {
     this.name = loadString(json, "name", "");
     this.order = loadInt(json, "order", 0);
-    this.bone_key = loadString(json, "bone", "");
+    this.bone_keys = json["bones"] || [];
     this.target_key = loadString(json, "target", "");
     this.position_mix = loadFloat(json, "translateMix", 1);
     this.position.x = loadFloat(json, "x", 0);
@@ -1184,28 +1188,6 @@ export class WeightedMeshAttachment extends Attachment {
   }
 }
 
-export class WeightedLinkedMeshAttachment extends Attachment {
-  public skin_key: string = "";
-  public parent_key: string = "";
-  public inherit_deform: boolean = true;
-  public width: number = 0;
-  public height: number = 0;
-
-  constructor() {
-    super("weightedlinkedmesh");
-  }
-
-  public load(json: any): WeightedLinkedMeshAttachment {
-    super.load(json);
-    this.skin_key = loadString(json, "skin", "");
-    this.parent_key = loadString(json, "parent", "");
-    this.inherit_deform = loadBool(json, "ffd", true);
-    this.width = loadInt(json, "width", 0);
-    this.height = loadInt(json, "height", 0);
-    return this;
-  }
-}
-
 export class PathAttachment extends Attachment {
   public color: Color = new Color();
   public closed: boolean = false;
@@ -1254,20 +1236,12 @@ export class SkinSlot {
           }
           break;
         case "linkedmesh":
-          if (json_attachment.vertices.length === json_attachment.uvs.length) {
-            this.attachments[attachment_key] = new LinkedMeshAttachment().load(json_attachment);
-          } else {
-            json_attachment.type = "weightedlinkedmesh";
-            this.attachments[attachment_key] = new WeightedLinkedMeshAttachment().load(json_attachment);
-          }
+          this.attachments[attachment_key] = new LinkedMeshAttachment().load(json_attachment);
           break;
         case "skinnedmesh":
           json_attachment.type = "weightedmesh";
         case "weightedmesh":
           this.attachments[attachment_key] = new WeightedMeshAttachment().load(json_attachment);
-          break;
-        case "weightedlinkedmesh":
-          this.attachments[attachment_key] = new WeightedLinkedMeshAttachment().load(json_attachment);
           break;
         case "path":
           this.attachments[attachment_key] = new PathAttachment().load(json_attachment);
@@ -1775,6 +1749,22 @@ export class PtcKeyframe extends Keyframe {
   }
 }
 
+export class PtcMixKeyframe extends PtcKeyframe {
+  public position_mix: number = 0;
+  public rotation_mix: number = 0;
+
+  constructor() {
+    super();
+  }
+
+  public load(json: any): PtcMixKeyframe {
+    super.load(json);
+    this.position_mix = loadFloat(json, "translateMix", 1);
+    this.rotation_mix = loadFloat(json, "rotateMix", 1);
+    return this;
+  }
+}
+
 export class PtcSpacingKeyframe extends PtcKeyframe {
   public spacing: number = 0;
 
@@ -1790,7 +1780,6 @@ export class PtcSpacingKeyframe extends PtcKeyframe {
 }
 
 export class PtcPositionKeyframe extends PtcKeyframe {
-  public position_mix: number = 1;
   public position: number = 0;
 
   constructor() {
@@ -1799,15 +1788,13 @@ export class PtcPositionKeyframe extends PtcKeyframe {
 
   public load(json: any): PtcPositionKeyframe {
     super.load(json);
-    this.position_mix = loadFloat(json, "positionMix", 1);
     this.position = loadFloat(json, "position", 0);
     return this;
   }
 }
 
 export class PtcRotationKeyframe extends PtcKeyframe {
-  public rotation_mix = 1;
-  public rotation = 0;
+  public rotation: Rotation = new Rotation();
 
   constructor() {
     super();
@@ -1815,8 +1802,7 @@ export class PtcRotationKeyframe extends PtcKeyframe {
 
   public load(json: any): PtcRotationKeyframe {
     super.load(json);
-    this.rotation_mix = loadFloat(json, "rotationMix", 1);
-    this.rotation = loadFloat(json, "rotation", 0);
+    this.rotation.deg = loadFloat(json, "rotation", 0);
     return this;
   }
 }
@@ -1824,6 +1810,7 @@ export class PtcRotationKeyframe extends PtcKeyframe {
 export class PtcTimeline {
   public min_time = 0;
   public max_time = 0;
+  public ptc_mix_keyframes: PtcMixKeyframe[];
   public ptc_spacing_keyframes: PtcSpacingKeyframe[];
   public ptc_position_keyframes: PtcPositionKeyframe[];
   public ptc_rotation_keyframes: PtcRotationKeyframe[];
@@ -1831,12 +1818,22 @@ export class PtcTimeline {
   public load(json: any): PtcTimeline {
     this.min_time = 0;
     this.max_time = 0;
+    this.ptc_mix_keyframes = [];
     this.ptc_spacing_keyframes = [];
     this.ptc_position_keyframes = [];
     this.ptc_rotation_keyframes = [];
 
     Object.keys(json || {}).forEach((key: string): void => {
       switch (key) {
+        case "mix":
+          json[key].forEach((mix_json: any): void => {
+            const ptc_mix_keyframe = new PtcMixKeyframe().load(mix_json);
+            this.min_time = Math.min(this.min_time, ptc_mix_keyframe.time);
+            this.max_time = Math.max(this.max_time, ptc_mix_keyframe.time);
+            this.ptc_mix_keyframes.push(ptc_mix_keyframe);
+          });
+          this.ptc_mix_keyframes.sort(Keyframe.compare);
+          break;
         case "spacing":
           json[key].forEach((spacing_json: any): void => {
             const ptc_spacing_keyframe = new PtcSpacingKeyframe().load(spacing_json);
@@ -2265,7 +2262,7 @@ export class Data {
       const skin_slot: SkinSlot = skin && (skin.slots[slot_key] || default_skin.slots[slot_key]);
       let attachment: Attachment = skin_slot && skin_slot.attachments[data_slot.attachment_key];
       let attachment_key: string = (attachment && attachment.name) || data_slot.attachment_key;
-      if (attachment && ((attachment.type === "linkedmesh") || (attachment.type === "weightedlinkedmesh"))) {
+      if (attachment && (attachment.type === "linkedmesh")) {
         attachment_key = attachment && (<LinkedMeshAttachment>attachment).parent_key;
         attachment = skin_slot && skin_slot.attachments[attachment_key];
       }
@@ -2464,7 +2461,7 @@ export class Pose {
           const rotation_keyframe1: RotationKeyframe = bone_timeline.rotation_keyframes[keyframe_index + 1];
           if (rotation_keyframe1) {
             pct = rotation_keyframe0.curve.evaluate((this.time - rotation_keyframe0.time) / (rotation_keyframe1.time - rotation_keyframe0.time));
-            pose_bone.local_space.rotation.rad += tweenAngle(rotation_keyframe0.rotation.rad, rotation_keyframe1.rotation.rad, pct);
+            pose_bone.local_space.rotation.rad += tweenAngleRadians(rotation_keyframe0.rotation.rad, rotation_keyframe1.rotation.rad, pct);
           } else {
             pose_bone.local_space.rotation.rad += rotation_keyframe0.rotation.rad;
           }
@@ -2490,8 +2487,8 @@ export class Pose {
           const shear_keyframe1: ShearKeyframe = bone_timeline.shear_keyframes[keyframe_index + 1];
           if (shear_keyframe1) {
             pct = shear_keyframe0.curve.evaluate((this.time - shear_keyframe0.time) / (shear_keyframe1.time - shear_keyframe0.time));
-            pose_bone.local_space.shear.x.rad += tweenAngle(shear_keyframe0.shear.x.rad, shear_keyframe1.shear.x.rad, pct);
-            pose_bone.local_space.shear.y.rad += tweenAngle(shear_keyframe0.shear.y.rad, shear_keyframe1.shear.y.rad, pct);
+            pose_bone.local_space.shear.x.rad += tweenAngleRadians(shear_keyframe0.shear.x.rad, shear_keyframe1.shear.x.rad, pct);
+            pose_bone.local_space.shear.y.rad += tweenAngleRadians(shear_keyframe0.shear.y.rad, shear_keyframe1.shear.y.rad, pct);
           } else {
             pose_bone.local_space.shear.x.rad += shear_keyframe0.shear.x.rad;
             pose_bone.local_space.shear.y.rad += shear_keyframe0.shear.y.rad;
@@ -2557,7 +2554,7 @@ export class Pose {
               a1 -= bone_parent.world_space.rotation.rad;
             }
           }
-          bone.local_space.rotation.rad = tweenAngle(bone.local_space.rotation.rad, a1, alpha);
+          bone.local_space.rotation.rad = tweenAngleRadians(bone.local_space.rotation.rad, a1, alpha);
           break;
         }
         case 2: {
@@ -2657,8 +2654,8 @@ export class Pose {
           const offset: number = Math.atan2(cy, child.local_space.position.x) * sign2;
           a1 = (a1 - offset) + offset1;
           a2 = (a2 + offset) * sign2 + offset2;
-          parent.local_space.rotation.rad = tweenAngle(parent.local_space.rotation.rad, a1, alpha);
-          child.local_space.rotation.rad = tweenAngle(child.local_space.rotation.rad, a2, alpha);
+          parent.local_space.rotation.rad = tweenAngleRadians(parent.local_space.rotation.rad, a1, alpha);
+          child.local_space.rotation.rad = tweenAngleRadians(child.local_space.rotation.rad, a2, alpha);
           break;
         }
       }
@@ -2701,15 +2698,17 @@ export class Pose {
         }
       }
 
-      const xfc_bone: Bone = this.bones[xfc.bone_key];
-      const xfc_target: Bone = this.bones[xfc.target_key];
-      const xfc_position: Vector = xfc.position;
-      ///const xfc_rotation = xfc.rotation;
-      ///const xfc_scale = xfc.scale;
-      ///const xfc_shear = xfc.shear;
-      const xfc_world_position: Vector = Space.transform(xfc_target.world_space, xfc_position, new Vector());
-      // TODO
-      xfc_bone.world_space.position.tween(xfc_world_position, xfc_position_mix, xfc_bone.world_space.position);
+      xfc.bone_keys.forEach((bone_key: string) => {
+        const xfc_bone: Bone = this.bones[bone_key];
+        const xfc_target: Bone = this.bones[xfc.target_key];
+        const xfc_position: Vector = xfc.position;
+        ///const xfc_rotation = xfc.rotation;
+        ///const xfc_scale = xfc.scale;
+        ///const xfc_shear = xfc.shear;
+        const xfc_world_position: Vector = Space.transform(xfc_target.world_space, xfc_position, new Vector());
+        // TODO
+        xfc_bone.world_space.position.tween(xfc_world_position, xfc_position_mix, xfc_bone.world_space.position);
+      });
     });
   }
 
@@ -2785,6 +2784,20 @@ export class Pose {
 
       const ptc_timeline: PtcTimeline = anim && anim.ptc_timeline_map[ptc_key];
       if (ptc_timeline) {
+        keyframe_index = Keyframe.find(ptc_timeline.ptc_mix_keyframes, this.time);
+        if (keyframe_index !== -1) {
+          const ptc_mix_keyframe0: PtcMixKeyframe = ptc_timeline.ptc_mix_keyframes[keyframe_index];
+          const ptc_mix_keyframe1: PtcMixKeyframe = ptc_timeline.ptc_mix_keyframes[keyframe_index + 1];
+          if (ptc_mix_keyframe1) {
+            pct = ptc_mix_keyframe0.curve.evaluate((this.time - ptc_mix_keyframe0.time) / (ptc_mix_keyframe1.time - ptc_mix_keyframe0.time));
+            ptc_position_mix = tween(ptc_mix_keyframe0.position_mix, ptc_mix_keyframe1.position_mix, pct);
+            ptc_rotation_mix = tween(ptc_mix_keyframe0.rotation_mix, ptc_mix_keyframe1.rotation_mix, pct);
+          } else {
+            ptc_position_mix = ptc_mix_keyframe0.position_mix;
+            ptc_rotation_mix = ptc_mix_keyframe0.rotation_mix;
+          }
+        }
+
         keyframe_index = Keyframe.find(ptc_timeline.ptc_spacing_keyframes, this.time);
         if (keyframe_index !== -1) {
           const ptc_spacing_keyframe0: PtcSpacingKeyframe = ptc_timeline.ptc_spacing_keyframes[keyframe_index];
@@ -2803,10 +2816,8 @@ export class Pose {
           const ptc_position_keyframe1: PtcPositionKeyframe = ptc_timeline.ptc_position_keyframes[keyframe_index + 1];
           if (ptc_position_keyframe1) {
             pct = ptc_position_keyframe0.curve.evaluate((this.time - ptc_position_keyframe0.time) / (ptc_position_keyframe1.time - ptc_position_keyframe0.time));
-            ptc_position_mix = tween(ptc_position_keyframe0.position_mix, ptc_position_keyframe1.position_mix, pct);
             ptc_position = tween(ptc_position_keyframe0.position, ptc_position_keyframe1.position, pct);
           } else {
-            ptc_position_mix = ptc_position_keyframe0.position_mix;
             ptc_position = ptc_position_keyframe0.position;
           }
         }
@@ -2817,11 +2828,9 @@ export class Pose {
           const ptc_rotation_keyframe1: PtcRotationKeyframe = ptc_timeline.ptc_rotation_keyframes[keyframe_index + 1];
           if (ptc_rotation_keyframe1) {
             pct = ptc_rotation_keyframe0.curve.evaluate((this.time - ptc_rotation_keyframe0.time) / (ptc_rotation_keyframe1.time - ptc_rotation_keyframe0.time));
-            ptc_rotation_mix = tween(ptc_rotation_keyframe0.rotation_mix, ptc_rotation_keyframe1.rotation_mix, pct);
-            ptc_rotation.deg = tween(ptc_rotation_keyframe0.rotation, ptc_rotation_keyframe1.rotation, pct);
+            ptc_rotation.rad = tweenAngleRadians(ptc_rotation_keyframe0.rotation.rad, ptc_rotation_keyframe1.rotation.rad, pct);
           } else {
-            ptc_rotation_mix = ptc_rotation_keyframe0.rotation_mix;
-            ptc_rotation.deg = ptc_rotation_keyframe0.rotation;
+            ptc_rotation.copy(ptc_rotation_keyframe0.rotation);
           }
         }
       }
@@ -2829,14 +2838,14 @@ export class Pose {
       ///const skin = data && data.skins[pose.skin_key];
       ///const default_skin = data && data.skins["default"];
       ///const slot_key = ptc.target_key;
-      ///const pose_slot = pose.slots[slot_key];
+      ///const slot = this.slots[slot_key];
       ///const skin_slot = skin && (skin.slots[slot_key] || default_skin.slots[slot_key]);
-      ///const ptc_target = skin_slot && skin_slot.attachments[pose_slot.attachment_key];
+      ///const ptc_target = skin_slot && skin_slot.attachments[slot.attachment_key];
 
-      ///ptc.bone_keys.forEach(function(bone_key) {
-      ///  const ptc_bone = pose.bones[bone_key];
-      ///  // TODO
-      ///});
+      ptc.bone_keys.forEach(function(bone_key) {
+        ///const ptc_bone = pose.bones[bone_key];
+        // TODO
+      });
     });
   }
 
@@ -2924,7 +2933,7 @@ export class Pose {
       const skin_slot: SkinSlot = skin && (skin.slots[slot_key] || default_skin.slots[slot_key]);
       let attachment: Attachment = skin_slot && skin_slot.attachments[pose_slot.attachment_key];
       let attachment_key: string = (attachment && attachment.name) || pose_slot.attachment_key;
-      if (attachment && ((attachment.type === "linkedmesh") || (attachment.type === "weightedlinkedmesh"))) {
+      if (attachment && (attachment.type === "linkedmesh")) {
         attachment_key = attachment && (<LinkedMeshAttachment>attachment).parent_key;
         attachment = skin_slot && skin_slot.attachments[attachment_key];
       }
