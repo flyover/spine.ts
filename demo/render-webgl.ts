@@ -67,7 +67,7 @@ export class RenderWebGL {
       "uniform mat3 uTexMatrix;",
       "attribute vec2 aPosition;", // [ x, y ]
       "attribute vec2 aTexCoord;", // [ u, v ]
-      repeat("attribute vec2 aBlenders{index};", this.skin_shader_blenders_count), // [ i, w ]
+      repeat("attribute vec2 aBlenders{index};", this.skin_shader_blenders_count), // [ i0, w0, i1, w1, ... ]
       "varying vec3 vTexCoord;",
       "void main(void) {",
       " vec4 position = vec4(aPosition, 0.0, 1.0);",
@@ -168,14 +168,7 @@ export class RenderWebGL {
         }
         const image_key: string = page.name;
         const image: HTMLImageElement = images[image_key];
-        const texture: RenderTexture = this.textures[image_key] = new RenderTexture();
-        texture.texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, texture.texture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, min_filter);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, mag_filter);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrap_s);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrap_t);
+        this.textures[image_key] = glMakeTexture(gl, image, min_filter, mag_filter, wrap_s, wrap_t);
       });
     } else {
       const gl: WebGLRenderingContext = this.gl;
@@ -188,14 +181,7 @@ export class RenderWebGL {
             case "weightedmesh":
               const image_key: string = attachment_key;
               const image: HTMLImageElement = images[image_key];
-              const texture: RenderTexture = this.textures[image_key] = new RenderTexture();
-              texture.texture = gl.createTexture();
-              gl.bindTexture(gl.TEXTURE_2D, texture.texture);
-              gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-              gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-              gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-              gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-              gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+              this.textures[image_key] = glMakeTexture(gl, image, gl.LINEAR, gl.LINEAR, gl.CLAMP_TO_EDGE, gl.CLAMP_TO_EDGE);
               break;
           }
         });
@@ -935,6 +921,18 @@ export function glMakeVertex(gl: WebGLRenderingContext, type_array: any, size: n
   gl.bindBuffer(vertex.buffer_type, vertex.buffer);
   gl.bufferData(vertex.buffer_type, vertex.type_array, vertex.buffer_draw);
   return vertex;
+}
+
+export function glMakeTexture(gl: WebGLRenderingContext, image: HTMLImageElement, min_filter: GLenum, mag_filter: GLenum, wrap_s: GLenum, wrap_t: GLenum): RenderTexture {
+  const texture: RenderTexture = new RenderTexture();
+  texture.texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture.texture);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, min_filter);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, mag_filter);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrap_s);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrap_t);
+  return texture;
 }
 
 export function glSetupAttribute(gl: WebGLRenderingContext, shader: RenderShader, format: string, vertex: RenderVertex, count: number = 0): void {
