@@ -587,8 +587,8 @@ function repeat(format: string, count: number): string[] {
   return array;
 }
 
-function flatten(array: any[], out: any[] = []): any[] {
-  array.forEach((value: any): void => {
+function flatten(array: (string|string[])[], out: string[] = []): string[] {
+  array.forEach((value: string|string[]): void => {
     if (Array.isArray(value)) { flatten(value, out); } else { out.push(value); }
   });
   return out;
@@ -604,11 +604,13 @@ class RenderShader {
   public attribs: {[key: string]: number};
 }
 
+type RenderVertexType = Float32Array | Int8Array | Uint8Array | Int16Array | Uint16Array | Int32Array | Uint32Array;
+
 class RenderVertex {
   public type: number; // FLOAT, BYTE, UNSIGNED_BYTE, SHORT, UNSIGNED_SHORT, INT, UNSIGNED_INT
   public size: number; // size in elements per vertex
   public count: number; // number of vertices
-  public type_array: any; // Float32Array, Int8Array, Uint8Array, Int16Array, Uint16Array, Int32Array, Uint32Array
+  public type_array: RenderVertexType;
   public buffer: WebGLBuffer | null;
   public buffer_type: number; // ARRAY_BUFFER or ELEMENT_ARRAY_BUFFER
   public buffer_draw: number; // STREAM_DRAW, STATIC_DRAW or DYNAMIC_DRAW
@@ -902,7 +904,7 @@ export function glMakeShader(gl: WebGLRenderingContext, vs_src: (string|string[]
   return shader;
 }
 
-export function glMakeVertex(gl: WebGLRenderingContext, type_array: any, size: number, buffer_type: number, buffer_draw: number): RenderVertex {
+export function glMakeVertex(gl: WebGLRenderingContext, type_array: RenderVertexType, size: number, buffer_type: number, buffer_draw: number): RenderVertex {
   const vertex: RenderVertex = new RenderVertex();
   if (type_array instanceof Float32Array) { vertex.type = gl.FLOAT; }
   else if (type_array instanceof Int8Array) { vertex.type = gl.BYTE; }
