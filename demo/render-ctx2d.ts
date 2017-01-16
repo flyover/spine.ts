@@ -34,6 +34,9 @@ export class RenderCtx2D {
           case "weightedmesh":
             render_slot.attachment_map[attachment_key] = new RenderWeightedMeshAttachment(this).loadData(spine_data, <Spine.WeightedMeshAttachment> attachment);
             break;
+          case "path":
+            render_slot.attachment_map[attachment_key] = new RenderPathAttachment(this).loadData(spine_data, <Spine.PathAttachment> attachment);
+            break;
         }
       });
     });
@@ -485,6 +488,60 @@ class RenderWeightedMeshAttachment implements RenderAttachment {
     ctx.save();
     ctxApplyAtlasSitePosition(ctx, site);
     ctxDrawMesh(ctx, this.vertex_triangle, this.vertex_setup_position, "rgba(127,127,127,1.0)", "rgba(127,127,127,0.25)");
+    ctx.restore();
+  }
+}
+
+class RenderPathAttachment implements RenderAttachment {
+  public render: RenderCtx2D;
+
+  constructor(render: RenderCtx2D) {
+    this.render = render;
+  }
+
+  loadData(spine_data: Spine.Data, attachment: Spine.BoundingBoxAttachment): RenderPathAttachment {
+    return this;
+  }
+
+  dropData(spine_data: Spine.Data, attachment: Spine.BoundingBoxAttachment): RenderPathAttachment {
+    return this;
+  }
+
+  updatePose(spine_pose: Spine.Pose, atlas_data: Atlas.Data | null, slot_key: string, attachment_key: string, attachment: Spine.Attachment): void {
+  }
+
+  drawPose(spine_pose: Spine.Pose, slot: Spine.Slot, attachment: Spine.PathAttachment, image: HTMLImageElement, site: Atlas.Site | null, page: Atlas.Page | null): void {
+  }
+
+  drawDebugPose(spine_pose: Spine.Pose, slot: Spine.Slot, attachment: Spine.PathAttachment, image: HTMLImageElement, site: Atlas.Site | null, page: Atlas.Page | null): void {
+    const ctx: CanvasRenderingContext2D = this.render.ctx;
+    const bone: Spine.Bone = spine_pose.bones[slot.bone_key];
+    ctx.save();
+    ctxApplySpace(ctx, bone.world_space);
+    ctx.beginPath();
+    let x: number = 0;
+    attachment.vertices.forEach(function(value: number, index: number): void {
+      if (index & 1) { ctx.lineTo(x, value); } else { x = value; }
+    });
+    ctx.closePath();
+    ctx.strokeStyle = "orange";
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  drawDebugData(spine_pose: Spine.Pose, slot: Spine.Slot, attachment: Spine.PathAttachment, image: HTMLImageElement, site: Atlas.Site | null, page: Atlas.Page | null): void {
+    const ctx: CanvasRenderingContext2D = this.render.ctx;
+    const bone: Spine.Bone = spine_pose.data.bones[slot.bone_key];
+    ctx.save();
+    ctxApplySpace(ctx, bone.world_space);
+    ctx.beginPath();
+    let x: number = 0;
+    attachment.vertices.forEach(function(value: number, index: number): void {
+      if (index & 1) { ctx.lineTo(x, value); } else { x = value; }
+    });
+    ctx.closePath();
+    ctx.strokeStyle = "orange";
+    ctx.stroke();
     ctx.restore();
   }
 }
