@@ -137,6 +137,10 @@ export class Color {
   public tween(other: Color, pct: number, out: Color = new Color()): Color {
     return Color.tween(this, other, pct, out);
   }
+
+  public selfTween(other: Color, pct: number): Color {
+    return Color.tween(this, other, pct, this);
+  }
 }
 
 // from: http://github.com/arian/cubic-bezier
@@ -475,6 +479,10 @@ export class Vector {
   public tween(other: Vector, pct: number, out: Vector = new Vector()): Vector {
     return Vector.tween(this, other, pct, out);
   }
+
+  public selfTween(other: Vector, pct: number): Vector {
+    return Vector.tween(this, other, pct, this);
+  }
 }
 
 export class Matrix {
@@ -543,6 +551,10 @@ export class Matrix {
     return Matrix.multiply(Matrix.invert(a, out), ab, out);
   }
 
+  public selfRotate(cos: number, sin: number): Matrix {
+    return Matrix.rotate(this, cos, sin, this);
+  }
+
   public static rotate(m: Matrix, cos: number, sin: number, out: Matrix = new Matrix()): Matrix {
     const a: number = m.a, b: number = m.b, c: number = m.c, d: number = m.d;
     out.a = a * cos + b * sin; out.b = b * cos - a * sin;
@@ -582,6 +594,10 @@ export class Matrix {
 
   public tween(other: Matrix, pct: number, out: Matrix = new Matrix()): Matrix {
     return Matrix.tween(this, other, pct, out);
+  }
+
+  public selfTween(other: Matrix, pct: number): Matrix {
+    return Matrix.tween(this, other, pct, this);
   }
 }
 
@@ -720,6 +736,10 @@ export class Shear {
   public tween(other: Shear, pct: number, out: Shear = new Shear()): Shear {
     return Shear.tween(this, other, pct, out);
   }
+
+  public selfTween(other: Shear, pct: number): Shear {
+    return Shear.tween(this, other, pct, this);
+  }
 }
 
 export class Space {
@@ -851,12 +871,20 @@ export class Space {
     return Affine.untransform(space.updateAffine(), v, out);
   }
 
-  public static tween(a: Space, b: Space, tween: number, out: Space= new Space()): Space {
-    a.position.tween(b.position, tween, out.position);
-    a.rotation.tween(b.rotation, tween, out.rotation);
-    a.scale.tween(b.scale, tween, out.scale);
-    a.shear.tween(b.shear, tween, out.shear);
+  public static tween(a: Space, b: Space, pct: number, out: Space= new Space()): Space {
+    a.position.tween(b.position, pct, out.position);
+    a.rotation.tween(b.rotation, pct, out.rotation);
+    a.scale.tween(b.scale, pct, out.scale);
+    a.shear.tween(b.shear, pct, out.shear);
     return out;
+  }
+
+  public tween(other: Space, pct: number, out: Space = new Space()): Space {
+    return Space.tween(this, other, pct, out);
+  }
+
+  public selfTween(other: Space, pct: number): Space {
+    return Space.tween(this, other, pct, this);
   }
 }
 
@@ -954,17 +982,25 @@ export class Bone {
   }
 }
 
-export class Ikc {
+export class Constraint {
   public name: string = "";
   public order: number = 0;
+
+  public load(json: any): Constraint {
+    this.name = loadString(json, "name", "");
+    this.order = loadInt(json, "order", 0);
+    return this;
+  }
+}
+
+export class Ikc extends Constraint {
   public bone_keys: string[] = [];
   public target_key: string = "";
   public mix: number = 1;
   public bend_positive: boolean = true;
 
   public load(json: any): Ikc {
-    this.name = loadString(json, "name", "");
-    this.order = loadInt(json, "order", 0);
+    super.load(json);
     this.bone_keys = json["bones"] || [];
     this.target_key = loadString(json, "target", "");
     this.mix = loadFloat(json, "mix", 1);
@@ -973,9 +1009,7 @@ export class Ikc {
   }
 }
 
-export class Xfc {
-  public name: string = "";
-  public order: number = 0;
+export class Xfc extends Constraint {
   public bone_keys: string[] = [];
   public target_key: string = "";
   public position_mix: number = 1;
@@ -988,8 +1022,7 @@ export class Xfc {
   public shear: Shear = new Shear();
 
   public load(json: any): Xfc {
-    this.name = loadString(json, "name", "");
-    this.order = loadInt(json, "order", 0);
+    super.load(json);
     this.bone_keys = json["bones"] || [];
     this.target_key = loadString(json, "target", "");
     this.position_mix = loadFloat(json, "translateMix", 1);
@@ -1007,9 +1040,7 @@ export class Xfc {
   }
 }
 
-export class Ptc {
-  public name: string = "";
-  public order: number = 0;
+export class Ptc extends Constraint {
   public bone_keys: string[] = [];
   public target_key: string = "";
   public spacing_mode: string = "length"; // "length", "fixed", "percent"
@@ -1017,13 +1048,12 @@ export class Ptc {
   public position_mode: string = "percent"; // "fixed", "percent"
   public position_mix: number = 1;
   public position: number = 0;
-  public rotation_mode: string = "tangent"; // "tangent", "chain", "chainScale"
+  public rotation_mode: string = "tangent"; // "tangent", "chain", "chainscale"
   public rotation_mix: number = 1;
   public rotation: Rotation = new Rotation();
 
   public load(json: any): Ptc {
-    this.name = loadString(json, "name", "");
-    this.order = loadInt(json, "order", 0);
+    super.load(json);
     this.bone_keys = json["bones"] || [];
     this.target_key = loadString(json, "target", "");
     this.spacing_mode = loadString(json, "spacingMode", "length");
@@ -2173,6 +2203,12 @@ export class Data {
             this.ptcs[ptc.name] = new Ptc().load(ptc);
             this.ptc_keys[ptc_index] = ptc.name;
           });
+          // sort by order
+          this.ptc_keys.sort((a: string, b: string): number => {
+            const ptc_a: Ptc = this.ptcs[a];
+            const ptc_b: Ptc = this.ptcs[b];
+            return ptc_a.order - ptc_b.order;
+          });
           break;
         case "slots":
           const json_slots: any[] = json[key];
@@ -2702,12 +2738,58 @@ export class Pose {
         const xfc_bone: Bone = this.bones[bone_key];
         const xfc_target: Bone = this.bones[xfc.target_key];
         const xfc_position: Vector = xfc.position;
-        ///const xfc_rotation = xfc.rotation;
-        ///const xfc_scale = xfc.scale;
-        ///const xfc_shear = xfc.shear;
-        const xfc_world_position: Vector = Space.transform(xfc_target.world_space, xfc_position, new Vector());
-        // TODO
-        xfc_bone.world_space.position.tween(xfc_world_position, xfc_position_mix, xfc_bone.world_space.position);
+        const xfc_rotation = xfc.rotation;
+        const xfc_scale = xfc.scale;
+        const xfc_shear = xfc.shear;
+
+        let ta = xfc_target.world_space.affine.matrix.a, tb = xfc_target.world_space.affine.matrix.b;
+        let tc = xfc_target.world_space.affine.matrix.c, td = xfc_target.world_space.affine.matrix.d;
+        ///let degRadReflect = ta * td - tb * tc > 0 ? MathUtils.degRad : -MathUtils.degRad;
+        ///let offsetRotation = this.data.offsetRotation * degRadReflect;
+        ///let offsetShearY = this.data.offsetShearY * degRadReflect;
+
+        if (xfc_position_mix !== 0) {
+          ///let temp = this.temp;
+          ///xfc_target.localToWorld(temp.set(xfc_position.x, xfc_position.y));
+          ///xfc_bone.world_space.affine.vector.x += (temp.x - xfc_bone.world_space.affine.vector.x) * xfc_position_mix;
+          ///xfc_bone.world_space.affine.vector.y += (temp.y - xfc_bone.world_space.affine.vector.y) * xfc_position_mix;
+          const xfc_world_position: Vector = Space.transform(xfc_target.world_space, xfc_position, new Vector());
+          xfc_bone.world_space.position.tween(xfc_world_position, xfc_position_mix, xfc_bone.world_space.position);
+        }
+
+        if (xfc_rotation_mix !== 0) {
+          let a = xfc_bone.world_space.affine.matrix.a; ///, b = xfc_bone.world_space.affine.matrix.b;
+          let c = xfc_bone.world_space.affine.matrix.c; ///, d = xfc_bone.world_space.affine.matrix.d;
+          let r = Math.atan2(tc, ta) - Math.atan2(c, a) + xfc_rotation.rad;
+          r = wrapAngleRadians(r);
+          r *= xfc_rotation_mix;
+          let cos = Math.cos(r), sin = Math.sin(r);
+          xfc_bone.world_space.affine.matrix.selfRotate(cos, sin);
+        }
+
+        if (xfc_scale_mix !== 0) {
+          let s = Math.sqrt(xfc_bone.world_space.affine.matrix.a * xfc_bone.world_space.affine.matrix.a + xfc_bone.world_space.affine.matrix.c * xfc_bone.world_space.affine.matrix.c);
+          let ts = Math.sqrt(ta * ta + tc * tc);
+          if (s > 0.00001) s = (s + (ts - s + xfc_scale.x) * xfc_scale_mix) / s;
+          xfc_bone.world_space.affine.matrix.a *= s;
+          xfc_bone.world_space.affine.matrix.c *= s;
+          s = Math.sqrt(xfc_bone.world_space.affine.matrix.b * xfc_bone.world_space.affine.matrix.b + xfc_bone.world_space.affine.matrix.d * xfc_bone.world_space.affine.matrix.d);
+          ts = Math.sqrt(tb * tb + td * td);
+          if (s > 0.00001) s = (s + (ts - s + xfc_scale.y) * xfc_scale_mix) / s;
+          xfc_bone.world_space.affine.matrix.b *= s;
+          xfc_bone.world_space.affine.matrix.d *= s;
+        }
+
+        if (xfc_shear_mix !== 0) {
+          let b = xfc_bone.world_space.affine.matrix.b, d = xfc_bone.world_space.affine.matrix.d;
+          let by = Math.atan2(d, b);
+          let r = Math.atan2(td, tb) - Math.atan2(tc, ta) - (by - Math.atan2(xfc_bone.world_space.affine.matrix.c, xfc_bone.world_space.affine.matrix.a));
+          r = wrapAngleRadians(r);
+          r = by + (r + xfc_shear.y.rad) * xfc_shear_mix;
+          let s = Math.sqrt(b * b + d * d);
+          xfc_bone.world_space.affine.matrix.b = Math.cos(r) * s;
+          xfc_bone.world_space.affine.matrix.d = Math.sin(r) * s;
+        }
       });
     });
   }
@@ -2773,12 +2855,24 @@ export class Pose {
 
     this.data.ptc_keys.forEach((ptc_key: string): void => {
       const ptc: Ptc = this.data.ptcs[ptc_key];
-      ///const ptc_spacing_mode: string = ptc.spacing_mode;
+
+      const skin: Skin = this.data.skins[this.skin_key];
+      const default_skin: Skin = this.data.skins["default"];
+      const slot_key: string = ptc.target_key;
+      const slot: Slot = this.slots[slot_key];
+      const skin_slot: SkinSlot = skin && (skin.slots[slot_key] || default_skin.slots[slot_key]);
+      const ptc_target: Attachment = skin_slot && skin_slot.attachments[slot.attachment_key];
+
+      if (!(ptc_target instanceof PathAttachment)) return;
+
+      const ptc_spacing_mode: string = ptc.spacing_mode;
       let ptc_spacing: number = ptc.spacing;
-      ///const ptc_position_mode: string = ptc.position_mode;
+
+      const ptc_position_mode: string = ptc.position_mode;
       let ptc_position_mix: number = ptc.position_mix;
       let ptc_position: number = ptc.position;
-      ///const ptc_rotation_mode: string = ptc.rotation_mode;
+
+      const ptc_rotation_mode: string = ptc.rotation_mode;
       let ptc_rotation_mix: number = ptc.rotation_mix;
       const ptc_rotation: Rotation = ptc.rotation;
 
@@ -2835,16 +2929,32 @@ export class Pose {
         }
       }
 
-      ///const skin = data && data.skins[pose.skin_key];
-      ///const default_skin = data && data.skins["default"];
-      ///const slot_key = ptc.target_key;
-      ///const slot = this.slots[slot_key];
-      ///const skin_slot = skin && (skin.slots[slot_key] || default_skin.slots[slot_key]);
-      ///const ptc_target = skin_slot && skin_slot.attachments[slot.attachment_key];
+      ptc.bone_keys.forEach((bone_key: string): void => {
+        const ptc_bone: Bone = this.bones[bone_key];
 
-      ptc.bone_keys.forEach(function(bone_key) {
-        ///const ptc_bone = pose.bones[bone_key];
-        // TODO
+        if (!ptc_bone) return;
+
+        // TODO: solve path constraint for ptc_bone (Bone) using ptc_target (PathAttachment)
+
+        switch (ptc_spacing_mode) {
+          case "length":
+          case "fixed":
+          case "percent":
+            break;
+        }
+
+        switch (ptc_position_mode) {
+          case "fixed":
+          case "percent":
+            break;
+        }
+
+        switch (ptc_rotation_mode) {
+          case "tangent":
+          case "chain":
+          case "chainscale":
+            break;
+        }
       });
     });
   }
