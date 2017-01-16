@@ -1407,14 +1407,14 @@ export class BoneKeyframe extends Keyframe {
   }
 }
 
-export class PositionKeyframe extends BoneKeyframe {
+export class BonePositionKeyframe extends BoneKeyframe {
   public position: Position = new Position();
 
   constructor() {
     super();
   }
 
-  public load(json: any): PositionKeyframe {
+  public load(json: any): BonePositionKeyframe {
     super.load(json);
     this.position.x = loadFloat(json, "x", 0);
     this.position.y = loadFloat(json, "y", 0);
@@ -1422,28 +1422,28 @@ export class PositionKeyframe extends BoneKeyframe {
   }
 }
 
-export class RotationKeyframe extends BoneKeyframe {
+export class BoneRotationKeyframe extends BoneKeyframe {
   public rotation: Rotation = new Rotation();
 
   constructor() {
     super();
   }
 
-  public load(json: any): RotationKeyframe {
+  public load(json: any): BoneRotationKeyframe {
     super.load(json);
     this.rotation.deg = loadFloat(json, "angle", 0);
     return this;
   }
 }
 
-export class ScaleKeyframe extends BoneKeyframe {
+export class BoneScaleKeyframe extends BoneKeyframe {
   public scale: Scale = new Scale();
 
   constructor() {
     super();
   }
 
-  public load(json: any): ScaleKeyframe {
+  public load(json: any): BoneScaleKeyframe {
     super.load(json);
     this.scale.x = loadFloat(json, "x", 1);
     this.scale.y = loadFloat(json, "y", 1);
@@ -1451,14 +1451,14 @@ export class ScaleKeyframe extends BoneKeyframe {
   }
 }
 
-export class ShearKeyframe extends BoneKeyframe {
+export class BoneShearKeyframe extends BoneKeyframe {
   public shear: Shear = new Shear();
 
   constructor() {
     super();
   }
 
-  public load(json: any): ShearKeyframe {
+  public load(json: any): BoneShearKeyframe {
     super.load(json);
     this.shear.x.deg = loadFloat(json, "x", 0);
     this.shear.y.deg = loadFloat(json, "y", 0);
@@ -1469,10 +1469,10 @@ export class ShearKeyframe extends BoneKeyframe {
 export class BoneTimeline {
   public min_time: number = 0;
   public max_time: number = 0;
-  public position_keyframes: PositionKeyframe[];
-  public rotation_keyframes: RotationKeyframe[];
-  public scale_keyframes: ScaleKeyframe[];
-  public shear_keyframes: ShearKeyframe[];
+  public position_keyframes: BonePositionKeyframe[];
+  public rotation_keyframes: BoneRotationKeyframe[];
+  public scale_keyframes: BoneScaleKeyframe[];
+  public shear_keyframes: BoneShearKeyframe[];
 
   public load(json: any): BoneTimeline {
     this.min_time = 0;
@@ -1487,7 +1487,7 @@ export class BoneTimeline {
         case "translate":
           this.position_keyframes = [];
           json.translate.forEach((translate_json: any): void => {
-            const position_keyframe = new PositionKeyframe().load(translate_json);
+            const position_keyframe = new BonePositionKeyframe().load(translate_json);
             this.position_keyframes.push(position_keyframe);
             this.min_time = Math.min(this.min_time, position_keyframe.time);
             this.max_time = Math.max(this.max_time, position_keyframe.time);
@@ -1497,7 +1497,7 @@ export class BoneTimeline {
         case "rotate":
           this.rotation_keyframes = [];
           json.rotate.forEach((rotate_json: any): void => {
-            const rotation_keyframe = new RotationKeyframe().load(rotate_json);
+            const rotation_keyframe = new BoneRotationKeyframe().load(rotate_json);
             this.rotation_keyframes.push(rotation_keyframe);
             this.min_time = Math.min(this.min_time, rotation_keyframe.time);
             this.max_time = Math.max(this.max_time, rotation_keyframe.time);
@@ -1507,7 +1507,7 @@ export class BoneTimeline {
         case "scale":
           this.scale_keyframes = [];
           json.scale.forEach((scale_json: any): void => {
-            const scale_keyframe = new ScaleKeyframe().load(scale_json);
+            const scale_keyframe = new BoneScaleKeyframe().load(scale_json);
             this.scale_keyframes.push(scale_keyframe);
             this.min_time = Math.min(this.min_time, scale_keyframe.time);
             this.max_time = Math.max(this.max_time, scale_keyframe.time);
@@ -1517,7 +1517,7 @@ export class BoneTimeline {
         case "shear":
           this.shear_keyframes = [];
           json.shear.forEach((shear_json: any): void => {
-            const shear_keyframe = new ShearKeyframe().load(shear_json);
+            const shear_keyframe = new BoneShearKeyframe().load(shear_json);
             this.shear_keyframes.push(shear_keyframe);
             this.min_time = Math.min(this.min_time, shear_keyframe.time);
             this.max_time = Math.max(this.max_time, shear_keyframe.time);
@@ -1545,7 +1545,7 @@ export class SlotKeyframe extends Keyframe {
   }
 }
 
-export class ColorKeyframe extends SlotKeyframe {
+export class SlotColorKeyframe extends SlotKeyframe {
   public curve: Curve = new Curve();
   public color: Color = new Color();
 
@@ -1553,7 +1553,7 @@ export class ColorKeyframe extends SlotKeyframe {
     super();
   }
 
-  public load(json: any): ColorKeyframe {
+  public load(json: any): SlotColorKeyframe {
     super.load(json);
     this.curve.load(json.curve);
     this.color.load(json.color);
@@ -1561,14 +1561,14 @@ export class ColorKeyframe extends SlotKeyframe {
   }
 }
 
-export class AttachmentKeyframe extends SlotKeyframe {
+export class SlotAttachmentKeyframe extends SlotKeyframe {
   public name: string = "";
 
   constructor() {
     super();
   }
 
-  public load(json: any): AttachmentKeyframe {
+  public load(json: any): SlotAttachmentKeyframe {
     super.load(json);
     this.name = loadString(json, "name", "");
     return this;
@@ -1578,8 +1578,8 @@ export class AttachmentKeyframe extends SlotKeyframe {
 export class SlotTimeline {
   public min_time: number = 0;
   public max_time: number = 0;
-  public color_keyframes: ColorKeyframe[];
-  public attachment_keyframes: AttachmentKeyframe[];
+  public color_keyframes: SlotColorKeyframe[];
+  public attachment_keyframes: SlotAttachmentKeyframe[];
 
   public load(json: any): SlotTimeline {
     this.min_time = 0;
@@ -1592,7 +1592,7 @@ export class SlotTimeline {
         case "color":
           this.color_keyframes = [];
           json[key].forEach((color: any): void => {
-            const color_keyframe = new ColorKeyframe().load(color);
+            const color_keyframe = new SlotColorKeyframe().load(color);
             this.min_time = Math.min(this.min_time, color_keyframe.time);
             this.max_time = Math.max(this.max_time, color_keyframe.time);
             this.color_keyframes.push(color_keyframe);
@@ -1602,7 +1602,7 @@ export class SlotTimeline {
         case "attachment":
           this.attachment_keyframes = [];
           json[key].forEach((attachment: any): void => {
-            const attachment_keyframe = new AttachmentKeyframe().load(attachment);
+            const attachment_keyframe = new SlotAttachmentKeyframe().load(attachment);
             this.min_time = Math.min(this.min_time, attachment_keyframe.time);
             this.max_time = Math.max(this.max_time, attachment_keyframe.time);
             this.attachment_keyframes.push(attachment_keyframe);
@@ -2295,7 +2295,7 @@ export class Data {
     const default_skin: Skin = this.skins["default"];
     this.slot_keys.forEach((slot_key: string): void => {
       const data_slot: Slot = this.slots[slot_key];
-      const skin_slot: SkinSlot = skin && (skin.slots[slot_key] || default_skin.slots[slot_key]);
+      const skin_slot: SkinSlot = (skin && skin.slots[slot_key]) || default_skin.slots[slot_key];
       let attachment: Attachment = skin_slot && skin_slot.attachments[data_slot.attachment_key];
       let attachment_key: string = (attachment && attachment.name) || data_slot.attachment_key;
       if (attachment && (attachment.type === "linkedmesh")) {
@@ -2349,18 +2349,15 @@ export class Pose {
   }
 
   public curSkel(): Skeleton {
-    const data: Data = this.data;
-    return data && data.skeleton;
+    return this.data.skeleton;
   }
 
   public getSkins(): {[key: string]: Skin} {
-    const data: Data = this.data;
-    return data && data.skins;
+    return this.data.skins;
   }
 
   public curSkin(): Skin {
-    const data: Data = this.data;
-    return data && data.skins[this.skin_key];
+    return this.data.skins[this.skin_key];
   }
 
   public getSkin(): string {
@@ -2373,24 +2370,16 @@ export class Pose {
     }
   }
 
-  public getEvents(): {[key: string]: Event} {
-    const data: Data = this.data;
-    return data && data.events;
-  }
-
   public getAnims(): {[key: string]: Animation} {
-    const data: Data = this.data;
-    return data && data.anims;
+    return this.data.anims;
   }
 
   public curAnim(): Animation {
-    const data: Data = this.data;
-    return data && data.anims[this.anim_key];
+    return this.data.anims[this.anim_key];
   }
 
   public curAnimLength(): number {
-    const data: Data = this.data;
-    const anim: Animation = data && data.anims[this.anim_key];
+    const anim: Animation = this.data.anims[this.anim_key];
     return (anim && anim.length) || 0;
   }
 
@@ -2401,8 +2390,7 @@ export class Pose {
   public setAnim(anim_key: string): void {
     if (this.anim_key !== anim_key) {
       this.anim_key = anim_key;
-      const data: Data = this.data;
-      const anim: Animation = data && data.anims[this.anim_key];
+      const anim: Animation = this.data.anims[this.anim_key];
       if (anim) {
         this.time = wrap(this.time, anim.min_time, anim.max_time);
       }
@@ -2417,8 +2405,7 @@ export class Pose {
   }
 
   public setTime(time: number): void {
-    const data: Data = this.data;
-    const anim: Animation = data && data.anims[this.anim_key];
+    const anim: Animation = this.data.anims[this.anim_key];
     if (anim) {
       time = wrap(time, anim.min_time, anim.max_time);
     }
@@ -2464,9 +2451,6 @@ export class Pose {
   }
 
   private _strikeBones(anim: Animation): void {
-    let keyframe_index: number;
-    let pct: number;
-
     this.data.bone_keys.forEach((bone_key: string): void => {
       const data_bone: Bone = this.data.bones[bone_key];
       const pose_bone: Bone = this.bones[bone_key] || (this.bones[bone_key] = new Bone());
@@ -2477,12 +2461,12 @@ export class Pose {
       // tween anim bone if keyframes are available
       const bone_timeline: BoneTimeline = anim && anim.bone_timeline_map[bone_key];
       if (bone_timeline) {
-        keyframe_index = Keyframe.find(bone_timeline.position_keyframes, this.time);
-        if (keyframe_index !== -1) {
-          const position_keyframe0: PositionKeyframe = bone_timeline.position_keyframes[keyframe_index];
-          const position_keyframe1: PositionKeyframe = bone_timeline.position_keyframes[keyframe_index + 1];
+        const position_keyframe_index: number = Keyframe.find(bone_timeline.position_keyframes, this.time);
+        if (position_keyframe_index !== -1) {
+          const position_keyframe0: BonePositionKeyframe = bone_timeline.position_keyframes[position_keyframe_index];
+          const position_keyframe1: BonePositionKeyframe = bone_timeline.position_keyframes[position_keyframe_index + 1];
           if (position_keyframe1) {
-            pct = position_keyframe0.curve.evaluate((this.time - position_keyframe0.time) / (position_keyframe1.time - position_keyframe0.time));
+            const pct: number = position_keyframe0.curve.evaluate((this.time - position_keyframe0.time) / (position_keyframe1.time - position_keyframe0.time));
             pose_bone.local_space.position.x += tween(position_keyframe0.position.x, position_keyframe1.position.x, pct);
             pose_bone.local_space.position.y += tween(position_keyframe0.position.y, position_keyframe1.position.y, pct);
           } else {
@@ -2491,24 +2475,24 @@ export class Pose {
           }
         }
 
-        keyframe_index = Keyframe.find(bone_timeline.rotation_keyframes, this.time);
-        if (keyframe_index !== -1) {
-          const rotation_keyframe0: RotationKeyframe = bone_timeline.rotation_keyframes[keyframe_index];
-          const rotation_keyframe1: RotationKeyframe = bone_timeline.rotation_keyframes[keyframe_index + 1];
+        const rotation_keyframe_index: number = Keyframe.find(bone_timeline.rotation_keyframes, this.time);
+        if (rotation_keyframe_index !== -1) {
+          const rotation_keyframe0: BoneRotationKeyframe = bone_timeline.rotation_keyframes[rotation_keyframe_index];
+          const rotation_keyframe1: BoneRotationKeyframe = bone_timeline.rotation_keyframes[rotation_keyframe_index + 1];
           if (rotation_keyframe1) {
-            pct = rotation_keyframe0.curve.evaluate((this.time - rotation_keyframe0.time) / (rotation_keyframe1.time - rotation_keyframe0.time));
+            const pct: number = rotation_keyframe0.curve.evaluate((this.time - rotation_keyframe0.time) / (rotation_keyframe1.time - rotation_keyframe0.time));
             pose_bone.local_space.rotation.rad += tweenAngleRadians(rotation_keyframe0.rotation.rad, rotation_keyframe1.rotation.rad, pct);
           } else {
             pose_bone.local_space.rotation.rad += rotation_keyframe0.rotation.rad;
           }
         }
 
-        keyframe_index = Keyframe.find(bone_timeline.scale_keyframes, this.time);
-        if (keyframe_index !== -1) {
-          const scale_keyframe0: ScaleKeyframe = bone_timeline.scale_keyframes[keyframe_index];
-          const scale_keyframe1: ScaleKeyframe = bone_timeline.scale_keyframes[keyframe_index + 1];
+        const scale_keyframe_index: number = Keyframe.find(bone_timeline.scale_keyframes, this.time);
+        if (scale_keyframe_index !== -1) {
+          const scale_keyframe0: BoneScaleKeyframe = bone_timeline.scale_keyframes[scale_keyframe_index];
+          const scale_keyframe1: BoneScaleKeyframe = bone_timeline.scale_keyframes[scale_keyframe_index + 1];
           if (scale_keyframe1) {
-            pct = scale_keyframe0.curve.evaluate((this.time - scale_keyframe0.time) / (scale_keyframe1.time - scale_keyframe0.time));
+            const pct: number = scale_keyframe0.curve.evaluate((this.time - scale_keyframe0.time) / (scale_keyframe1.time - scale_keyframe0.time));
             pose_bone.local_space.scale.a *= tween(scale_keyframe0.scale.a, scale_keyframe1.scale.a, pct);
             pose_bone.local_space.scale.d *= tween(scale_keyframe0.scale.d, scale_keyframe1.scale.d, pct);
           } else {
@@ -2517,12 +2501,12 @@ export class Pose {
           }
         }
 
-        keyframe_index = Keyframe.find(bone_timeline.shear_keyframes, this.time);
-        if (keyframe_index !== -1) {
-          const shear_keyframe0: ShearKeyframe = bone_timeline.shear_keyframes[keyframe_index];
-          const shear_keyframe1: ShearKeyframe = bone_timeline.shear_keyframes[keyframe_index + 1];
+        const shear_keyframe_index: number = Keyframe.find(bone_timeline.shear_keyframes, this.time);
+        if (shear_keyframe_index !== -1) {
+          const shear_keyframe0: BoneShearKeyframe = bone_timeline.shear_keyframes[shear_keyframe_index];
+          const shear_keyframe1: BoneShearKeyframe = bone_timeline.shear_keyframes[shear_keyframe_index + 1];
           if (shear_keyframe1) {
-            pct = shear_keyframe0.curve.evaluate((this.time - shear_keyframe0.time) / (shear_keyframe1.time - shear_keyframe0.time));
+            const pct: number = shear_keyframe0.curve.evaluate((this.time - shear_keyframe0.time) / (shear_keyframe1.time - shear_keyframe0.time));
             pose_bone.local_space.shear.x.rad += tweenAngleRadians(shear_keyframe0.shear.x.rad, shear_keyframe1.shear.x.rad, pct);
             pose_bone.local_space.shear.y.rad += tweenAngleRadians(shear_keyframe0.shear.y.rad, shear_keyframe1.shear.y.rad, pct);
           } else {
@@ -2541,22 +2525,20 @@ export class Pose {
   }
 
   private _strikeIkcs(anim: Animation): void {
-    let keyframe_index: number;
-    let pct: number;
-
     this.data.ikc_keys.forEach((ikc_key: string): void => {
       const ikc: Ikc = this.data.ikcs[ikc_key];
+
       let ikc_mix: number = ikc.mix;
       let ikc_bend_positive: boolean = ikc.bend_positive;
 
       const ikc_timeline: IkcTimeline = anim && anim.ikc_timeline_map[ikc_key];
       if (ikc_timeline) {
-        keyframe_index = Keyframe.find(ikc_timeline.ikc_keyframes, this.time);
-        if (keyframe_index !== -1) {
-          const ikc_keyframe0: IkcKeyframe = ikc_timeline.ikc_keyframes[keyframe_index];
-          const ikc_keyframe1: IkcKeyframe = ikc_timeline.ikc_keyframes[keyframe_index + 1];
+        const ikc_keyframe_index: number = Keyframe.find(ikc_timeline.ikc_keyframes, this.time);
+        if (ikc_keyframe_index !== -1) {
+          const ikc_keyframe0: IkcKeyframe = ikc_timeline.ikc_keyframes[ikc_keyframe_index];
+          const ikc_keyframe1: IkcKeyframe = ikc_timeline.ikc_keyframes[ikc_keyframe_index + 1];
           if (ikc_keyframe1) {
-            pct = ikc_keyframe0.curve.evaluate((this.time - ikc_keyframe0.time) / (ikc_keyframe1.time - ikc_keyframe0.time));
+            const pct: number = ikc_keyframe0.curve.evaluate((this.time - ikc_keyframe0.time) / (ikc_keyframe1.time - ikc_keyframe0.time));
             ikc_mix = tween(ikc_keyframe0.mix, ikc_keyframe1.mix, pct);
           } else {
             ikc_mix = ikc_keyframe0.mix;
@@ -2703,11 +2685,9 @@ export class Pose {
   }
 
   private _strikeXfcs(anim: Animation): void {
-    let keyframe_index: number;
-    let pct: number;
-
     this.data.xfc_keys.forEach((xfc_key: string): void => {
       const xfc: Xfc = this.data.xfcs[xfc_key];
+
       let xfc_position_mix: number = xfc.position_mix;
       let xfc_rotation_mix: number = xfc.rotation_mix;
       let xfc_scale_mix: number = xfc.scale_mix;
@@ -2715,12 +2695,12 @@ export class Pose {
 
       const xfc_timeline: XfcTimeline = anim && anim.xfc_timeline_map[xfc_key];
       if (xfc_timeline) {
-        keyframe_index = Keyframe.find(xfc_timeline.xfc_keyframes, this.time);
-        if (keyframe_index !== -1) {
-          const xfc_keyframe0: XfcKeyframe = xfc_timeline.xfc_keyframes[keyframe_index];
-          const xfc_keyframe1: XfcKeyframe = xfc_timeline.xfc_keyframes[keyframe_index + 1];
+        const xfc_keyframe_index = Keyframe.find(xfc_timeline.xfc_keyframes, this.time);
+        if (xfc_keyframe_index !== -1) {
+          const xfc_keyframe0: XfcKeyframe = xfc_timeline.xfc_keyframes[xfc_keyframe_index];
+          const xfc_keyframe1: XfcKeyframe = xfc_timeline.xfc_keyframes[xfc_keyframe_index + 1];
           if (xfc_keyframe1) {
-            pct = xfc_keyframe0.curve.evaluate((this.time - xfc_keyframe0.time) / (xfc_keyframe1.time - xfc_keyframe0.time));
+            const pct: number = xfc_keyframe0.curve.evaluate((this.time - xfc_keyframe0.time) / (xfc_keyframe1.time - xfc_keyframe0.time));
             xfc_position_mix = tween(xfc_keyframe0.position_mix, xfc_keyframe1.position_mix, pct);
             xfc_rotation_mix = tween(xfc_keyframe0.rotation_mix, xfc_keyframe1.rotation_mix, pct);
             xfc_scale_mix = tween(xfc_keyframe0.scale_mix, xfc_keyframe1.scale_mix, pct);
@@ -2734,19 +2714,20 @@ export class Pose {
         }
       }
 
+      const xfc_target: Bone = this.bones[xfc.target_key];
+      const xfc_position: Position = xfc.position;
+      const xfc_rotation: Rotation = xfc.rotation;
+      const xfc_scale: Scale = xfc.scale;
+      const xfc_shear: Shear = xfc.shear;
+
+      let ta = xfc_target.world_space.affine.matrix.a, tb = xfc_target.world_space.affine.matrix.b;
+      let tc = xfc_target.world_space.affine.matrix.c, td = xfc_target.world_space.affine.matrix.d;
+      ///let degRadReflect = ta * td - tb * tc > 0 ? MathUtils.degRad : -MathUtils.degRad;
+      ///let offsetRotation = this.data.offsetRotation * degRadReflect;
+      ///let offsetShearY = this.data.offsetShearY * degRadReflect;
+
       xfc.bone_keys.forEach((bone_key: string) => {
         const xfc_bone: Bone = this.bones[bone_key];
-        const xfc_target: Bone = this.bones[xfc.target_key];
-        const xfc_position: Vector = xfc.position;
-        const xfc_rotation = xfc.rotation;
-        const xfc_scale = xfc.scale;
-        const xfc_shear = xfc.shear;
-
-        let ta = xfc_target.world_space.affine.matrix.a, tb = xfc_target.world_space.affine.matrix.b;
-        let tc = xfc_target.world_space.affine.matrix.c, td = xfc_target.world_space.affine.matrix.d;
-        ///let degRadReflect = ta * td - tb * tc > 0 ? MathUtils.degRad : -MathUtils.degRad;
-        ///let offsetRotation = this.data.offsetRotation * degRadReflect;
-        ///let offsetShearY = this.data.offsetShearY * degRadReflect;
 
         if (xfc_position_mix !== 0) {
           ///let temp = this.temp;
@@ -2795,9 +2776,6 @@ export class Pose {
   }
 
   private _strikeSlots(anim: Animation): void {
-    let keyframe_index: number;
-    let pct: number;
-
     this.data.slot_keys.forEach((slot_key: string): void => {
       const data_slot: Slot = this.data.slots[slot_key];
       const pose_slot: Slot = this.slots[slot_key] || (this.slots[slot_key] = new Slot());
@@ -2808,21 +2786,21 @@ export class Pose {
       // tween anim slot if keyframes are available
       const slot_timeline: SlotTimeline = anim && anim.slot_timeline_map[slot_key];
       if (slot_timeline) {
-        keyframe_index = Keyframe.find(slot_timeline.color_keyframes, this.time);
-        if (keyframe_index !== -1) {
-          const color_keyframe0: ColorKeyframe = slot_timeline.color_keyframes[keyframe_index];
-          const color_keyframe1: ColorKeyframe = slot_timeline.color_keyframes[keyframe_index + 1];
+        const color_keyframe_index: number = Keyframe.find(slot_timeline.color_keyframes, this.time);
+        if (color_keyframe_index !== -1) {
+          const color_keyframe0: SlotColorKeyframe = slot_timeline.color_keyframes[color_keyframe_index];
+          const color_keyframe1: SlotColorKeyframe = slot_timeline.color_keyframes[color_keyframe_index + 1];
           if (color_keyframe1) {
-            pct = color_keyframe0.curve.evaluate((this.time - color_keyframe0.time) / (color_keyframe1.time - color_keyframe0.time));
+            const pct: number = color_keyframe0.curve.evaluate((this.time - color_keyframe0.time) / (color_keyframe1.time - color_keyframe0.time));
             color_keyframe0.color.tween(color_keyframe1.color, pct, pose_slot.color);
           } else {
             pose_slot.color.copy(color_keyframe0.color);
           }
         }
 
-        keyframe_index = Keyframe.find(slot_timeline.attachment_keyframes, this.time);
-        if (keyframe_index !== -1) {
-          const attachment_keyframe0: AttachmentKeyframe = slot_timeline.attachment_keyframes[keyframe_index];
+        const attachment_keyframe_index: number = Keyframe.find(slot_timeline.attachment_keyframes, this.time);
+        if (attachment_keyframe_index !== -1) {
+          const attachment_keyframe0: SlotAttachmentKeyframe = slot_timeline.attachment_keyframes[attachment_keyframe_index];
           // no tweening attachments
           pose_slot.attachment_key = attachment_keyframe0.name;
         }
@@ -2832,9 +2810,9 @@ export class Pose {
     this.slot_keys = this.data.slot_keys;
 
     if (anim) {
-      keyframe_index = Keyframe.find(anim.order_keyframes, this.time);
-      if (keyframe_index !== -1) {
-        const order_keyframe: OrderKeyframe = anim.order_keyframes[keyframe_index];
+      const order_keyframe_index: number = Keyframe.find(anim.order_keyframes, this.time);
+      if (order_keyframe_index !== -1) {
+        const order_keyframe: OrderKeyframe = anim.order_keyframes[order_keyframe_index];
         this.slot_keys = this.data.slot_keys.slice(0); // copy array before reordering
         order_keyframe.slot_offsets.forEach((slot_offset: SlotOffset): void => {
           const slot_index: number = this.slot_keys.indexOf(slot_offset.slot_key);
@@ -2850,17 +2828,15 @@ export class Pose {
   }
 
   private _strikePtcs(anim: Animation): void {
-    let keyframe_index: number;
-    let pct: number;
+    const skin: Skin = this.data.skins[this.skin_key];
+    const default_skin: Skin = this.data.skins["default"];
 
     this.data.ptc_keys.forEach((ptc_key: string): void => {
       const ptc: Ptc = this.data.ptcs[ptc_key];
 
-      const skin: Skin = this.data.skins[this.skin_key];
-      const default_skin: Skin = this.data.skins["default"];
       const slot_key: string = ptc.target_key;
       const slot: Slot = this.slots[slot_key];
-      const skin_slot: SkinSlot = skin && (skin.slots[slot_key] || default_skin.slots[slot_key]);
+      const skin_slot: SkinSlot = (skin && skin.slots[slot_key]) || default_skin.slots[slot_key];
       const ptc_target: Attachment = skin_slot && skin_slot.attachments[slot.attachment_key];
 
       if (!(ptc_target instanceof PathAttachment)) return;
@@ -2878,12 +2854,12 @@ export class Pose {
 
       const ptc_timeline: PtcTimeline = anim && anim.ptc_timeline_map[ptc_key];
       if (ptc_timeline) {
-        keyframe_index = Keyframe.find(ptc_timeline.ptc_mix_keyframes, this.time);
-        if (keyframe_index !== -1) {
-          const ptc_mix_keyframe0: PtcMixKeyframe = ptc_timeline.ptc_mix_keyframes[keyframe_index];
-          const ptc_mix_keyframe1: PtcMixKeyframe = ptc_timeline.ptc_mix_keyframes[keyframe_index + 1];
+        const ptc_mix_keyframe_index = Keyframe.find(ptc_timeline.ptc_mix_keyframes, this.time);
+        if (ptc_mix_keyframe_index !== -1) {
+          const ptc_mix_keyframe0: PtcMixKeyframe = ptc_timeline.ptc_mix_keyframes[ptc_mix_keyframe_index];
+          const ptc_mix_keyframe1: PtcMixKeyframe = ptc_timeline.ptc_mix_keyframes[ptc_mix_keyframe_index + 1];
           if (ptc_mix_keyframe1) {
-            pct = ptc_mix_keyframe0.curve.evaluate((this.time - ptc_mix_keyframe0.time) / (ptc_mix_keyframe1.time - ptc_mix_keyframe0.time));
+            const pct = ptc_mix_keyframe0.curve.evaluate((this.time - ptc_mix_keyframe0.time) / (ptc_mix_keyframe1.time - ptc_mix_keyframe0.time));
             ptc_position_mix = tween(ptc_mix_keyframe0.position_mix, ptc_mix_keyframe1.position_mix, pct);
             ptc_rotation_mix = tween(ptc_mix_keyframe0.rotation_mix, ptc_mix_keyframe1.rotation_mix, pct);
           } else {
@@ -2892,36 +2868,36 @@ export class Pose {
           }
         }
 
-        keyframe_index = Keyframe.find(ptc_timeline.ptc_spacing_keyframes, this.time);
-        if (keyframe_index !== -1) {
-          const ptc_spacing_keyframe0: PtcSpacingKeyframe = ptc_timeline.ptc_spacing_keyframes[keyframe_index];
-          const ptc_spacing_keyframe1: PtcSpacingKeyframe = ptc_timeline.ptc_spacing_keyframes[keyframe_index + 1];
+        const ptc_spacing_keyframe_index = Keyframe.find(ptc_timeline.ptc_spacing_keyframes, this.time);
+        if (ptc_spacing_keyframe_index !== -1) {
+          const ptc_spacing_keyframe0: PtcSpacingKeyframe = ptc_timeline.ptc_spacing_keyframes[ptc_spacing_keyframe_index];
+          const ptc_spacing_keyframe1: PtcSpacingKeyframe = ptc_timeline.ptc_spacing_keyframes[ptc_spacing_keyframe_index + 1];
           if (ptc_spacing_keyframe1) {
-            pct = ptc_spacing_keyframe0.curve.evaluate((this.time - ptc_spacing_keyframe0.time) / (ptc_spacing_keyframe1.time - ptc_spacing_keyframe0.time));
+            const pct = ptc_spacing_keyframe0.curve.evaluate((this.time - ptc_spacing_keyframe0.time) / (ptc_spacing_keyframe1.time - ptc_spacing_keyframe0.time));
             ptc_spacing = tween(ptc_spacing_keyframe0.spacing, ptc_spacing_keyframe1.spacing, pct);
           } else {
             ptc_spacing = ptc_spacing_keyframe0.spacing;
           }
         }
 
-        keyframe_index = Keyframe.find(ptc_timeline.ptc_position_keyframes, this.time);
-        if (keyframe_index !== -1) {
-          const ptc_position_keyframe0: PtcPositionKeyframe = ptc_timeline.ptc_position_keyframes[keyframe_index];
-          const ptc_position_keyframe1: PtcPositionKeyframe = ptc_timeline.ptc_position_keyframes[keyframe_index + 1];
+        const ptc_position_keyframe_index = Keyframe.find(ptc_timeline.ptc_position_keyframes, this.time);
+        if (ptc_position_keyframe_index !== -1) {
+          const ptc_position_keyframe0: PtcPositionKeyframe = ptc_timeline.ptc_position_keyframes[ptc_position_keyframe_index];
+          const ptc_position_keyframe1: PtcPositionKeyframe = ptc_timeline.ptc_position_keyframes[ptc_position_keyframe_index + 1];
           if (ptc_position_keyframe1) {
-            pct = ptc_position_keyframe0.curve.evaluate((this.time - ptc_position_keyframe0.time) / (ptc_position_keyframe1.time - ptc_position_keyframe0.time));
+            const pct = ptc_position_keyframe0.curve.evaluate((this.time - ptc_position_keyframe0.time) / (ptc_position_keyframe1.time - ptc_position_keyframe0.time));
             ptc_position = tween(ptc_position_keyframe0.position, ptc_position_keyframe1.position, pct);
           } else {
             ptc_position = ptc_position_keyframe0.position;
           }
         }
 
-        keyframe_index = Keyframe.find(ptc_timeline.ptc_rotation_keyframes, this.time);
-        if (keyframe_index !== -1) {
-          const ptc_rotation_keyframe0: PtcRotationKeyframe = ptc_timeline.ptc_rotation_keyframes[keyframe_index];
-          const ptc_rotation_keyframe1: PtcRotationKeyframe = ptc_timeline.ptc_rotation_keyframes[keyframe_index + 1];
+        const ptc_rotation_keyframe_index = Keyframe.find(ptc_timeline.ptc_rotation_keyframes, this.time);
+        if (ptc_rotation_keyframe_index !== -1) {
+          const ptc_rotation_keyframe0: PtcRotationKeyframe = ptc_timeline.ptc_rotation_keyframes[ptc_rotation_keyframe_index];
+          const ptc_rotation_keyframe1: PtcRotationKeyframe = ptc_timeline.ptc_rotation_keyframes[ptc_rotation_keyframe_index + 1];
           if (ptc_rotation_keyframe1) {
-            pct = ptc_rotation_keyframe0.curve.evaluate((this.time - ptc_rotation_keyframe0.time) / (ptc_rotation_keyframe1.time - ptc_rotation_keyframe0.time));
+            const pct = ptc_rotation_keyframe0.curve.evaluate((this.time - ptc_rotation_keyframe0.time) / (ptc_rotation_keyframe1.time - ptc_rotation_keyframe0.time));
             ptc_rotation.rad = tweenAngleRadians(ptc_rotation_keyframe0.rotation.rad, ptc_rotation_keyframe1.rotation.rad, pct);
           } else {
             ptc_rotation.copy(ptc_rotation_keyframe0.rotation);
@@ -3035,12 +3011,11 @@ export class Pose {
   }
 
   public iterateAttachments(callback: (slot_key: string, pose_slot: Slot, skin_slot: SkinSlot, attachment_key: string, attachment: Attachment) => void): void {
-    const data: Data = this.data;
-    const skin: Skin = data && data.skins[this.skin_key];
-    const default_skin: Skin = data && data.skins["default"];
+    const skin: Skin = this.data.skins[this.skin_key];
+    const default_skin: Skin = this.data.skins["default"];
     this.slot_keys.forEach((slot_key: string): void => {
       const pose_slot: Slot = this.slots[slot_key];
-      const skin_slot: SkinSlot = skin && (skin.slots[slot_key] || default_skin.slots[slot_key]);
+      const skin_slot: SkinSlot = (skin && skin.slots[slot_key]) || default_skin.slots[slot_key];
       let attachment: Attachment = skin_slot && skin_slot.attachments[pose_slot.attachment_key];
       let attachment_key: string = (attachment && attachment.name) || pose_slot.attachment_key;
       if (attachment && (attachment.type === "linkedmesh")) {
