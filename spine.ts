@@ -1391,6 +1391,17 @@ export class Keyframe {
   public static compare(a: Keyframe, b: Keyframe): number {
     return a.time - b.time;
   }
+
+  public static evaluate(keyframes: Keyframe[], time: number, callback: (keyframe0: Keyframe, keyframe0_index: number, keyframe1: Keyframe, keyframe1_index: number, k: number) => void): void {
+    const keyframe0_index: number = Keyframe.find(keyframes, time);
+    if (keyframe0_index !== -1) {
+      const keyframe1_index: number = keyframe0_index + 1;
+      const keyframe0: Keyframe = keyframes[keyframe0_index];
+      const keyframe1: Keyframe = keyframes[keyframe1_index] || keyframe0;
+      const k: number = (keyframe0.time === keyframe1.time) ? 0 : (time - keyframe0.time) / (keyframe1.time - keyframe0.time);
+      callback(keyframe0, keyframe0_index, keyframe1, keyframe1_index, k);
+    }
+  }
 }
 
 export class BoneKeyframe extends Keyframe {
@@ -2461,59 +2472,28 @@ export class Pose {
       // tween anim bone if keyframes are available
       const bone_timeline: BoneTimeline = anim && anim.bone_timeline_map[bone_key];
       if (bone_timeline) {
-        const position_keyframe_index: number = Keyframe.find(bone_timeline.position_keyframes, this.time);
-        if (position_keyframe_index !== -1) {
-          const position_keyframe0: BonePositionKeyframe = bone_timeline.position_keyframes[position_keyframe_index];
-          const position_keyframe1: BonePositionKeyframe = bone_timeline.position_keyframes[position_keyframe_index + 1];
-          if (position_keyframe1) {
-            const pct: number = position_keyframe0.curve.evaluate((this.time - position_keyframe0.time) / (position_keyframe1.time - position_keyframe0.time));
-            pose_bone.local_space.position.x += tween(position_keyframe0.position.x, position_keyframe1.position.x, pct);
-            pose_bone.local_space.position.y += tween(position_keyframe0.position.y, position_keyframe1.position.y, pct);
-          } else {
-            pose_bone.local_space.position.x += position_keyframe0.position.x;
-            pose_bone.local_space.position.y += position_keyframe0.position.y;
-          }
-        }
+        Keyframe.evaluate(bone_timeline.position_keyframes, this.time, (keyframe0: BonePositionKeyframe, keyframe0_index: number, keyframe1: BonePositionKeyframe, keyframe1_index: number, k: number) => {
+          const pct: number = keyframe0.curve.evaluate(k);
+          pose_bone.local_space.position.x += tween(keyframe0.position.x, keyframe1.position.x, pct);
+          pose_bone.local_space.position.y += tween(keyframe0.position.y, keyframe1.position.y, pct);
+        });
 
-        const rotation_keyframe_index: number = Keyframe.find(bone_timeline.rotation_keyframes, this.time);
-        if (rotation_keyframe_index !== -1) {
-          const rotation_keyframe0: BoneRotationKeyframe = bone_timeline.rotation_keyframes[rotation_keyframe_index];
-          const rotation_keyframe1: BoneRotationKeyframe = bone_timeline.rotation_keyframes[rotation_keyframe_index + 1];
-          if (rotation_keyframe1) {
-            const pct: number = rotation_keyframe0.curve.evaluate((this.time - rotation_keyframe0.time) / (rotation_keyframe1.time - rotation_keyframe0.time));
-            pose_bone.local_space.rotation.rad += tweenAngleRadians(rotation_keyframe0.rotation.rad, rotation_keyframe1.rotation.rad, pct);
-          } else {
-            pose_bone.local_space.rotation.rad += rotation_keyframe0.rotation.rad;
-          }
-        }
+        Keyframe.evaluate(bone_timeline.rotation_keyframes, this.time, (keyframe0: BoneRotationKeyframe, keyframe0_index: number, keyframe1: BoneRotationKeyframe, keyframe1_index: number, k: number) => {
+          const pct: number = keyframe0.curve.evaluate(k);
+          pose_bone.local_space.rotation.rad += tweenAngleRadians(keyframe0.rotation.rad, keyframe1.rotation.rad, pct);
+        });
 
-        const scale_keyframe_index: number = Keyframe.find(bone_timeline.scale_keyframes, this.time);
-        if (scale_keyframe_index !== -1) {
-          const scale_keyframe0: BoneScaleKeyframe = bone_timeline.scale_keyframes[scale_keyframe_index];
-          const scale_keyframe1: BoneScaleKeyframe = bone_timeline.scale_keyframes[scale_keyframe_index + 1];
-          if (scale_keyframe1) {
-            const pct: number = scale_keyframe0.curve.evaluate((this.time - scale_keyframe0.time) / (scale_keyframe1.time - scale_keyframe0.time));
-            pose_bone.local_space.scale.a *= tween(scale_keyframe0.scale.a, scale_keyframe1.scale.a, pct);
-            pose_bone.local_space.scale.d *= tween(scale_keyframe0.scale.d, scale_keyframe1.scale.d, pct);
-          } else {
-            pose_bone.local_space.scale.a *= scale_keyframe0.scale.a;
-            pose_bone.local_space.scale.d *= scale_keyframe0.scale.d;
-          }
-        }
+        Keyframe.evaluate(bone_timeline.scale_keyframes, this.time, (keyframe0: BoneScaleKeyframe, keyframe0_index: number, keyframe1: BoneScaleKeyframe, keyframe1_index: number, k: number) => {
+          const pct: number = keyframe0.curve.evaluate(k);
+          pose_bone.local_space.scale.a *= tween(keyframe0.scale.a, keyframe1.scale.a, pct);
+          pose_bone.local_space.scale.d *= tween(keyframe0.scale.d, keyframe1.scale.d, pct);
+        });
 
-        const shear_keyframe_index: number = Keyframe.find(bone_timeline.shear_keyframes, this.time);
-        if (shear_keyframe_index !== -1) {
-          const shear_keyframe0: BoneShearKeyframe = bone_timeline.shear_keyframes[shear_keyframe_index];
-          const shear_keyframe1: BoneShearKeyframe = bone_timeline.shear_keyframes[shear_keyframe_index + 1];
-          if (shear_keyframe1) {
-            const pct: number = shear_keyframe0.curve.evaluate((this.time - shear_keyframe0.time) / (shear_keyframe1.time - shear_keyframe0.time));
-            pose_bone.local_space.shear.x.rad += tweenAngleRadians(shear_keyframe0.shear.x.rad, shear_keyframe1.shear.x.rad, pct);
-            pose_bone.local_space.shear.y.rad += tweenAngleRadians(shear_keyframe0.shear.y.rad, shear_keyframe1.shear.y.rad, pct);
-          } else {
-            pose_bone.local_space.shear.x.rad += shear_keyframe0.shear.x.rad;
-            pose_bone.local_space.shear.y.rad += shear_keyframe0.shear.y.rad;
-          }
-        }
+        Keyframe.evaluate(bone_timeline.shear_keyframes, this.time, (keyframe0: BoneShearKeyframe, keyframe0_index: number, keyframe1: BoneShearKeyframe, keyframe1_index: number, k: number) => {
+          const pct: number = keyframe0.curve.evaluate(k);
+          pose_bone.local_space.shear.x.rad += tweenAngleRadians(keyframe0.shear.x.rad, keyframe1.shear.x.rad, pct);
+          pose_bone.local_space.shear.y.rad += tweenAngleRadians(keyframe0.shear.y.rad, keyframe1.shear.y.rad, pct);
+        });
       }
     });
 
@@ -2533,19 +2513,11 @@ export class Pose {
 
       const ikc_timeline: IkcTimeline = anim && anim.ikc_timeline_map[ikc_key];
       if (ikc_timeline) {
-        const ikc_keyframe_index: number = Keyframe.find(ikc_timeline.ikc_keyframes, this.time);
-        if (ikc_keyframe_index !== -1) {
-          const ikc_keyframe0: IkcKeyframe = ikc_timeline.ikc_keyframes[ikc_keyframe_index];
-          const ikc_keyframe1: IkcKeyframe = ikc_timeline.ikc_keyframes[ikc_keyframe_index + 1];
-          if (ikc_keyframe1) {
-            const pct: number = ikc_keyframe0.curve.evaluate((this.time - ikc_keyframe0.time) / (ikc_keyframe1.time - ikc_keyframe0.time));
-            ikc_mix = tween(ikc_keyframe0.mix, ikc_keyframe1.mix, pct);
-          } else {
-            ikc_mix = ikc_keyframe0.mix;
-          }
+        Keyframe.evaluate(ikc_timeline.ikc_keyframes, this.time, (keyframe0: IkcKeyframe, keyframe0_index: number, keyframe1: IkcKeyframe, keyframe1_index: number, k: number) => {
+          ikc_mix = tween(keyframe0.mix, keyframe1.mix, keyframe0.curve.evaluate(k));
           // no tweening ik bend direction
-          ikc_bend_positive = ikc_keyframe0.bend_positive;
-        }
+          ikc_bend_positive = keyframe0.bend_positive;
+        });
       }
 
       const alpha: number = ikc_mix;
@@ -2695,23 +2667,13 @@ export class Pose {
 
       const xfc_timeline: XfcTimeline = anim && anim.xfc_timeline_map[xfc_key];
       if (xfc_timeline) {
-        const xfc_keyframe_index = Keyframe.find(xfc_timeline.xfc_keyframes, this.time);
-        if (xfc_keyframe_index !== -1) {
-          const xfc_keyframe0: XfcKeyframe = xfc_timeline.xfc_keyframes[xfc_keyframe_index];
-          const xfc_keyframe1: XfcKeyframe = xfc_timeline.xfc_keyframes[xfc_keyframe_index + 1];
-          if (xfc_keyframe1) {
-            const pct: number = xfc_keyframe0.curve.evaluate((this.time - xfc_keyframe0.time) / (xfc_keyframe1.time - xfc_keyframe0.time));
-            xfc_position_mix = tween(xfc_keyframe0.position_mix, xfc_keyframe1.position_mix, pct);
-            xfc_rotation_mix = tween(xfc_keyframe0.rotation_mix, xfc_keyframe1.rotation_mix, pct);
-            xfc_scale_mix = tween(xfc_keyframe0.scale_mix, xfc_keyframe1.scale_mix, pct);
-            xfc_shear_mix = tween(xfc_keyframe0.shear_mix, xfc_keyframe1.shear_mix, pct);
-          } else {
-            xfc_position_mix = xfc_keyframe0.position_mix;
-            xfc_rotation_mix = xfc_keyframe0.rotation_mix;
-            xfc_scale_mix = xfc_keyframe0.scale_mix;
-            xfc_shear_mix = xfc_keyframe0.shear_mix;
-          }
-        }
+        Keyframe.evaluate(xfc_timeline.xfc_keyframes, this.time, (keyframe0: XfcKeyframe, keyframe0_index: number, keyframe1: XfcKeyframe, keyframe1_index: number, k: number) => {
+          const pct: number = keyframe0.curve.evaluate(k);
+          xfc_position_mix = tween(keyframe0.position_mix, keyframe1.position_mix, pct);
+          xfc_rotation_mix = tween(keyframe0.rotation_mix, keyframe1.rotation_mix, pct);
+          xfc_scale_mix = tween(keyframe0.scale_mix, keyframe1.scale_mix, pct);
+          xfc_shear_mix = tween(keyframe0.shear_mix, keyframe1.shear_mix, pct);
+        });
       }
 
       const xfc_target: Bone = this.bones[xfc.target_key];
@@ -2786,35 +2748,23 @@ export class Pose {
       // tween anim slot if keyframes are available
       const slot_timeline: SlotTimeline = anim && anim.slot_timeline_map[slot_key];
       if (slot_timeline) {
-        const color_keyframe_index: number = Keyframe.find(slot_timeline.color_keyframes, this.time);
-        if (color_keyframe_index !== -1) {
-          const color_keyframe0: SlotColorKeyframe = slot_timeline.color_keyframes[color_keyframe_index];
-          const color_keyframe1: SlotColorKeyframe = slot_timeline.color_keyframes[color_keyframe_index + 1];
-          if (color_keyframe1) {
-            const pct: number = color_keyframe0.curve.evaluate((this.time - color_keyframe0.time) / (color_keyframe1.time - color_keyframe0.time));
-            color_keyframe0.color.tween(color_keyframe1.color, pct, pose_slot.color);
-          } else {
-            pose_slot.color.copy(color_keyframe0.color);
-          }
-        }
+        Keyframe.evaluate(slot_timeline.color_keyframes, this.time, (keyframe0: SlotColorKeyframe, keyframe0_index: number, keyframe1: SlotColorKeyframe, keyframe1_index: number, k: number) => {
+          keyframe0.color.tween(keyframe1.color, keyframe0.curve.evaluate(k), pose_slot.color);
+        });
 
-        const attachment_keyframe_index: number = Keyframe.find(slot_timeline.attachment_keyframes, this.time);
-        if (attachment_keyframe_index !== -1) {
-          const attachment_keyframe0: SlotAttachmentKeyframe = slot_timeline.attachment_keyframes[attachment_keyframe_index];
+        Keyframe.evaluate(slot_timeline.attachment_keyframes, this.time, (keyframe0: SlotAttachmentKeyframe, keyframe0_index: number, keyframe1: SlotAttachmentKeyframe, keyframe1_index: number, k: number) => {
           // no tweening attachments
-          pose_slot.attachment_key = attachment_keyframe0.name;
-        }
+          pose_slot.attachment_key = keyframe0.name;
+        });
       }
     });
 
     this.slot_keys = this.data.slot_keys;
 
     if (anim) {
-      const order_keyframe_index: number = Keyframe.find(anim.order_keyframes, this.time);
-      if (order_keyframe_index !== -1) {
-        const order_keyframe: OrderKeyframe = anim.order_keyframes[order_keyframe_index];
+      Keyframe.evaluate(anim.order_keyframes, this.time, (keyframe0: OrderKeyframe, keyframe0_index: number, keyframe1: OrderKeyframe, keyframe1_index: number, k: number) => {
         this.slot_keys = this.data.slot_keys.slice(0); // copy array before reordering
-        order_keyframe.slot_offsets.forEach((slot_offset: SlotOffset): void => {
+        keyframe0.slot_offsets.forEach((slot_offset: SlotOffset): void => {
           const slot_index: number = this.slot_keys.indexOf(slot_offset.slot_key);
           if (slot_index !== -1) {
             // delete old position
@@ -2823,7 +2773,7 @@ export class Pose {
             this.slot_keys.splice(slot_index + slot_offset.offset, 0, slot_offset.slot_key);
           }
         });
-      }
+      });
     }
   }
 
@@ -2854,55 +2804,23 @@ export class Pose {
 
       const ptc_timeline: PtcTimeline = anim && anim.ptc_timeline_map[ptc_key];
       if (ptc_timeline) {
-        const ptc_mix_keyframe_index = Keyframe.find(ptc_timeline.ptc_mix_keyframes, this.time);
-        if (ptc_mix_keyframe_index !== -1) {
-          const ptc_mix_keyframe0: PtcMixKeyframe = ptc_timeline.ptc_mix_keyframes[ptc_mix_keyframe_index];
-          const ptc_mix_keyframe1: PtcMixKeyframe = ptc_timeline.ptc_mix_keyframes[ptc_mix_keyframe_index + 1];
-          if (ptc_mix_keyframe1) {
-            const pct = ptc_mix_keyframe0.curve.evaluate((this.time - ptc_mix_keyframe0.time) / (ptc_mix_keyframe1.time - ptc_mix_keyframe0.time));
-            ptc_position_mix = tween(ptc_mix_keyframe0.position_mix, ptc_mix_keyframe1.position_mix, pct);
-            ptc_rotation_mix = tween(ptc_mix_keyframe0.rotation_mix, ptc_mix_keyframe1.rotation_mix, pct);
-          } else {
-            ptc_position_mix = ptc_mix_keyframe0.position_mix;
-            ptc_rotation_mix = ptc_mix_keyframe0.rotation_mix;
-          }
-        }
+        Keyframe.evaluate(ptc_timeline.ptc_mix_keyframes, this.time, (keyframe0: PtcMixKeyframe, keyframe0_index: number, keyframe1: PtcMixKeyframe, keyframe1_index: number, k: number) => {
+          const pct = keyframe0.curve.evaluate(k);
+          ptc_position_mix = tween(keyframe0.position_mix, keyframe1.position_mix, pct);
+          ptc_rotation_mix = tween(keyframe0.rotation_mix, keyframe1.rotation_mix, pct);
+        });
 
-        const ptc_spacing_keyframe_index = Keyframe.find(ptc_timeline.ptc_spacing_keyframes, this.time);
-        if (ptc_spacing_keyframe_index !== -1) {
-          const ptc_spacing_keyframe0: PtcSpacingKeyframe = ptc_timeline.ptc_spacing_keyframes[ptc_spacing_keyframe_index];
-          const ptc_spacing_keyframe1: PtcSpacingKeyframe = ptc_timeline.ptc_spacing_keyframes[ptc_spacing_keyframe_index + 1];
-          if (ptc_spacing_keyframe1) {
-            const pct = ptc_spacing_keyframe0.curve.evaluate((this.time - ptc_spacing_keyframe0.time) / (ptc_spacing_keyframe1.time - ptc_spacing_keyframe0.time));
-            ptc_spacing = tween(ptc_spacing_keyframe0.spacing, ptc_spacing_keyframe1.spacing, pct);
-          } else {
-            ptc_spacing = ptc_spacing_keyframe0.spacing;
-          }
-        }
+        Keyframe.evaluate(ptc_timeline.ptc_spacing_keyframes, this.time, (keyframe0: PtcSpacingKeyframe, keyframe0_index: number, keyframe1: PtcSpacingKeyframe, keyframe1_index: number, k: number) => {
+          ptc_spacing = tween(keyframe0.spacing, keyframe1.spacing, keyframe0.curve.evaluate(k));
+        });
 
-        const ptc_position_keyframe_index = Keyframe.find(ptc_timeline.ptc_position_keyframes, this.time);
-        if (ptc_position_keyframe_index !== -1) {
-          const ptc_position_keyframe0: PtcPositionKeyframe = ptc_timeline.ptc_position_keyframes[ptc_position_keyframe_index];
-          const ptc_position_keyframe1: PtcPositionKeyframe = ptc_timeline.ptc_position_keyframes[ptc_position_keyframe_index + 1];
-          if (ptc_position_keyframe1) {
-            const pct = ptc_position_keyframe0.curve.evaluate((this.time - ptc_position_keyframe0.time) / (ptc_position_keyframe1.time - ptc_position_keyframe0.time));
-            ptc_position = tween(ptc_position_keyframe0.position, ptc_position_keyframe1.position, pct);
-          } else {
-            ptc_position = ptc_position_keyframe0.position;
-          }
-        }
+        Keyframe.evaluate(ptc_timeline.ptc_position_keyframes, this.time, (keyframe0: PtcPositionKeyframe, keyframe0_index: number, keyframe1: PtcPositionKeyframe, keyframe1_index: number, k: number) => {
+          ptc_position = tween(keyframe0.position, keyframe1.position, keyframe0.curve.evaluate(k));
+        });
 
-        const ptc_rotation_keyframe_index = Keyframe.find(ptc_timeline.ptc_rotation_keyframes, this.time);
-        if (ptc_rotation_keyframe_index !== -1) {
-          const ptc_rotation_keyframe0: PtcRotationKeyframe = ptc_timeline.ptc_rotation_keyframes[ptc_rotation_keyframe_index];
-          const ptc_rotation_keyframe1: PtcRotationKeyframe = ptc_timeline.ptc_rotation_keyframes[ptc_rotation_keyframe_index + 1];
-          if (ptc_rotation_keyframe1) {
-            const pct = ptc_rotation_keyframe0.curve.evaluate((this.time - ptc_rotation_keyframe0.time) / (ptc_rotation_keyframe1.time - ptc_rotation_keyframe0.time));
-            ptc_rotation.rad = tweenAngleRadians(ptc_rotation_keyframe0.rotation.rad, ptc_rotation_keyframe1.rotation.rad, pct);
-          } else {
-            ptc_rotation.copy(ptc_rotation_keyframe0.rotation);
-          }
-        }
+        Keyframe.evaluate(ptc_timeline.ptc_rotation_keyframes, this.time, (keyframe0: PtcRotationKeyframe, keyframe0_index: number, keyframe1: PtcRotationKeyframe, keyframe1_index: number, k: number) => {
+          ptc_rotation.rad = tweenAngleRadians(keyframe0.rotation.rad, keyframe1.rotation.rad, keyframe0.curve.evaluate(k));
+        });
       }
 
       ptc.bone_keys.forEach((bone_key: string): void => {
