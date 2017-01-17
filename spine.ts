@@ -1356,34 +1356,22 @@ export class Keyframe {
   }
 
   public static find(array: Keyframe[], time: number): number {
-    if (!array) {
-      return -1;
-    }
-    if (array.length <= 0) {
-      return -1;
-    }
-    if (time < array[0].time) {
-      return -1;
-    }
-    const last = array.length - 1;
-    if (time >= array[last].time) {
-      return last;
-    }
-    let lo = 0;
-    let hi = last;
-    if (hi === 0) {
-      return 0;
-    }
-    let current = hi >> 1;
+    if (!array) return -1;
+    if (array.length <= 0) return -1;
+    if (time < array[0].time) return -1;
+    const last: number = array.length - 1;
+    if (time >= array[last].time) return last;
+    let lo: number = 0;
+    let hi: number = last;
+    if (hi === 0) return 0;
+    let current: number = hi >> 1;
     while (true) {
       if (array[current + 1].time <= time) {
         lo = current + 1;
       } else {
         hi = current;
       }
-      if (lo === hi) {
-        return lo;
-      }
+      if (lo === hi) return lo;
       current = (lo + hi) >> 1;
     }
   }
@@ -1401,6 +1389,30 @@ export class Keyframe {
       const k: number = (keyframe0.time === keyframe1.time) ? 0 : (time - keyframe0.time) / (keyframe1.time - keyframe0.time);
       callback(keyframe0, keyframe1, k, keyframe0_index, keyframe1_index);
     }
+  }
+}
+
+export class Timeline {
+  public min_time: number = 0;
+  public max_time: number = 0;
+
+  public get length(): number { return this.max_time - this.min_time; }
+
+  protected _expandTimeline(timeline: Timeline): Timeline {
+    this.min_time = Math.min(this.min_time, timeline.min_time);
+    this.max_time = Math.max(this.max_time, timeline.max_time);
+    return timeline;
+  }
+
+  protected _expandKeyframe(keyframe: Keyframe): Keyframe {
+    this.min_time = Math.min(this.min_time, keyframe.time);
+    this.max_time = Math.max(this.max_time, keyframe.time);
+    return keyframe;
+  }
+
+  protected _expandKeyframes(keyframes: Keyframe[]): Keyframe[] {
+    keyframes.forEach((keyframe: Keyframe) => { this._expandKeyframe(keyframe); });
+    return keyframes;
   }
 }
 
@@ -1477,9 +1489,7 @@ export class BoneShearKeyframe extends BoneKeyframe {
   }
 }
 
-export class BoneTimeline {
-  public min_time: number = 0;
-  public max_time: number = 0;
+export class BoneTimeline extends Timeline {
   public position_keyframes: BonePositionKeyframe[];
   public rotation_keyframes: BoneRotationKeyframe[];
   public scale_keyframes: BoneScaleKeyframe[];
@@ -1497,43 +1507,35 @@ export class BoneTimeline {
       switch (key) {
         case "translate":
           this.position_keyframes = [];
-          json.translate.forEach((translate_json: any): void => {
-            const position_keyframe = new BonePositionKeyframe().load(translate_json);
-            this.position_keyframes.push(position_keyframe);
-            this.min_time = Math.min(this.min_time, position_keyframe.time);
-            this.max_time = Math.max(this.max_time, position_keyframe.time);
+          json.translate.forEach((translate: any): void => {
+            this.position_keyframes.push(new BonePositionKeyframe().load(translate));
           });
           this.position_keyframes.sort(Keyframe.compare);
+          this._expandKeyframes(this.position_keyframes);
           break;
         case "rotate":
           this.rotation_keyframes = [];
-          json.rotate.forEach((rotate_json: any): void => {
-            const rotation_keyframe = new BoneRotationKeyframe().load(rotate_json);
-            this.rotation_keyframes.push(rotation_keyframe);
-            this.min_time = Math.min(this.min_time, rotation_keyframe.time);
-            this.max_time = Math.max(this.max_time, rotation_keyframe.time);
+          json.rotate.forEach((rotate: any): void => {
+            this.rotation_keyframes.push(new BoneRotationKeyframe().load(rotate));
           });
           this.rotation_keyframes.sort(Keyframe.compare);
+          this._expandKeyframes(this.rotation_keyframes);
           break;
         case "scale":
           this.scale_keyframes = [];
-          json.scale.forEach((scale_json: any): void => {
-            const scale_keyframe = new BoneScaleKeyframe().load(scale_json);
-            this.scale_keyframes.push(scale_keyframe);
-            this.min_time = Math.min(this.min_time, scale_keyframe.time);
-            this.max_time = Math.max(this.max_time, scale_keyframe.time);
+          json.scale.forEach((scale: any): void => {
+            this.scale_keyframes.push(new BoneScaleKeyframe().load(scale));
           });
           this.scale_keyframes.sort(Keyframe.compare);
+          this._expandKeyframes(this.scale_keyframes);
           break;
         case "shear":
           this.shear_keyframes = [];
-          json.shear.forEach((shear_json: any): void => {
-            const shear_keyframe = new BoneShearKeyframe().load(shear_json);
-            this.shear_keyframes.push(shear_keyframe);
-            this.min_time = Math.min(this.min_time, shear_keyframe.time);
-            this.max_time = Math.max(this.max_time, shear_keyframe.time);
+          json.shear.forEach((shear: any): void => {
+            this.shear_keyframes.push(new BoneShearKeyframe().load(shear));
           });
           this.shear_keyframes.sort(Keyframe.compare);
+          this._expandKeyframes(this.shear_keyframes);
           break;
         default:
           console.log("TODO: BoneTimeline::load", key);
@@ -1586,9 +1588,7 @@ export class SlotAttachmentKeyframe extends SlotKeyframe {
   }
 }
 
-export class SlotTimeline {
-  public min_time: number = 0;
-  public max_time: number = 0;
+export class SlotTimeline extends Timeline {
   public color_keyframes: SlotColorKeyframe[];
   public attachment_keyframes: SlotAttachmentKeyframe[];
 
@@ -1603,22 +1603,18 @@ export class SlotTimeline {
         case "color":
           this.color_keyframes = [];
           json[key].forEach((color: any): void => {
-            const color_keyframe = new SlotColorKeyframe().load(color);
-            this.min_time = Math.min(this.min_time, color_keyframe.time);
-            this.max_time = Math.max(this.max_time, color_keyframe.time);
-            this.color_keyframes.push(color_keyframe);
+            this.color_keyframes.push(new SlotColorKeyframe().load(color));
           });
           this.color_keyframes.sort(Keyframe.compare);
+          this._expandKeyframes(this.color_keyframes);
           break;
         case "attachment":
           this.attachment_keyframes = [];
           json[key].forEach((attachment: any): void => {
-            const attachment_keyframe = new SlotAttachmentKeyframe().load(attachment);
-            this.min_time = Math.min(this.min_time, attachment_keyframe.time);
-            this.max_time = Math.max(this.max_time, attachment_keyframe.time);
-            this.attachment_keyframes.push(attachment_keyframe);
+            this.attachment_keyframes.push(new SlotAttachmentKeyframe().load(attachment));
           });
           this.attachment_keyframes.sort(Keyframe.compare);
+          this._expandKeyframes(this.attachment_keyframes);
           break;
         default:
           console.log("TODO: SlotTimeline::load", key);
@@ -1652,6 +1648,22 @@ export class EventKeyframe extends Keyframe {
     if (typeof(json["string"]) === "string") {
       this.string_value = loadString(json, "string", "");
     }
+    return this;
+  }
+}
+
+export class EventTimeline extends Timeline {
+  public event_keyframes: EventKeyframe[];
+
+  public load(json: any): EventTimeline {
+    this.min_time = 0;
+    this.max_time = 0;
+    this.event_keyframes = [];
+    json.forEach((event: any): void => {
+      this.event_keyframes.push(new EventKeyframe().load(event));
+    });
+    this.event_keyframes.sort(Keyframe.compare);
+    this._expandKeyframes(this.event_keyframes);
     return this;
   }
 }
@@ -1692,6 +1704,22 @@ export class OrderKeyframe extends Keyframe {
   }
 }
 
+export class OrderTimeline extends Timeline {
+  public order_keyframes: OrderKeyframe[];
+
+  public load(json: any): OrderTimeline {
+    this.min_time = 0;
+    this.max_time = 0;
+    this.order_keyframes = [];
+    json.forEach((order: any): void => {
+      this.order_keyframes.push(new OrderKeyframe().load(order));
+    });
+    this.order_keyframes.sort(Keyframe.compare);
+    this._expandKeyframes(this.order_keyframes);
+    return this;
+  }
+}
+
 export class IkcKeyframe extends Keyframe {
   public curve: Curve = new Curve();
   public mix: number = 1;
@@ -1710,24 +1738,18 @@ export class IkcKeyframe extends Keyframe {
   }
 }
 
-export class IkcTimeline {
-  public min_time: number = 0;
-  public max_time: number = 0;
+export class IkcTimeline extends Timeline {
   public ikc_keyframes: IkcKeyframe[];
 
   public load(json: any): IkcTimeline {
     this.min_time = 0;
     this.max_time = 0;
     this.ikc_keyframes = [];
-
     json.forEach((ikc: any): void => {
-      const ikc_keyframe = new IkcKeyframe().load(ikc);
-      this.min_time = Math.min(this.min_time, ikc_keyframe.time);
-      this.max_time = Math.max(this.max_time, ikc_keyframe.time);
-      this.ikc_keyframes.push(ikc_keyframe);
+      this.ikc_keyframes.push(new IkcKeyframe().load(ikc));
     });
     this.ikc_keyframes.sort(Keyframe.compare);
-
+    this._expandKeyframes(this.ikc_keyframes);
     return this;
   }
 }
@@ -1754,24 +1776,18 @@ export class XfcKeyframe extends Keyframe {
   }
 }
 
-export class XfcTimeline {
-  public min_time: number = 0;
-  public max_time: number = 0;
+export class XfcTimeline extends Timeline {
   public xfc_keyframes: XfcKeyframe[];
 
   public load(json: any): XfcTimeline {
     this.min_time = 0;
     this.max_time = 0;
     this.xfc_keyframes = [];
-
     json.forEach((xfc: any): void => {
-      const xfc_keyframe = new XfcKeyframe().load(xfc);
-      this.min_time = Math.min(this.min_time, xfc_keyframe.time);
-      this.max_time = Math.max(this.max_time, xfc_keyframe.time);
-      this.xfc_keyframes.push(xfc_keyframe);
+      this.xfc_keyframes.push(new XfcKeyframe().load(xfc));
     });
     this.xfc_keyframes.sort(Keyframe.compare);
-
+    this._expandKeyframes(this.xfc_keyframes);
     return this;
   }
 }
@@ -1848,9 +1864,7 @@ export class PtcRotationKeyframe extends PtcKeyframe {
   }
 }
 
-export class PtcTimeline {
-  public min_time = 0;
-  public max_time = 0;
+export class PtcTimeline extends Timeline {
   public ptc_mix_keyframes: PtcMixKeyframe[];
   public ptc_spacing_keyframes: PtcSpacingKeyframe[];
   public ptc_position_keyframes: PtcPositionKeyframe[];
@@ -1859,48 +1873,44 @@ export class PtcTimeline {
   public load(json: any): PtcTimeline {
     this.min_time = 0;
     this.max_time = 0;
-    this.ptc_mix_keyframes = [];
-    this.ptc_spacing_keyframes = [];
-    this.ptc_position_keyframes = [];
-    this.ptc_rotation_keyframes = [];
+    delete this.ptc_mix_keyframes;
+    delete this.ptc_spacing_keyframes;
+    delete this.ptc_position_keyframes;
+    delete this.ptc_rotation_keyframes;
 
     Object.keys(json || {}).forEach((key: string): void => {
       switch (key) {
         case "mix":
-          json[key].forEach((mix_json: any): void => {
-            const ptc_mix_keyframe = new PtcMixKeyframe().load(mix_json);
-            this.min_time = Math.min(this.min_time, ptc_mix_keyframe.time);
-            this.max_time = Math.max(this.max_time, ptc_mix_keyframe.time);
-            this.ptc_mix_keyframes.push(ptc_mix_keyframe);
+          this.ptc_mix_keyframes = [];
+          json[key].forEach((mix: any): void => {
+            this.ptc_mix_keyframes.push(new PtcMixKeyframe().load(mix));
           });
           this.ptc_mix_keyframes.sort(Keyframe.compare);
+          this._expandKeyframes(this.ptc_mix_keyframes);
           break;
         case "spacing":
-          json[key].forEach((spacing_json: any): void => {
-            const ptc_spacing_keyframe = new PtcSpacingKeyframe().load(spacing_json);
-            this.min_time = Math.min(this.min_time, ptc_spacing_keyframe.time);
-            this.max_time = Math.max(this.max_time, ptc_spacing_keyframe.time);
-            this.ptc_spacing_keyframes.push(ptc_spacing_keyframe);
+          this.ptc_spacing_keyframes = [];
+          json[key].forEach((spacing: any): void => {
+            this.ptc_spacing_keyframes.push(new PtcSpacingKeyframe().load(spacing));
           });
           this.ptc_spacing_keyframes.sort(Keyframe.compare);
+          this._expandKeyframes(this.ptc_spacing_keyframes);
           break;
         case "position":
-          json[key].forEach((position_json: any): void => {
-            const ptc_position_keyframe = new PtcPositionKeyframe().load(position_json);
-            this.min_time = Math.min(this.min_time, ptc_position_keyframe.time);
-            this.max_time = Math.max(this.max_time, ptc_position_keyframe.time);
-            this.ptc_position_keyframes.push(ptc_position_keyframe);
+          this.ptc_position_keyframes = [];
+          json[key].forEach((position: any): void => {
+            this.ptc_position_keyframes.push(new PtcPositionKeyframe().load(position));
           });
           this.ptc_position_keyframes.sort(Keyframe.compare);
+          this._expandKeyframes(this.ptc_position_keyframes);
           break;
         case "rotation":
-          json[key].forEach((rotation_json: any): void => {
-            const ptc_rotation_keyframe = new PtcRotationKeyframe().load(rotation_json);
-            this.min_time = Math.min(this.min_time, ptc_rotation_keyframe.time);
-            this.max_time = Math.max(this.max_time, ptc_rotation_keyframe.time);
-            this.ptc_rotation_keyframes.push(ptc_rotation_keyframe);
+          this.ptc_rotation_keyframes = [];
+          json[key].forEach((rotation: any): void => {
+            this.ptc_rotation_keyframes.push(new PtcRotationKeyframe().load(rotation));
           });
           this.ptc_rotation_keyframes.sort(Keyframe.compare);
+          this._expandKeyframes(this.ptc_rotation_keyframes);
           break;
         default:
           console.log("TODO: PtcTimeline::load", key);
@@ -1930,22 +1940,27 @@ export class FfdKeyframe extends Keyframe {
   }
 }
 
-export class FfdAttachment {
-  public min_time: number = 0;
-  public max_time: number = 0;
+export class FfdTimeline extends Timeline {
   public ffd_keyframes: FfdKeyframe[];
 
-  public load(json: any): FfdAttachment {
+  public load(json: any): FfdTimeline {
     this.min_time = 0;
     this.max_time = 0;
     this.ffd_keyframes = [];
-    json.forEach((ffd_keyframe_json: any): void => {
-      const ffd_keyframe = new FfdKeyframe().load(ffd_keyframe_json);
-      this.min_time = Math.min(this.min_time, ffd_keyframe.time);
-      this.max_time = Math.max(this.max_time, ffd_keyframe.time);
-      this.ffd_keyframes.push(ffd_keyframe);
+    json.forEach((ffd_keyframe: any): void => {
+      this.ffd_keyframes.push(new FfdKeyframe().load(ffd_keyframe));
     });
     this.ffd_keyframes.sort(Keyframe.compare);
+    this._expandKeyframes(this.ffd_keyframes);
+    return this;
+  }
+}
+
+export class FfdAttachment {
+  public ffd_timeline: FfdTimeline = new FfdTimeline();
+
+  public load(json: any): FfdAttachment {
+    this.ffd_timeline.load(json);
     return this;
   }
 }
@@ -1971,26 +1986,16 @@ export class FfdSlot {
   }
 }
 
-export class FfdTimeline {
-  public min_time: number = 0;
-  public max_time: number = 0;
+export class FfdSkin {
   public ffd_slots: {[key: string]: FfdSlot} = {};
   public ffd_slot_keys: string[] = [];
 
-  public load(json: any): FfdTimeline {
-    this.min_time = 0;
-    this.max_time = 0;
+  public load(json: any): FfdSkin {
     this.ffd_slots = {};
     this.ffd_slot_keys = Object.keys(json || {});
     this.ffd_slot_keys.forEach((key: string): void => {
       this.ffd_slots[key] = new FfdSlot().load(json[key]);
     });
-
-    this.iterateAttachments((ffd_slot_key: string, ffd_slot: FfdSlot, ffd_attachment_key: string, ffd_attachment: FfdAttachment): void => {
-      this.min_time = Math.min(this.min_time, ffd_attachment.min_time);
-      this.max_time = Math.max(this.max_time, ffd_attachment.max_time);
-    });
-
     return this;
   }
 
@@ -2004,29 +2009,26 @@ export class FfdTimeline {
   }
 }
 
-export class Animation {
+export class Animation extends Timeline {
   public name: string = "";
   public bone_timeline_map: {[key: string]: BoneTimeline} = {};
   public slot_timeline_map: {[key: string]: SlotTimeline} = {};
-  public event_keyframes: EventKeyframe[];
-  public order_keyframes: OrderKeyframe[];
+  public event_timeline: EventTimeline;
+  public order_timeline: OrderTimeline;
   public ikc_timeline_map: {[key: string]: IkcTimeline} = {};
   public xfc_timeline_map: {[key: string]: XfcTimeline} = {};
   public ptc_timeline_map: {[key: string]: PtcTimeline} = {};
-  public ffd_timeline_map: {[key: string]: FfdTimeline} = {};
-  public min_time = 0;
-  public max_time = 0;
-  public length = 0;
+  public ffd_skins: {[key: string]: FfdSkin} = {};
 
   public load(json: any): Animation {
     this.bone_timeline_map = {};
     this.slot_timeline_map = {};
-    delete this.event_keyframes;
-    delete this.order_keyframes;
+    delete this.event_timeline;
+    delete this.event_timeline;
     this.ikc_timeline_map = {};
     this.xfc_timeline_map = {};
     this.ptc_timeline_map = {};
-    this.ffd_timeline_map = {};
+    this.ffd_skins = {};
 
     this.min_time = 0;
     this.max_time = 0;
@@ -2035,72 +2037,38 @@ export class Animation {
       switch (key) {
         case "bones":
           Object.keys(json[key] || {}).forEach((bone_key: string): void => {
-            const bone_timeline = new BoneTimeline().load(json[key][bone_key]);
-            this.min_time = Math.min(this.min_time, bone_timeline.min_time);
-            this.max_time = Math.max(this.max_time, bone_timeline.max_time);
-            this.bone_timeline_map[bone_key] = bone_timeline;
+            this._expandTimeline(this.bone_timeline_map[bone_key] = new BoneTimeline().load(json[key][bone_key]));
           });
           break;
         case "slots":
           Object.keys(json[key] || {}).forEach((slot_key: string): void => {
-            const slot_timeline = new SlotTimeline().load(json[key][slot_key]);
-            this.min_time = Math.min(this.min_time, slot_timeline.min_time);
-            this.max_time = Math.max(this.max_time, slot_timeline.max_time);
-            this.slot_timeline_map[slot_key] = slot_timeline;
+            this._expandTimeline(this.slot_timeline_map[slot_key] = new SlotTimeline().load(json[key][slot_key]));
           });
           break;
         case "events":
-          this.event_keyframes = [];
-          json[key].forEach((event: any): void => {
-            const event_keyframe = new EventKeyframe().load(event);
-            this.min_time = Math.min(this.min_time, event_keyframe.time);
-            this.max_time = Math.max(this.max_time, event_keyframe.time);
-            this.event_keyframes.push(event_keyframe);
-          });
-          this.event_keyframes.sort(Keyframe.compare);
+          this._expandTimeline(this.event_timeline = new EventTimeline().load(json[key]));
           break;
-        case "drawOrder":
-        case "draworder":
-          this.order_keyframes = [];
-          json[key].forEach((order: any): void => {
-            const order_keyframe = new OrderKeyframe().load(order);
-            this.min_time = Math.min(this.min_time, order_keyframe.time);
-            this.max_time = Math.max(this.max_time, order_keyframe.time);
-            this.order_keyframes.push(order_keyframe);
-          });
-          this.order_keyframes.sort(Keyframe.compare);
+        case "draworder": case "drawOrder":
+          this._expandTimeline(this.order_timeline = new OrderTimeline().load(json[key]));
           break;
         case "ik":
           Object.keys(json[key] || {}).forEach((ikc_key: string): void => {
-            const ikc_timeline = new IkcTimeline().load(json[key][ikc_key]);
-            this.min_time = Math.min(this.min_time, ikc_timeline.min_time);
-            this.max_time = Math.max(this.max_time, ikc_timeline.max_time);
-            this.ikc_timeline_map[ikc_key] = ikc_timeline;
+            this._expandTimeline(this.ikc_timeline_map[ikc_key] = new IkcTimeline().load(json[key][ikc_key]));
           });
           break;
         case "transform":
           Object.keys(json[key] || {}).forEach((xfc_key: string): void => {
-            const xfc_timeline = new XfcTimeline().load(json[key][xfc_key]);
-            this.min_time = Math.min(this.min_time, xfc_timeline.min_time);
-            this.max_time = Math.max(this.max_time, xfc_timeline.max_time);
-            this.xfc_timeline_map[xfc_key] = xfc_timeline;
+            this._expandTimeline(this.xfc_timeline_map[xfc_key] = new XfcTimeline().load(json[key][xfc_key]));
           });
           break;
         case "paths":
           Object.keys(json[key] || {}).forEach((ptc_key: string): void => {
-            const ptc_timeline = new PtcTimeline().load(json[key][ptc_key]);
-            this.min_time = Math.min(this.min_time, ptc_timeline.min_time);
-            this.max_time = Math.max(this.max_time, ptc_timeline.max_time);
-            this.ptc_timeline_map[ptc_key] = ptc_timeline;
+            this._expandTimeline(this.ptc_timeline_map[ptc_key] = new PtcTimeline().load(json[key][ptc_key]));
           });
           break;
-        case "ffd":
-        case "deform":
+        case "deform": case "ffd":
           Object.keys(json[key] || {}).forEach((ffd_key: string): void => {
-            const ffd_timeline = new FfdTimeline().load(json[key][ffd_key]);
-            this.min_time = Math.min(this.min_time, ffd_timeline.min_time);
-            this.max_time = Math.max(this.max_time, ffd_timeline.max_time);
-            this.ffd_timeline_map[ffd_key] = ffd_timeline;
+            this.ffd_skins[ffd_key] = new FfdSkin().load(json[key][ffd_key]);
           });
           break;
         default:
@@ -2108,8 +2076,6 @@ export class Animation {
           break;
       }
     });
-
-    this.length = this.max_time - this.min_time;
 
     return this;
   }
@@ -2442,14 +2408,13 @@ export class Pose {
 
     this.prev_time = this.time; // save previous time
     this.time += this.elapsed_time; // accumulate elapsed time
-    this.elapsed_time = 0; // reset elapsed time for next strike
 
     const anim: Animation = this.data.anims[this.anim_key];
     this.wrapped_min = false;
     this.wrapped_max = false;
     if (anim) {
-      this.wrapped_min = (this.time < this.prev_time) && (this.time <= anim.min_time);
-      this.wrapped_max = (this.time > this.prev_time) && (this.time >= anim.max_time);
+      this.wrapped_min = (this.elapsed_time < 0) && (this.time <= anim.min_time);
+      this.wrapped_max = (this.elapsed_time > 0) && (this.time >= anim.max_time);
       this.time = wrap(this.time, anim.min_time, anim.max_time);
     }
 
@@ -2459,6 +2424,8 @@ export class Pose {
     this._strikeSlots(anim);
     this._strikePtcs(anim); // Path Constraints
     this._strikeEvents(anim);
+
+    this.elapsed_time = 0; // reset elapsed time for next strike
   }
 
   private _strikeBones(anim: Animation): void {
@@ -2761,8 +2728,8 @@ export class Pose {
 
     this.slot_keys = this.data.slot_keys;
 
-    if (anim) {
-      Keyframe.evaluate(anim.order_keyframes, this.time, (keyframe0: OrderKeyframe, keyframe1: OrderKeyframe, k: number) => {
+    if (anim && anim.order_timeline) {
+      Keyframe.evaluate(anim.order_timeline.order_keyframes, this.time, (keyframe0: OrderKeyframe, keyframe1: OrderKeyframe, k: number) => {
         this.slot_keys = this.data.slot_keys.slice(0); // copy array before reordering
         keyframe0.slot_offsets.forEach((slot_offset: SlotOffset): void => {
           const slot_index: number = this.slot_keys.indexOf(slot_offset.slot_key);
@@ -2856,7 +2823,7 @@ export class Pose {
   private _strikeEvents(anim: Animation): void {
     this.events.length = 0;
 
-    if (anim && anim.event_keyframes) {
+    if (anim && anim.event_timeline) {
       const make_event = (event_keyframe: EventKeyframe): Event => {
         const pose_event: Event = new Event();
         const data_event: Event = this.data.events[event_keyframe.name];
@@ -2869,14 +2836,14 @@ export class Pose {
         return pose_event;
       };
 
-      if (this.time < this.prev_time) {
+      if (this.elapsed_time < 0) {
         if (this.wrapped_min) {
           // min    prev_time           time      max
           //  |         |                |         |
           //  ----------x                o<---------
           // all events between min_time and prev_time, not including prev_time
           // all events between max_time and time
-          anim.event_keyframes.forEach((event_keyframe: EventKeyframe): void => {
+          anim.event_timeline.event_keyframes.forEach((event_keyframe: EventKeyframe): void => {
             if (((anim.min_time <= event_keyframe.time) && (event_keyframe.time < this.prev_time)) ||
               ((this.time <= event_keyframe.time) && (event_keyframe.time <= anim.max_time))) {
               this.events.push(make_event(event_keyframe));
@@ -2887,7 +2854,7 @@ export class Pose {
           //  |         |                |         |
           //            o<---------------x
           // all events between time and prev_time, not including prev_time
-          anim.event_keyframes.forEach((event_keyframe: EventKeyframe): void => {
+          anim.event_timeline.event_keyframes.forEach((event_keyframe: EventKeyframe): void => {
             if ((this.time <= event_keyframe.time) && (event_keyframe.time < this.prev_time)) {
               this.events.push(make_event(event_keyframe));
             }
@@ -2900,7 +2867,7 @@ export class Pose {
           //  --------->o                x----------
           // all events between prev_time and max_time, not including prev_time
           // all events between min_time and time
-          anim.event_keyframes.forEach((event_keyframe: EventKeyframe): void => {
+          anim.event_timeline.event_keyframes.forEach((event_keyframe: EventKeyframe): void => {
             if (((anim.min_time <= event_keyframe.time) && (event_keyframe.time <= this.time)) ||
               ((this.prev_time < event_keyframe.time) && (event_keyframe.time <= anim.max_time))) {
                 this.events.push(make_event(event_keyframe));
@@ -2911,7 +2878,7 @@ export class Pose {
           //  |         |                |         |
           //            x--------------->o
           // all events between prev_time and time, not including prev_time
-          anim.event_keyframes.forEach((event_keyframe: EventKeyframe): void => {
+          anim.event_timeline.event_keyframes.forEach((event_keyframe: EventKeyframe): void => {
             if ((this.prev_time < event_keyframe.time) && (event_keyframe.time <= this.time)) {
               this.events.push(make_event(event_keyframe));
             }
