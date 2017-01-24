@@ -3,9 +3,9 @@ import * as Atlas from "./atlas";
 
 export class RenderWebGL {
   public gl: WebGLRenderingContext;
-  public bone_map: {[key: string]: RenderBone} = {};
-  public skin_map: {[key: string]: RenderSkin} = {};
-  public textures: {[key: string]: RenderTexture} = {};
+  public bone_map: Spine.Map<string, RenderBone> = new Spine.Map<string, RenderBone>();
+  public skin_map: Spine.Map<string, RenderSkin> = new Spine.Map<string, RenderSkin>();
+  public textures: Spine.Map<string, RenderTexture> = new Spine.Map<string, RenderTexture>();
   public projection: Float32Array = mat4x4Identity(new Float32Array(16));
   public modelview: Float32Array = mat4x4Identity(new Float32Array(16));
   public texmatrix: Float32Array = mat3x3Identity(new Float32Array(9));
@@ -111,25 +111,25 @@ export class RenderWebGL {
     this.region_vertex_texcoord = glMakeVertex(gl, new Float32Array([0, 1, 1, 1, 1, 0, 0, 0]), 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW); // [ u, v ]
   }
 
-  public loadData(spine_data: Spine.Data, atlas_data: Atlas.Data | null, images: {[key: string]: HTMLImageElement}): void {
+  public loadData(spine_data: Spine.Data, atlas_data: Atlas.Data | null, images: Spine.Map<string, HTMLImageElement>): void {
     spine_data.iterateBones((bone_key: string, bone: Spine.Bone): void => {
-      const render_bone: RenderBone = this.bone_map[bone_key] = new RenderBone();
+      const render_bone: RenderBone = this.bone_map.get(bone_key) || this.bone_map.set(bone_key, new RenderBone());
       Spine.Space.invert(bone.world_space, render_bone.setup_space);
     });
     spine_data.iterateSkins((skin_key: string, skin: Spine.Skin): void => {
-      const render_skin: RenderSkin = this.skin_map[skin_key] = new RenderSkin();
+      const render_skin: RenderSkin = this.skin_map.get(skin_key) || this.skin_map.set(skin_key, new RenderSkin());
       skin.iterateAttachments((slot_key: string, skin_slot: Spine.SkinSlot, attachment_key: string, attachment: Spine.Attachment): void => {
         if (!attachment) { return; }
-        const render_slot: RenderSlot = render_skin.slot_map[slot_key] || (render_skin.slot_map[slot_key] = new RenderSlot());
+        const render_slot: RenderSlot = render_skin.slot_map.get(slot_key) || render_skin.slot_map.set(slot_key, new RenderSlot());
         switch (attachment.type) {
           case "region":
-            render_slot.attachment_map[attachment_key] = new RenderRegionAttachment(this).loadData(spine_data, skin_key, slot_key, attachment_key, <Spine.RegionAttachment> attachment);
+            render_slot.attachment_map.set(attachment_key, new RenderRegionAttachment(this).loadData(spine_data, skin_key, slot_key, attachment_key, <Spine.RegionAttachment> attachment));
             break;
           case "mesh":
-            render_slot.attachment_map[attachment_key] = new RenderMeshAttachment(this).loadData(spine_data, skin_key, slot_key, attachment_key, <Spine.MeshAttachment> attachment);
+            render_slot.attachment_map.set(attachment_key, new RenderMeshAttachment(this).loadData(spine_data, skin_key, slot_key, attachment_key, <Spine.MeshAttachment> attachment));
             break;
           case "weightedmesh":
-            render_slot.attachment_map[attachment_key] = new RenderWeightedMeshAttachment(this).loadData(spine_data, skin_key, slot_key, attachment_key, <Spine.WeightedMeshAttachment> attachment);
+            render_slot.attachment_map.set(attachment_key, new RenderWeightedMeshAttachment(this).loadData(spine_data, skin_key, slot_key, attachment_key, <Spine.WeightedMeshAttachment> attachment));
             break;
         }
       });
@@ -167,7 +167,7 @@ export class RenderWebGL {
           case "MirroredRepeat": wrap_t = gl.MIRRORED_REPEAT; break;
         }
         const image_key: string = page.name;
-        this.textures[image_key] = glMakeTexture(gl, images[image_key], min_filter, mag_filter, wrap_s, wrap_t);
+        this.textures.set(image_key, glMakeTexture(gl, images.get(image_key), min_filter, mag_filter, wrap_s, wrap_t));
       });
     } else {
       const gl: WebGLRenderingContext = this.gl;
@@ -179,7 +179,7 @@ export class RenderWebGL {
             case "mesh":
             case "weightedmesh":
               const image_key: string = attachment_key;
-              this.textures[image_key] = glMakeTexture(gl, images[image_key], gl.LINEAR, gl.LINEAR, gl.CLAMP_TO_EDGE, gl.CLAMP_TO_EDGE);
+              this.textures.set(image_key, glMakeTexture(gl, images.get(image_key), gl.LINEAR, gl.LINEAR, gl.CLAMP_TO_EDGE, gl.CLAMP_TO_EDGE));
               break;
           }
         });
@@ -189,24 +189,23 @@ export class RenderWebGL {
 
   public dropData(spine_data: Spine.Data, atlas_data: Atlas.Data | null = null): void {
     const gl: WebGLRenderingContext = this.gl;
-    Object.keys(this.textures).forEach((image_key: string): void => {
-      const texture: RenderTexture = this.textures[image_key];
-      gl.deleteTexture(texture.texture);
+    this.textures.forEach((texture: RenderTexture, image_key: string): void => {
+      glDropTexture(gl, texture);
     });
-    this.textures = {};
-    this.bone_map = {};
+    this.textures.clear();
+    this.bone_map.clear();
     spine_data.iterateSkins((skin_key: string, skin: Spine.Skin): void => {
-      const render_skin: RenderSkin = this.skin_map[skin_key] = new RenderSkin();
+      const render_skin: RenderSkin | undefined = this.skin_map.get(skin_key);
       skin.iterateAttachments((slot_key: string, skin_slot: Spine.SkinSlot, attachment_key: string, attachment: Spine.Attachment): void => {
         if (!attachment) { return; }
-        const render_slot: RenderSlot = render_skin.slot_map[slot_key] || (render_skin.slot_map[slot_key] = new RenderSlot());
-        const render_attachment: RenderAttachment = render_slot.attachment_map[attachment_key];
+        const render_slot: RenderSlot | undefined = render_skin && render_skin.slot_map.get(slot_key);
+        const render_attachment: RenderAttachment | undefined = render_slot && render_slot.attachment_map.get(attachment_key);
         if (render_attachment) {
           render_attachment.dropData(spine_data, skin_key, slot_key, attachment_key, attachment);
         }
       });
     });
-    this.skin_map = {};
+    this.skin_map.clear();
   }
 
   public drawPose(spine_pose: Spine.Pose, atlas_data: Atlas.Data | null = null): void {
@@ -218,7 +217,7 @@ export class RenderWebGL {
       const site: Atlas.Site | null = atlas_data && atlas_data.sites[attachment.path || attachment.name || attachment_key];
       const page: Atlas.Page | null = site && site.page;
       const image_key: string = (page && page.name) || attachment.path || attachment.name || attachment_key;
-      const texture: RenderTexture = this.textures[image_key];
+      const texture: RenderTexture | undefined = this.textures.get(image_key);
       if (!texture) { return; }
       mat4x4Identity(this.modelview);
       mat3x3Identity(this.texmatrix);
@@ -234,9 +233,10 @@ export class RenderWebGL {
         case "multiply": gl.blendFunc(gl.DST_COLOR, gl.ONE_MINUS_SRC_ALPHA); break;
         case "screen": gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_COLOR); break;
       }
-      const render_skin: RenderSkin = this.skin_map[spine_pose.skin_key];
-      const render_slot: RenderSlot = render_skin.slot_map[slot_key] || this.skin_map["default"].slot_map[slot_key];
-      const render_attachment: RenderAttachment = render_slot.attachment_map[attachment_key];
+      const render_skin: RenderSkin | undefined = this.skin_map.get(spine_pose.skin_key);
+      const render_skin_default: RenderSkin | undefined = this.skin_map.get("default");
+      const render_slot: RenderSlot | undefined = (render_skin && render_skin.slot_map.get(slot_key)) || (render_skin_default && render_skin_default.slot_map.get(slot_key));
+      const render_attachment: RenderAttachment | undefined = render_slot && render_slot.attachment_map.get(attachment_key);
       if (render_attachment) {
         render_attachment.drawPose(spine_pose, spine_pose.skin_key, slot_key, slot, attachment_key, attachment, texture, site);
       }
@@ -250,11 +250,11 @@ class RenderBone {
 }
 
 class RenderSkin {
-  public slot_map: {[key: string]: RenderSlot} = {};
+  public slot_map: Spine.Map<string, RenderSlot> = new Spine.Map<string, RenderSlot>();
 }
 
 class RenderSlot {
-  public attachment_map: {[key: string]: RenderAttachment} = {};
+  public attachment_map: Spine.Map<string, RenderAttachment> = new Spine.Map<string, RenderAttachment>();
 }
 
 interface RenderAttachment {
@@ -280,23 +280,24 @@ class RenderRegionAttachment implements RenderAttachment {
 
   drawPose(spine_pose: Spine.Pose, skin_key: string, slot_key: string, slot: Spine.Slot, attachment_key: string, attachment: Spine.RegionAttachment, texture: RenderTexture, site: Atlas.Site | null): void {
     const gl: WebGLRenderingContext = this.render.gl;
-    const bone: Spine.Bone = spine_pose.bones[slot.bone_key];
-    mat4x4ApplySpace(this.render.modelview, bone.world_space);
+    const bone: Spine.Bone | undefined = spine_pose.bones.get(slot.bone_key);
+    bone && mat4x4ApplySpace(this.render.modelview, bone.world_space);
     mat4x4ApplySpace(this.render.modelview, attachment.local_space);
     mat4x4Scale(this.render.modelview, attachment.width / 2, attachment.height / 2);
     mat4x4ApplyAtlasSitePosition(this.render.modelview, site);
     const shader: RenderShader = this.render.mesh_shader;
     gl.useProgram(shader.program);
-    gl.uniformMatrix4fv(shader.uniforms["uProjection"], false, this.render.projection);
-    gl.uniformMatrix4fv(shader.uniforms["uModelview"], false, this.render.modelview);
-    gl.uniformMatrix3fv(shader.uniforms["uTexMatrix"], false, this.render.texmatrix);
-    gl.uniform4fv(shader.uniforms["uColor"], this.render.color);
+    gl.uniformMatrix4fv(shader.uniforms.get("uProjection") || 0, false, this.render.projection);
+    gl.uniformMatrix4fv(shader.uniforms.get("uModelview") || 0, false, this.render.modelview);
+    gl.uniformMatrix3fv(shader.uniforms.get("uTexMatrix") || 0, false, this.render.texmatrix);
+    gl.uniform4fv(shader.uniforms.get("uColor") || 0, this.render.color);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, texture.texture);
-    gl.uniform1i(shader.uniforms["uSampler"], 0);
+    gl.uniform1i(shader.uniforms.get("uSampler") || 0, 0);
     glSetupAttribute(gl, shader, "aPosition", this.render.region_vertex_position);
     glSetupAttribute(gl, shader, "aTexCoord", this.render.region_vertex_texcoord);
     gl.drawArrays(gl.TRIANGLE_FAN, 0, this.render.region_vertex_position.count);
+    glResetAttributes(gl, shader);
   }
 }
 
@@ -305,7 +306,7 @@ class RenderMeshAttachment implements RenderAttachment {
   public vertex_position: RenderVertex;
   public vertex_texcoord: RenderVertex;
   public vertex_triangle: RenderVertex;
-  public ffd_attachment_map: {[key: string]: RenderFfdAttachment} = {};
+  public ffd_attachment_map: Spine.Map<string, RenderFfdAttachment> = new Spine.Map<string, RenderFfdAttachment>();
 
   constructor(render: RenderWebGL) {
     this.render = render;
@@ -321,11 +322,11 @@ class RenderMeshAttachment implements RenderAttachment {
     this.vertex_texcoord = glMakeVertex(gl, vertex_texcoord, 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
     this.vertex_triangle = glMakeVertex(gl, vertex_triangle, 1, gl.ELEMENT_ARRAY_BUFFER, gl.STATIC_DRAW);
     spine_data.iterateAnims((anim_key: string, anim: Spine.Animation): void => {
-      const ffd_skin: Spine.FfdSkin = anim.ffd_skins && anim.ffd_skins[skin_key];
-      const ffd_slot: Spine.FfdSlot = ffd_skin && ffd_skin.ffd_slots[slot_key];
-      const ffd_attachment: Spine.FfdAttachment = ffd_slot && ffd_slot.ffd_attachments[attachment_key];
+      const ffd_skin: Spine.FfdSkin | undefined = anim.ffd_skins && anim.ffd_skins.get(skin_key);
+      const ffd_slot: Spine.FfdSlot | undefined = ffd_skin && ffd_skin.ffd_slots.get(slot_key);
+      const ffd_attachment: Spine.FfdAttachment | undefined = ffd_slot && ffd_slot.ffd_attachments.get(attachment_key);
       if (ffd_attachment) {
-        const render_ffd_attachment: RenderFfdAttachment = this.ffd_attachment_map[anim_key] = new RenderFfdAttachment();
+        const render_ffd_attachment: RenderFfdAttachment = this.ffd_attachment_map.set(anim_key, new RenderFfdAttachment());
         ffd_attachment.ffd_timeline.ffd_keyframes.forEach((ffd_keyframe: Spine.FfdKeyframe, ffd_keyframe_index: number): void => {
           const render_ffd_keyframe: RenderFfdKeyframe = render_ffd_attachment.ffd_keyframes[ffd_keyframe_index] = new RenderFfdKeyframe();
           const vertex_position_morph: Float32Array = new Float32Array(2 * vertex_count);
@@ -339,13 +340,12 @@ class RenderMeshAttachment implements RenderAttachment {
 
   dropData(spine_data: Spine.Data, skin_key: string, slot_key: string, attachment_key: string, attachment: Spine.MeshAttachment): RenderMeshAttachment {
     const gl: WebGLRenderingContext = this.render.gl;
-    gl.deleteBuffer(this.vertex_position.buffer);
-    gl.deleteBuffer(this.vertex_texcoord.buffer);
-    gl.deleteBuffer(this.vertex_triangle.buffer);
-    Object.keys(this.ffd_attachment_map).forEach((anim_key: string): void => {
-      const render_ffd_attachment: RenderFfdAttachment = this.ffd_attachment_map[anim_key];
+    glDropVertex(gl, this.vertex_position);
+    glDropVertex(gl, this.vertex_texcoord);
+    glDropVertex(gl, this.vertex_triangle);
+    this.ffd_attachment_map.forEach((render_ffd_attachment: RenderFfdAttachment, anim_key: string): void => {
       render_ffd_attachment.ffd_keyframes.forEach((ffd_keyframe: RenderFfdKeyframe): void => {
-        gl.deleteBuffer(ffd_keyframe.vertex_position_morph.buffer);
+        glDropVertex(gl, ffd_keyframe.vertex_position_morph);
       });
     });
     return this;
@@ -353,42 +353,43 @@ class RenderMeshAttachment implements RenderAttachment {
 
   drawPose(spine_pose: Spine.Pose, skin_key: string, slot_key: string, slot: Spine.Slot, attachment_key: string, attachment: Spine.MeshAttachment, texture: RenderTexture, site: Atlas.Site | null): void {
     const gl: WebGLRenderingContext = this.render.gl;
-    const bone: Spine.Bone = spine_pose.bones[slot.bone_key];
-    mat4x4ApplySpace(this.render.modelview, bone.world_space);
+    const bone: Spine.Bone | undefined = spine_pose.bones.get(slot.bone_key);
+    bone && mat4x4ApplySpace(this.render.modelview, bone.world_space);
     mat4x4ApplyAtlasSitePosition(this.render.modelview, site);
-    const anim: Spine.Animation | undefined = spine_pose.data.anims[spine_pose.anim_key];
-    const ffd_skin: Spine.FfdSkin | undefined = anim && anim.ffd_skins && anim.ffd_skins[spine_pose.skin_key];
-    const ffd_slot: Spine.FfdSlot | undefined = ffd_skin && ffd_skin.ffd_slots[slot_key];
-    const ffd_attachment: Spine.FfdAttachment | undefined = ffd_slot && ffd_slot.ffd_attachments[attachment_key];
+    const anim: Spine.Animation | undefined = spine_pose.data.anims.get(spine_pose.anim_key);
+    const ffd_skin: Spine.FfdSkin | undefined = anim && anim.ffd_skins && anim.ffd_skins.get(spine_pose.skin_key);
+    const ffd_slot: Spine.FfdSlot | undefined = ffd_skin && ffd_skin.ffd_slots.get(slot_key);
+    const ffd_attachment: Spine.FfdAttachment | undefined = ffd_slot && ffd_slot.ffd_attachments.get(attachment_key);
     const ffd_timeline: Spine.FfdTimeline | undefined = ffd_attachment && ffd_attachment.ffd_timeline;
     const ffd_keyframes: Spine.FfdKeyframe[] | undefined = ffd_timeline && ffd_timeline.ffd_keyframes;
     const ffd_keyframe0_index: number = Spine.Keyframe.find(ffd_keyframes, spine_pose.time);
     const ffd_keyframe1_index: number = ffd_keyframe0_index + 1 || ffd_keyframe0_index;
-    const ffd_keyframe0: Spine.FfdKeyframe | undefined = ffd_keyframes && ffd_keyframes[ffd_keyframe0_index];
-    const ffd_keyframe1: Spine.FfdKeyframe | undefined = ffd_keyframes && ffd_keyframes[ffd_keyframe1_index] || ffd_keyframe0;
+    const ffd_keyframe0: Spine.FfdKeyframe | undefined = (ffd_keyframes && ffd_keyframes[ffd_keyframe0_index]);
+    const ffd_keyframe1: Spine.FfdKeyframe | undefined = (ffd_keyframes && ffd_keyframes[ffd_keyframe1_index]) || ffd_keyframe0;
     const shader: RenderShader = (ffd_keyframe0) ? this.render.ffd_mesh_shader : this.render.mesh_shader;
     gl.useProgram(shader.program);
-    gl.uniformMatrix4fv(shader.uniforms["uProjection"], false, this.render.projection);
-    gl.uniformMatrix4fv(shader.uniforms["uModelview"], false, this.render.modelview);
-    gl.uniformMatrix3fv(shader.uniforms["uTexMatrix"], false, this.render.texmatrix);
-    gl.uniform4fv(shader.uniforms["uColor"], this.render.color);
+    gl.uniformMatrix4fv(shader.uniforms.get("uProjection") || 0, false, this.render.projection);
+    gl.uniformMatrix4fv(shader.uniforms.get("uModelview") || 0, false, this.render.modelview);
+    gl.uniformMatrix3fv(shader.uniforms.get("uTexMatrix") || 0, false, this.render.texmatrix);
+    gl.uniform4fv(shader.uniforms.get("uColor") || 0, this.render.color);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, texture.texture);
-    gl.uniform1i(shader.uniforms["uSampler"], 0);
+    gl.uniform1i(shader.uniforms.get("uSampler") || 0, 0);
     glSetupAttribute(gl, shader, "aPosition", this.vertex_position);
     glSetupAttribute(gl, shader, "aTexCoord", this.vertex_texcoord);
-    if (ffd_keyframe0) {
+    if (ffd_keyframe0 && ffd_keyframe1) {
       const weight: number = (ffd_keyframe0.time === ffd_keyframe1.time) ? 0 : ffd_keyframe0.curve.evaluate((spine_pose.time - ffd_keyframe0.time) / (ffd_keyframe1.time - ffd_keyframe0.time));
-      const render_ffd_attachment: RenderFfdAttachment = this.ffd_attachment_map[spine_pose.anim_key];
-      const render_ffd_keyframe0: RenderFfdKeyframe = render_ffd_attachment.ffd_keyframes[ffd_keyframe0_index];
-      const render_ffd_keyframe1: RenderFfdKeyframe = render_ffd_attachment.ffd_keyframes[ffd_keyframe1_index] || render_ffd_keyframe0;
-      gl.uniform1f(shader.uniforms["uMorphWeight"], weight);
-      glSetupAttribute(gl, shader, "aPositionMorph0", render_ffd_keyframe0.vertex_position_morph);
-      glSetupAttribute(gl, shader, "aPositionMorph1", render_ffd_keyframe1.vertex_position_morph);
+      const render_ffd_attachment: RenderFfdAttachment | undefined = this.ffd_attachment_map.get(spine_pose.anim_key);
+      const render_ffd_keyframe0: RenderFfdKeyframe | undefined = (render_ffd_attachment && render_ffd_attachment.ffd_keyframes[ffd_keyframe0_index]);
+      const render_ffd_keyframe1: RenderFfdKeyframe | undefined = (render_ffd_attachment && render_ffd_attachment.ffd_keyframes[ffd_keyframe1_index]) || render_ffd_keyframe0;
+      gl.uniform1f(shader.uniforms.get("uMorphWeight") || 0, weight);
+      render_ffd_keyframe0 && glSetupAttribute(gl, shader, "aPositionMorph0", render_ffd_keyframe0.vertex_position_morph);
+      render_ffd_keyframe1 && glSetupAttribute(gl, shader, "aPositionMorph1", render_ffd_keyframe1.vertex_position_morph);
     }
     const vertex_triangle: RenderVertex = this.vertex_triangle;
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vertex_triangle.buffer);
     gl.drawElements(gl.TRIANGLES, vertex_triangle.count, vertex_triangle.type, 0);
+    glResetAttributes(gl, shader);
   }
 }
 
@@ -399,7 +400,7 @@ class RenderWeightedMeshAttachment implements RenderAttachment {
   public vertex_texcoord: RenderVertex;
   public vertex_triangle: RenderVertex;
   public blend_bone_index_array: number[] = [];
-  public ffd_attachment_map: {[key: string]: RenderFfdAttachment} = {};
+  public ffd_attachment_map: Spine.Map<string, RenderFfdAttachment> = new Spine.Map<string, RenderFfdAttachment>();
 
   constructor(render: RenderWebGL) {
     this.render = render;
@@ -441,10 +442,10 @@ class RenderWeightedMeshAttachment implements RenderAttachment {
       blender_array.forEach((blender: Blender): void => { blender.weight /= weight_sum; });
       const position: Spine.Vector = new Spine.Vector();
       blender_array.forEach((blender: Blender, blender_index: number): void => {
-        const bone_key: string = spine_data.bone_keys[blender.bone_index];
-        const bone: Spine.Bone = spine_data.bones[bone_key];
+        const bone_key: string = spine_data.bones.keys[blender.bone_index];
+        const bone: Spine.Bone | undefined = spine_data.bones.get(bone_key);
         const blend_position: Spine.Vector = new Spine.Vector();
-        Spine.Space.transform(bone.world_space, blender.position, blend_position);
+        bone && Spine.Space.transform(bone.world_space, blender.position, blend_position);
         position.selfAdd(blend_position.selfScale(blender.weight));
         // keep track of which bones are used for blending
         if (blend_bone_index_array.indexOf(blender.bone_index) === -1) {
@@ -465,11 +466,11 @@ class RenderWeightedMeshAttachment implements RenderAttachment {
     this.vertex_blenders = glMakeVertex(gl, vertex_blenders, 2, gl.ARRAY_BUFFER, gl.STATIC_DRAW);
     this.vertex_triangle = glMakeVertex(gl, vertex_triangle, 1, gl.ELEMENT_ARRAY_BUFFER, gl.STATIC_DRAW);
     spine_data.iterateAnims((anim_key: string, anim: Spine.Animation): void => {
-      const ffd_skin: Spine.FfdSkin = anim.ffd_skins && anim.ffd_skins[skin_key];
-      const ffd_slot: Spine.FfdSlot = ffd_skin && ffd_skin.ffd_slots[slot_key];
-      const ffd_attachment: Spine.FfdAttachment = ffd_slot && ffd_slot.ffd_attachments[attachment_key];
+      const ffd_skin: Spine.FfdSkin | undefined = anim.ffd_skins && anim.ffd_skins.get(skin_key);
+      const ffd_slot: Spine.FfdSlot | undefined = ffd_skin && ffd_skin.ffd_slots.get(slot_key);
+      const ffd_attachment: Spine.FfdAttachment | undefined = ffd_slot && ffd_slot.ffd_attachments.get(attachment_key);
       if (ffd_attachment) {
-        const render_ffd_attachment: RenderFfdAttachment = this.ffd_attachment_map[anim_key] = new RenderFfdAttachment();
+        const render_ffd_attachment: RenderFfdAttachment = this.ffd_attachment_map.set(anim_key, new RenderFfdAttachment());
         ffd_attachment.ffd_timeline.ffd_keyframes.forEach((ffd_keyframe: Spine.FfdKeyframe, ffd_keyframe_index: number): void => {
           const render_ffd_keyframe: RenderFfdKeyframe = render_ffd_attachment.ffd_keyframes[ffd_keyframe_index] = new RenderFfdKeyframe();
           const vertex_position_morph: Float32Array = new Float32Array(2 * vertex_count);
@@ -478,12 +479,12 @@ class RenderWeightedMeshAttachment implements RenderAttachment {
             parse_index = parseBlenders(attachment.vertices, parse_index, (blender: Blender): void => { blender_array.push(blender); });
             const position_morph: Spine.Vector = new Spine.Vector();
             blender_array.forEach((blender: Blender): void => {
-              const bone_key = spine_data.bone_keys[blender.bone_index];
-              const bone = spine_data.bones[bone_key];
-              const blend_position = new Spine.Vector();
+              const bone_key: string = spine_data.bones.keys[blender.bone_index];
+              const bone: Spine.Bone | undefined = spine_data.bones.get(bone_key);
+              const blend_position: Spine.Vector = new Spine.Vector();
               blend_position.x = ffd_keyframe.vertices[ffd_index - ffd_keyframe.offset] || 0; ++ffd_index;
               blend_position.y = ffd_keyframe.vertices[ffd_index - ffd_keyframe.offset] || 0; ++ffd_index;
-              Spine.Matrix.transform(bone.world_space.affine.matrix, blend_position, blend_position);
+              bone && Spine.Matrix.transform(bone.world_space.affine.matrix, blend_position, blend_position);
               position_morph.selfAdd(blend_position.selfScale(blender.weight));
             });
             vertex_position_morph[vertex_index * 2 + 0] = position_morph.x;
@@ -498,14 +499,13 @@ class RenderWeightedMeshAttachment implements RenderAttachment {
 
   dropData(spine_data: Spine.Data, skin_key: string, slot_key: string, attachment_key: string, attachment: Spine.WeightedMeshAttachment): RenderWeightedMeshAttachment {
     const gl: WebGLRenderingContext = this.render.gl;
-    gl.deleteBuffer(this.vertex_position.buffer);
-    gl.deleteBuffer(this.vertex_blenders.buffer);
-    gl.deleteBuffer(this.vertex_texcoord.buffer);
-    gl.deleteBuffer(this.vertex_triangle.buffer);
-    Object.keys(this.ffd_attachment_map).forEach((anim_key: string): void => {
-      const render_ffd_attachment: RenderFfdAttachment = this.ffd_attachment_map[anim_key];
+    glDropVertex(gl, this.vertex_position);
+    glDropVertex(gl, this.vertex_blenders);
+    glDropVertex(gl, this.vertex_texcoord);
+    glDropVertex(gl, this.vertex_triangle);
+    this.ffd_attachment_map.forEach((render_ffd_attachment: RenderFfdAttachment, anim_key: string): void => {
       render_ffd_attachment.ffd_keyframes.forEach((ffd_keyframe: RenderFfdKeyframe): void => {
-        gl.deleteBuffer(ffd_keyframe.vertex_position_morph.buffer);
+        glDropVertex(gl, ffd_keyframe.vertex_position_morph);
       });
     });
     return this;
@@ -518,50 +518,51 @@ class RenderWeightedMeshAttachment implements RenderAttachment {
     for (let index: number = 0; index < blend_bone_index_array.length; ++index) {
       if (index < this.render.skin_shader_modelview_count) {
         const bone_index: number = blend_bone_index_array[index];
-        const bone_key: string = spine_pose.bone_keys[bone_index];
-        const bone: Spine.Bone = spine_pose.bones[bone_key];
-        const render_bone: RenderBone = this.render.bone_map[bone_key];
+        const bone_key: string = spine_pose.bones.keys[bone_index];
+        const bone: Spine.Bone | undefined = spine_pose.bones.get(bone_key);
+        const render_bone: RenderBone | undefined = this.render.bone_map.get(bone_key);
         const modelview: Float32Array = this.render.skin_shader_modelview_array.subarray(index * 16, (index + 1) * 16);
         mat4x4Copy(modelview, this.render.modelview);
-        mat4x4ApplySpace(modelview, bone.world_space);
-        mat4x4ApplySpace(modelview, render_bone.setup_space);
+        bone && mat4x4ApplySpace(modelview, bone.world_space);
+        render_bone && mat4x4ApplySpace(modelview, render_bone.setup_space);
         mat4x4ApplyAtlasSitePosition(modelview, site);
       }
     }
-    const anim: Spine.Animation | undefined = spine_pose.data.anims[spine_pose.anim_key];
-    const ffd_skin: Spine.FfdSkin | undefined = anim && anim.ffd_skins && anim.ffd_skins[spine_pose.skin_key];
-    const ffd_slot: Spine.FfdSlot | undefined = ffd_skin && ffd_skin.ffd_slots[slot_key];
-    const ffd_attachment: Spine.FfdAttachment | undefined = ffd_slot && ffd_slot.ffd_attachments[attachment_key];
+    const anim: Spine.Animation | undefined = spine_pose.data.anims.get(spine_pose.anim_key);
+    const ffd_skin: Spine.FfdSkin | undefined = anim && anim.ffd_skins && anim.ffd_skins.get(spine_pose.skin_key);
+    const ffd_slot: Spine.FfdSlot | undefined = ffd_skin && ffd_skin.ffd_slots.get(slot_key);
+    const ffd_attachment: Spine.FfdAttachment | undefined = ffd_slot && ffd_slot.ffd_attachments.get(attachment_key);
     const ffd_timeline: Spine.FfdTimeline | undefined = ffd_attachment && ffd_attachment.ffd_timeline;
     const ffd_keyframes: Spine.FfdKeyframe[] | undefined = ffd_timeline && ffd_timeline.ffd_keyframes;
     const ffd_keyframe0_index: number = Spine.Keyframe.find(ffd_keyframes, spine_pose.time);
     const ffd_keyframe1_index: number = ffd_keyframe0_index + 1 || ffd_keyframe0_index;
-    const ffd_keyframe0: Spine.FfdKeyframe | undefined = ffd_keyframes && ffd_keyframes[ffd_keyframe0_index];
-    const ffd_keyframe1: Spine.FfdKeyframe | undefined = ffd_keyframes && ffd_keyframes[ffd_keyframe1_index] || ffd_keyframe0;
+    const ffd_keyframe0: Spine.FfdKeyframe | undefined = (ffd_keyframes && ffd_keyframes[ffd_keyframe0_index]);
+    const ffd_keyframe1: Spine.FfdKeyframe | undefined = (ffd_keyframes && ffd_keyframes[ffd_keyframe1_index]) || ffd_keyframe0;
     const shader: RenderShader = (ffd_keyframe0) ? this.render.ffd_skin_shader : this.render.skin_shader;
     gl.useProgram(shader.program);
-    gl.uniformMatrix4fv(shader.uniforms["uProjection"], false, this.render.projection);
-    gl.uniformMatrix4fv(shader.uniforms["uModelviewArray[0]"], false, this.render.skin_shader_modelview_array);
-    gl.uniformMatrix3fv(shader.uniforms["uTexMatrix"], false, this.render.texmatrix);
-    gl.uniform4fv(shader.uniforms["uColor"], this.render.color);
+    gl.uniformMatrix4fv(shader.uniforms.get("uProjection") || 0, false, this.render.projection);
+    gl.uniformMatrix4fv(shader.uniforms.get("uModelviewArray[0]") || 0, false, this.render.skin_shader_modelview_array);
+    gl.uniformMatrix3fv(shader.uniforms.get("uTexMatrix") || 0, false, this.render.texmatrix);
+    gl.uniform4fv(shader.uniforms.get("uColor") || 0, this.render.color);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, texture.texture);
-    gl.uniform1i(shader.uniforms["uSampler"], 0);
+    gl.uniform1i(shader.uniforms.get("uSampler") || 0, 0);
     glSetupAttribute(gl, shader, "aPosition", this.vertex_position);
     glSetupAttribute(gl, shader, "aTexCoord", this.vertex_texcoord);
     glSetupAttribute(gl, shader, "aBlenders{index}", this.vertex_blenders, this.render.skin_shader_blenders_count);
-    if (ffd_keyframe0) {
+    if (ffd_keyframe0 && ffd_keyframe1) {
       const weight: number = (ffd_keyframe0.time === ffd_keyframe1.time) ? 0 : ffd_keyframe0.curve.evaluate((spine_pose.time - ffd_keyframe0.time) / (ffd_keyframe1.time - ffd_keyframe0.time));
-      const render_ffd_attachment: RenderFfdAttachment = this.ffd_attachment_map[spine_pose.anim_key];
-      const render_ffd_keyframe0: RenderFfdKeyframe = render_ffd_attachment.ffd_keyframes[ffd_keyframe0_index];
-      const render_ffd_keyframe1: RenderFfdKeyframe = render_ffd_attachment.ffd_keyframes[ffd_keyframe1_index] || render_ffd_keyframe0;
-      gl.uniform1f(shader.uniforms["uMorphWeight"], weight);
-      glSetupAttribute(gl, shader, "aPositionMorph0", render_ffd_keyframe0.vertex_position_morph);
-      glSetupAttribute(gl, shader, "aPositionMorph1", render_ffd_keyframe1.vertex_position_morph);
+      const render_ffd_attachment: RenderFfdAttachment | undefined = this.ffd_attachment_map.get(spine_pose.anim_key);
+      const render_ffd_keyframe0: RenderFfdKeyframe | undefined = (render_ffd_attachment && render_ffd_attachment.ffd_keyframes[ffd_keyframe0_index]);
+      const render_ffd_keyframe1: RenderFfdKeyframe | undefined = (render_ffd_attachment && render_ffd_attachment.ffd_keyframes[ffd_keyframe1_index]) || render_ffd_keyframe0;
+      gl.uniform1f(shader.uniforms.get("uMorphWeight") || 0, weight);
+      render_ffd_keyframe0 && glSetupAttribute(gl, shader, "aPositionMorph0", render_ffd_keyframe0.vertex_position_morph);
+      render_ffd_keyframe1 && glSetupAttribute(gl, shader, "aPositionMorph1", render_ffd_keyframe1.vertex_position_morph);
     }
     const vertex_triangle: RenderVertex = this.vertex_triangle;
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vertex_triangle.buffer);
     gl.drawElements(gl.TRIANGLES, vertex_triangle.count, vertex_triangle.type, 0);
+    glResetAttributes(gl, shader);
   }
 }
 
@@ -600,8 +601,8 @@ class RenderShader {
   public vs: WebGLShader | null;
   public fs: WebGLShader | null;
   public program: WebGLProgram | null;
-  public uniforms: {[key: string]: WebGLUniformLocation};
-  public attribs: {[key: string]: number};
+  public uniforms: Map<string, WebGLUniformLocation>;
+  public attribs: Map<string, GLint>;
 }
 
 type RenderVertexType = Float32Array | Int8Array | Uint8Array | Int16Array | Uint16Array | Int32Array | Uint32Array;
@@ -866,24 +867,24 @@ export function glLinkProgram(gl: WebGLRenderingContext, vs: WebGLShader | null,
   return program;
 }
 
-export function glGetUniforms(gl: WebGLRenderingContext, program: WebGLProgram | null, uniforms: {[key: string]: WebGLUniformLocation}): {[key: string]: WebGLUniformLocation} {
+export function glGetUniforms(gl: WebGLRenderingContext, program: WebGLProgram | null, uniforms: Map<string, WebGLUniformLocation> = new Map<string, WebGLUniformLocation>()): Map<string, WebGLUniformLocation> {
   const count: number = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
   for (let index: number = 0; index < count; ++index) {
     const uniform: WebGLActiveInfo | null = gl.getActiveUniform(program, index);
     if (!uniform) continue;
     const uniform_location: WebGLUniformLocation | null = gl.getUniformLocation(program, uniform.name);
     if (!uniform_location) continue;
-    uniforms[uniform.name] = uniform_location;
+    uniforms.set(uniform.name, uniform_location);
   }
   return uniforms;
 }
 
-export function glGetAttribs(gl: WebGLRenderingContext, program: WebGLProgram | null, attribs: {[key: string]: number}): {[key: string]: number} {
+export function glGetAttribs(gl: WebGLRenderingContext, program: WebGLProgram | null, attribs: Map<string, number> = new Map<string, number>()): Map<string, number> {
   const count: number = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
   for (let index: number = 0; index < count; ++index) {
     const attrib: WebGLActiveInfo | null = gl.getActiveAttrib(program, index);
     if (!attrib) continue;
-    attribs[attrib.name] = gl.getAttribLocation(program, attrib.name);
+    attribs.set(attrib.name, gl.getAttribLocation(program, attrib.name));
   }
   return attribs;
 }
@@ -899,9 +900,18 @@ export function glMakeShader(gl: WebGLRenderingContext, vs_src: (string|string[]
   shader.vs = glCompileShader(gl, shader.vs_src, gl.VERTEX_SHADER);
   shader.fs = glCompileShader(gl, shader.fs_src, gl.FRAGMENT_SHADER);
   shader.program = glLinkProgram(gl, shader.vs, shader.fs);
-  shader.uniforms = glGetUniforms(gl, shader.program, {});
-  shader.attribs = glGetAttribs(gl, shader.program, {});
+  shader.uniforms = glGetUniforms(gl, shader.program);
+  shader.attribs = glGetAttribs(gl, shader.program);
   return shader;
+}
+
+export function glDropShader(gl: WebGLRenderingContext, shader: RenderShader): void {
+  if (shader.program === gl.getParameter(gl.CURRENT_PROGRAM)) {
+    glResetAttributes(gl, shader);
+    gl.useProgram(null);
+  }
+  gl.deleteProgram(shader.program);
+  shader.program = null;
 }
 
 export function glMakeVertex(gl: WebGLRenderingContext, type_array: RenderVertexType, size: number, buffer_type: number, buffer_draw: number): RenderVertex {
@@ -925,7 +935,15 @@ export function glMakeVertex(gl: WebGLRenderingContext, type_array: RenderVertex
   return vertex;
 }
 
-export function glMakeTexture(gl: WebGLRenderingContext, image: HTMLImageElement, min_filter: GLenum, mag_filter: GLenum, wrap_s: GLenum, wrap_t: GLenum): RenderTexture {
+export function glDropVertex(gl: WebGLRenderingContext, vertex: RenderVertex): void {
+  if (vertex.buffer === gl.getParameter(gl.ARRAY_BUFFER_BINDING)) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  }
+  gl.deleteBuffer(vertex.buffer);
+  vertex.buffer = null;
+}
+
+export function glMakeTexture(gl: WebGLRenderingContext, image: HTMLImageElement | undefined, min_filter: GLenum, mag_filter: GLenum, wrap_s: GLenum, wrap_t: GLenum): RenderTexture {
   const texture: RenderTexture = new RenderTexture();
   texture.texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture.texture);
@@ -937,6 +955,14 @@ export function glMakeTexture(gl: WebGLRenderingContext, image: HTMLImageElement
   return texture;
 }
 
+export function glDropTexture(gl: WebGLRenderingContext, texture: RenderTexture): void {
+  if (texture.texture === gl.getParameter(gl.TEXTURE_BINDING_2D)) {
+    gl.bindTexture(gl.TEXTURE_2D, null);
+  }
+  gl.deleteTexture(texture.texture);
+  texture.texture = null;
+}
+
 export function glSetupAttribute(gl: WebGLRenderingContext, shader: RenderShader, format: string, vertex: RenderVertex, count: number = 0): void {
   gl.bindBuffer(vertex.buffer_type, vertex.buffer);
   if (count > 0) {
@@ -944,12 +970,12 @@ export function glSetupAttribute(gl: WebGLRenderingContext, shader: RenderShader
     const stride: number = sizeof_vertex * count;
     for (let index: number = 0; index < count; ++index) {
       const offset: number = sizeof_vertex * index;
-      const attrib: number = shader.attribs[format.replace(/{index}/g, index.toString())];
+      const attrib: number = shader.attribs.get(format.replace(/{index}/g, index.toString())) || 0;
       gl.vertexAttribPointer(attrib, vertex.size, vertex.type, false, stride, offset);
       gl.enableVertexAttribArray(attrib);
     }
   } else {
-    const attrib: number = shader.attribs[format];
+    const attrib: number = shader.attribs.get(format) || 0;
     gl.vertexAttribPointer(attrib, vertex.size, vertex.type, false, 0, 0);
     gl.enableVertexAttribArray(attrib);
   }
@@ -958,11 +984,19 @@ export function glSetupAttribute(gl: WebGLRenderingContext, shader: RenderShader
 export function glResetAttribute(gl: WebGLRenderingContext, shader: RenderShader, format: string, vertex: RenderVertex, count: number = 0): void {
   if (count > 0) {
     for (let index = 0; index < count; ++index) {
-      const attrib: number = shader.attribs[format.replace(/{index}/g, index.toString())];
+      const attrib: number = shader.attribs.get(format.replace(/{index}/g, index.toString())) || 0;
       gl.disableVertexAttribArray(attrib);
     }
   } else {
-    const attrib: number = shader.attribs[format];
+    const attrib: number = shader.attribs.get(format) || 0;
     gl.disableVertexAttribArray(attrib);
   }
+}
+
+export function glResetAttributes(gl: WebGLRenderingContext, shader: RenderShader): void {
+  shader.attribs.forEach((value: GLint, key: string): void => {
+    if (value !== -1) {
+      gl.disableVertexAttribArray(value);
+    }
+  });
 }

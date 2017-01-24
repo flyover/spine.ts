@@ -104,12 +104,12 @@ export function start(): void {
   function loadFile(file: any, callback: () => void): void {
     render_ctx2d.dropData(spine_data, atlas_data);
     render_webgl.dropData(spine_data, atlas_data);
-    ///spine_pose.drop();
-    ///spine_pose_next.drop();
-    ///spine_data.drop();
+    spine_pose.drop();
+    spine_pose_next.drop();
+    spine_data.drop();
     atlas_data = null;
 
-    const images: {[key: string]: HTMLImageElement} = {};
+    const images: Spine.Map<string, HTMLImageElement> = new Spine.Map<string, HTMLImageElement>();
 
     let counter: number = 0;
     const counter_inc = (): void => { counter++; };
@@ -141,12 +141,12 @@ export function start(): void {
             const image_key: string = page.name;
             const image_url: string = dir_path + "/" + image_key;
             counter_inc();
-            images[image_key] = loadImage(image_url, (err: string, image: HTMLImageElement): void => {
+            images.set(image_key, loadImage(image_url, (err: string, image: HTMLImageElement): void => {
               if (err) console.log("error loading:", image_url);
               page.w = page.w || image.width;
               page.h = page.h || image.height;
               counter_dec();
-            });
+            }));
           });
         } else {
           // load attachment images
@@ -160,10 +160,10 @@ export function start(): void {
                   const image_key: string = attachment_key;
                   const image_url: string = file_path + spine_data.skeleton.images + image_key + ".png";
                   counter_inc();
-                  images[image_key] = loadImage(image_url, (err: string, image: HTMLImageElement): void => {
+                  images.set(image_key, loadImage(image_url, (err: string, image: HTMLImageElement): void => {
                     if (err) console.log("error loading:", image_url);
                     counter_dec();
-                  });
+                  }));
                   break;
               }
             });
@@ -193,29 +193,53 @@ export function start(): void {
   addFile("ExplorerQ/", "ExplorerQ.json");
   addFile("examples/alien/", "export/alien.json", "export/alien.atlas");
   addFile("examples/dragon/", "export/dragon.json", "export/dragon.atlas");
-  addFile("examples/goblins/", "export/goblins.json", "export/goblins.atlas", 2);
-  addFile("examples/goblins/", "export/goblins-mesh.json", "export/goblins-mesh.atlas", 2);
-  addFile("examples/goblins/", "export/goblins-ffd.json", "export/goblins-ffd.atlas", 2);
-  addFile("examples/hero/", "export/hero-mesh.json", "export/hero-mesh.atlas", 2);
-  addFile("examples/hero/", "export/hero.json", "export/hero.atlas", 2);
+  addFile("examples/goblins/", "export/goblins.json", "export/goblins.atlas");
+  addFile("examples/goblins/", "export/goblins-mesh.json", "export/goblins-mesh.atlas");
+  addFile("examples/goblins/", "export/goblins-ffd.json", "export/goblins-ffd.atlas");
+  addFile("examples/hero/", "export/hero-mesh.json", "export/hero-mesh.atlas");
+  addFile("examples/hero/", "export/hero.json", "export/hero.atlas");
   addFile("examples/powerup/", "export/powerup.json", "export/powerup.atlas");
-  addFile("examples/raptor/", "export/raptor.json", "export/raptor.atlas", 0.5, [ "walk" ]);
+  addFile("examples/raptor/", "export/raptor.json", "export/raptor.atlas", 0.5);
   addFile("examples/speedy/", "export/speedy.json", "export/speedy.atlas");
   addFile("examples/spineboy-old/", "export/spineboy-old.json", "export/spineboy-old.atlas");
-  addFile("examples/spineboy/", "export/spineboy.json", "export/spineboy.atlas");
-  addFile("examples/spineboy/", "export/spineboy-mesh.json", "export/spineboy-mesh.atlas");
-  addFile("examples/spineboy/", "export/spineboy-hoverboard.json", "export/spineboy-hoverboard.atlas");
+  addFile("examples/spineboy/", "export/spineboy.json", "export/spineboy.atlas", 0.5);
+  addFile("examples/spineboy/", "export/spineboy-mesh.json", "export/spineboy-mesh.atlas", 0.5);
+  addFile("examples/spineboy/", "export/spineboy-hoverboard.json", "export/spineboy-hoverboard.atlas", 0.5);
   addFile("examples/spinosaurus/", "export/spinosaurus.json", "export/spinosaurus.atlas", 0.5);
+
   ///const esoteric: string = "https://raw.githubusercontent.com/EsotericSoftware/spine-runtimes/master/";
-  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Dragon/", "dragon.json", "dragon.Atlas.txt");
-  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Eyes/", "eyes.json", "eyes.Atlas.txt");
-  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/FootSoldier/", "FootSoldier.json", "FS_White.Atlas.txt");
-  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Gauge/", "Gauge.json", "Gauge.Atlas.txt");
-  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Goblins/", "goblins-mesh.json", "goblins-mesh.Atlas.txt");
-  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Hero/", "hero-mesh.json", "hero-mesh.Atlas.txt");
-  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Raggedy Spineboy/", "Raggedy Spineboy.json", "Raggedy Spineboy.Atlas.txt");
-  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Raptor/", "raptor.json", "raptor.Atlas.txt");
-  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Spineboy/", "spineboy.json", "spineboy.Atlas.txt");
+
+  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Spineboy/", "spineboy.json", "spineboy.atlas.txt", 0.5);
+
+  ///addFile(esoteric + "examples/alien/", "export/alien.json", "export/alien.atlas", 0.5);
+  ///addFile(esoteric + "examples/dragon/", "export/dragon.json", "export/dragon.atlas", 0.5);
+  ///addFile(esoteric + "examples/goblins/", "export/goblins.json", "export/goblins.atlas");
+  ///addFile(esoteric + "examples/goblins/", "export/goblins-mesh.json", "export/goblins.atlas");
+  ///addFile(esoteric + "examples/hero/", "export/hero.json", "export/hero.atlas");
+  ///addFile(esoteric + "examples/hero/", "export/hero-mesh.json", "export/hero.atlas");
+  ///addFile(esoteric + "examples/powerup/", "export/powerup.json", "export/powerup.atlas");
+  ///addFile(esoteric + "examples/raptor/", "export/raptor.json", "export/raptor.atlas", 0.5);
+  ///addFile(esoteric + "examples/speedy/", "export/speedy.json", "export/speedy.atlas");
+  ///addFile(esoteric + "examples/spineboy/", "export/spineboy.json", "export/spineboy.atlas", 0.5);
+  ///addFile(esoteric + "examples/spineboy/", "export/spineboy-mesh.json", "export/spineboy.atlas", 0.5);
+  ///addFile(esoteric + "examples/spineboy/", "export/spineboy-hover.json", "export/spineboy.atlas", 0.5);
+  ///addFile(esoteric + "examples/spineboy-old/", "export/spineboy-old.json", "export/spineboy-old.atlas");
+  ///addFile(esoteric + "examples/spinosaurus/", "export/spinosaurus.json");
+  ///addFile(esoteric + "examples/stretchyman/", "export/stretchyman.json", "export/stretchyman.atlas");
+  ///addFile(esoteric + "examples/tank/", "export/tank.json", "export/tank.atlas", 0.5);
+  ///addFile(esoteric + "examples/test/", "export/test.json", "export/test.atlas", 0.5);
+  ///addFile(esoteric + "examples/vine/", "export/vine.json", "export/vine.atlas", 0.5);
+  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Dragon/", "dragon.json", "dragon.atlas.txt");
+  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Eyes/", "eyes.json", "eyes.atlas.txt");
+  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/FootSoldier/", "FootSoldier.json", "FS_White.atlas.txt");
+  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Gauge/", "Gauge.json", "Gauge.atlas.txt");
+  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Goblins/", "goblins.json", "goblins.atlas.txt");
+  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Hero/", "hero-mesh.json", "hero-mesh.atlas.txt");
+  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Raggedy Spineboy/", "Raggedy Spineboy.json", "Raggedy Spineboy.atlas.txt");
+  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Raptor/", "raptor.json", "raptor.atlas.txt", 0.5);
+  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Spineboy/", "spineboy.json", "spineboy.atlas.txt", 0.5);
+  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Spineunitygirl/", "Doi.json", "Doi.atlas.txt");
+  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Strechyman/", "stretchyman.json", "stretchyman-diffuse-pma.atlas.txt");
 
   ///files = [];
   ///addFile("test-ikc/", "export/skeleton.json");
@@ -240,14 +264,14 @@ export function start(): void {
   }
 
   function updateSkin() {
-    const skin_keys: string[] = spine_data.skin_keys;
+    const skin_keys: string[] = spine_data.skins.keys;
     const skin_key: string = skin_keys[skin_index];
     spine_pose.setSkin(skin_key);
     spine_pose_next.setSkin(skin_key);
   }
 
   function updateAnim() {
-    const anim_keys: string[] = file.anim_keys || spine_data.anim_keys;
+    const anim_keys: string[] = file.anim_keys || spine_data.anims.keys;
     const anim_key: string = anim_keys[anim_index];
     spine_pose.setAnim(anim_key);
     const anim_key_next: string = anim_keys[(anim_index + 1) % anim_keys.length];
@@ -281,10 +305,10 @@ export function start(): void {
       anim_time += dt * anim_rate;
 
       if (anim_time >= (anim_length * anim_repeat)) {
-        const anim_keys: string[] = file.anim_keys || spine_data.anim_keys;
+        const anim_keys: string[] = file.anim_keys || spine_data.anims.keys;
         if (++anim_index >= anim_keys.length) {
           anim_index = 0;
-          const skin_keys: string[] = spine_data.skin_keys;
+          const skin_keys: string[] = spine_data.skins.keys;
           if (++skin_index >= skin_keys.length) {
             skin_index = 0;
             if (files.length > 1) {
@@ -306,9 +330,9 @@ export function start(): void {
         updateAnim();
       }
 
-      const skin_keys: string[] = spine_data.skin_keys;
+      const skin_keys: string[] = spine_data.skins.keys;
       const skin_key: string = skin_keys[skin_index];
-      const anim_keys: string[] = file.anim_keys || spine_data.anim_keys;
+      const anim_keys: string[] = file.anim_keys || spine_data.anims.keys;
       const anim_key: string = anim_keys[anim_index];
       const anim_key_next: string = anim_keys[(anim_index + 1) % anim_keys.length];
       messages.innerHTML = "skin: " + skin_key + ", anim: " + anim_key + ", next anim: " + anim_key_next + "<br>" + file.path + file.json_url;
@@ -336,7 +360,7 @@ export function start(): void {
 
       // blend next pose bone into pose bone
       spine_pose.iterateBones((bone_key: string, bone: Spine.Bone): void => {
-        const bone_next: Spine.Bone = spine_pose_next.bones[bone_key];
+        const bone_next: Spine.Bone | undefined = spine_pose_next.bones.get(bone_key);
         if (!bone_next) { return; }
         Spine.Space.tween(bone.local_space, bone_next.local_space, anim_blend, bone.local_space);
       });

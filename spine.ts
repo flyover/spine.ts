@@ -32,6 +32,70 @@
 
 export let EPSILON: number = 1e-6;
 
+export { SpineMap as Map }
+
+class SpineMap<K, V> {
+  public keys: K[] = [];
+  public map: Map<K, V>;
+
+  constructor(...args: any[]) {
+    this.map = new Map<K, V>(args);
+    this.map.forEach((value: V, key: K): void => {
+      this.keys.push(key);
+    });
+  }
+
+  public clear(): void {
+    this.keys.length = 0;
+    this.map.clear();
+  }
+
+  public has(key: K): boolean {
+    return this.map.has(key);
+  }
+
+  public hasByIndex(index: number): boolean {
+    return this.has(this.keys[index]);
+  }
+
+  public get(key: K): V | undefined {
+    return this.map.get(key);
+  }
+
+  public getByIndex(index: number): V | undefined {
+    return this.get(this.keys[index]);
+  }
+
+  public set(key: K, value: V): V {
+    if (!this.map.has(key)) {
+      this.keys.push(key);
+    }
+    this.map.set(key, value);
+    return value;
+  }
+
+  public setByIndex(index: number, value: V): V {
+    return this.set(this.keys[index], value);
+  }
+
+  public delete(key: K): void {
+    this.keys.splice(this.keys.indexOf(key), 1);
+    this.map.delete(key);
+  }
+
+  public deleteByIndex(index: number): void {
+    this.delete(this.keys[index]);
+  }
+
+  public forEach(callback: (value: V, key: K, index: number, map: SpineMap<K, V>) => void): void {
+    this.keys.forEach((key: K, index: number, array: K[]): void => {
+      const value: V | undefined = this.map.get(key);
+      if (!value) throw new Error();
+      callback(value, key, index, this);
+    });
+  }
+}
+
 export function loadBool(json: any, key: string | number, def: boolean = false): boolean {
   const value: any = json[key];
   switch (typeof(value)) {
@@ -91,6 +155,8 @@ export function saveString(json: any, key: string | number, value: string, def: 
   }
 }
 
+type ColorJSON = number | string;
+
 export class Color {
   public r: number = 1;
   public g: number = 1;
@@ -109,16 +175,14 @@ export class Color {
     return Color.copy(other, this);
   }
 
-  public load(json: any): Color {
-    let rgba: number = 0xffffffff;
-    switch (typeof(json)) {
-      case "string": rgba = parseInt(json, 16); break;
-      case "number": rgba = 0 | json; break;
-    }
-    this.r = ((rgba >> 24) & 0xff) / 255;
-    this.g = ((rgba >> 16) & 0xff) / 255;
-    this.b = ((rgba >> 8) & 0xff) / 255;
-    this.a = (rgba & 0xff) / 255;
+  public load(json?: ColorJSON, def: number = 0xffffffff): Color {
+    let rgba: number = def;
+    if (typeof(json) === "string") rgba = parseInt(json, 16);
+    if (typeof(json) === "number") rgba = 0 | json;
+    this.r = ((rgba >> 24) & 0xff) / 0xff;
+    this.g = ((rgba >> 16) & 0xff) / 0xff;
+    this.b = ((rgba >> 8) & 0xff) / 0xff;
+    this.a = (rgba & 0xff) / 0xff;
     return this;
   }
 
@@ -277,10 +341,12 @@ export function StepBezierCurve(cx1: number, cy1: number, cx2: number, cy2: numb
   };
 }
 
+type CurveJSON = string | number[];
+
 export class Curve {
   public evaluate: (t: number) => number = function (t: number): number { return t; };
 
-  public load(json: any): Curve {
+  public load(json?: CurveJSON): Curve {
     // default: linear
     this.evaluate = function (t: number): number { return t; };
     if ((typeof(json) === "string") && (json === "stepped")) {
@@ -742,6 +808,16 @@ export class Shear {
   }
 }
 
+interface SpaceJSON {
+  x: number;
+  y: number;
+  rotation: number;
+  scaleX: number;
+  scaleY: number;
+  shearX: number;
+  shearY: number;
+}
+
 export class Space {
   public position: Position = new Position();
   public rotation: Rotation = new Rotation();
@@ -769,7 +845,7 @@ export class Space {
     return Space.copy(other, this);
   }
 
-  public load(json: any): Space {
+  public load(json: SpaceJSON): Space {
     this.position.x = loadFloat(json, "x", 0);
     this.position.y = loadFloat(json, "y", 0);
     this.rotation.deg = loadFloat(json, "rotation", 0);
@@ -888,6 +964,16 @@ export class Space {
   }
 }
 
+interface BoneJSON extends SpaceJSON {
+  name: string;
+  color?: ColorJSON;
+  parent?: string;
+  length?: number;
+  inheritRotation?: boolean; // TODO: deprecate
+  inheritScale?: boolean; // TODO: deprecate
+  transform?: string;
+}
+
 export class Bone {
   public color: Color = new Color();
   public parent_key: string = "";
@@ -910,8 +996,8 @@ export class Bone {
     return this;
   }
 
-  public load(json: any): Bone {
-    this.color.load(json.color || 0x9b9b9bff);
+  public load(json: BoneJSON): Bone {
+    this.color.load(json.color, 0x989898ff);
     this.parent_key = loadString(json, "parent", "");
     this.length = loadFloat(json, "length", 0);
     this.local_space.load(json);
@@ -931,10 +1017,10 @@ export class Bone {
     return this;
   }
 
-  public static flatten(bone: Bone, bones: {[key: string]: Bone}): Bone {
+  public static flatten(bone: Bone, bones: SpineMap<string, Bone>): Bone {
     const bls: Space = bone.local_space;
     const bws: Space = bone.world_space;
-    let parent: Bone = bones[bone.parent_key];
+    let parent: Bone | undefined = bones.get(bone.parent_key);
     if (!parent) {
       bws.copy(bls);
       bws.updateAffine();
@@ -951,7 +1037,7 @@ export class Bone {
         while (parent && parent.inherit_rotation) {
           const pls: Space = parent.local_space;
           Matrix.rotate(bws.affine.matrix, pls.rotation.cos, pls.rotation.sin, bws.affine.matrix);
-          parent = bones[parent.parent_key];
+          parent = bones.get(parent.parent_key);
         }
       } else if (bone.inherit_scale) {
         Matrix.identity(bws.affine.matrix);
@@ -962,7 +1048,7 @@ export class Bone {
           Matrix.multiply(bws.affine.matrix, pls.scale, bws.affine.matrix);
           if (pls.scale.x >= 0) { sin = -sin; }
           Matrix.rotate(bws.affine.matrix, cos, sin, bws.affine.matrix);
-          parent = bones[parent.parent_key];
+          parent = bones.get(parent.parent_key);
         }
       } else {
         Matrix.identity(bws.affine.matrix);
@@ -982,15 +1068,27 @@ export class Bone {
   }
 }
 
+interface ConstraintJSON {
+  name: string;
+  order: number;
+}
+
 export class Constraint {
-  public name: string = "";
+  ///public name: string = "";
   public order: number = 0;
 
-  public load(json: any): Constraint {
-    this.name = loadString(json, "name", "");
+  public load(json: ConstraintJSON): Constraint {
+    ///this.name = loadString(json, "name", "");
     this.order = loadInt(json, "order", 0);
     return this;
   }
+}
+
+interface IkcJSON extends ConstraintJSON {
+  bones: string[];
+  target: string;
+  mix: number;
+  bendPositive: boolean;
 }
 
 export class Ikc extends Constraint {
@@ -999,7 +1097,7 @@ export class Ikc extends Constraint {
   public mix: number = 1;
   public bend_positive: boolean = true;
 
-  public load(json: any): Ikc {
+  public load(json: IkcJSON): Ikc {
     super.load(json);
     this.bone_keys = json["bones"] || [];
     this.target_key = loadString(json, "target", "");
@@ -1007,6 +1105,22 @@ export class Ikc extends Constraint {
     this.bend_positive = loadBool(json, "bendPositive", true);
     return this;
   }
+}
+
+interface XfcJSON extends ConstraintJSON {
+  bones: string[];
+  target: string;
+  translateMix: number;
+  x: number;
+  y: number;
+  rotateMix: number;
+  rotation: number;
+  scaleMix: number;
+  scaleX: number;
+  scaleY: number;
+  shearMix: number;
+  shearX: number;
+  shearY: number;
 }
 
 export class Xfc extends Constraint {
@@ -1021,7 +1135,7 @@ export class Xfc extends Constraint {
   public shear_mix: number = 1;
   public shear: Shear = new Shear();
 
-  public load(json: any): Xfc {
+  public load(json: XfcJSON): Xfc {
     super.load(json);
     this.bone_keys = json["bones"] || [];
     this.target_key = loadString(json, "target", "");
@@ -1040,6 +1154,19 @@ export class Xfc extends Constraint {
   }
 }
 
+interface PtcJSON extends ConstraintJSON {
+  bones: string[];
+  target: string;
+  spacingMode: string;
+  spacing: number;
+  positionMode: string;
+  translateMix: number;
+  position: number;
+  rotateMode: string;
+  rotateMix: number;
+  rotation: number;
+}
+
 export class Ptc extends Constraint {
   public bone_keys: string[] = [];
   public target_key: string = "";
@@ -1052,7 +1179,7 @@ export class Ptc extends Constraint {
   public rotation_mix: number = 1;
   public rotation: Rotation = new Rotation();
 
-  public load(json: any): Ptc {
+  public load(json: PtcJSON): Ptc {
     super.load(json);
     this.bone_keys = json["bones"] || [];
     this.target_key = loadString(json, "target", "");
@@ -1066,6 +1193,14 @@ export class Ptc extends Constraint {
     this.rotation.deg = loadFloat(json, "rotation", 0);
     return this;
   }
+}
+
+interface SlotJSON {
+  name: string;
+  bone: string;
+  color?: ColorJSON;
+  attachment: string;
+  blend?: string;
 }
 
 export class Slot {
@@ -1082,13 +1217,19 @@ export class Slot {
     return this;
   }
 
-  public load(json: any): Slot {
+  public load(json: SlotJSON): Slot {
     this.bone_key = loadString(json, "bone", "");
     this.color.load(json.color);
     this.attachment_key = loadString(json, "attachment", "");
     this.blend = loadString(json, "blend", "normal");
     return this;
   }
+}
+
+interface AttachmentJSON {
+  type: string;
+  name?: string;
+  path?: string;
 }
 
 export class Attachment {
@@ -1100,15 +1241,21 @@ export class Attachment {
     this.type = type;
   }
 
-  public load(json: any): Attachment {
-    const attachment_type = loadString(json, "type", "region");
-    if (attachment_type !== this.type) {
+  public load(json: AttachmentJSON): Attachment {
+    const type: string = loadString(json, "type", "region");
+    if (type !== this.type) {
       throw new Error();
     }
     this.name = loadString(json, "name", "");
     this.path = loadString(json, "path", "");
     return this;
   }
+}
+
+interface RegionAttachmentJSON extends AttachmentJSON, SpaceJSON {
+  color?: ColorJSON;
+  width?: number;
+  height?: number;
 }
 
 export class RegionAttachment extends Attachment {
@@ -1121,7 +1268,7 @@ export class RegionAttachment extends Attachment {
     super("region");
   }
 
-  public load(json: any): RegionAttachment {
+  public load(json: RegionAttachmentJSON): RegionAttachment {
     super.load(json);
     this.color.load(json.color);
     this.local_space.load(json);
@@ -1131,19 +1278,35 @@ export class RegionAttachment extends Attachment {
   }
 }
 
+interface BoundingBoxAttachmentJSON extends AttachmentJSON {
+  color?: ColorJSON;
+  vertices: number[];
+}
+
 export class BoundingBoxAttachment extends Attachment {
+  public color: Color = new Color();
   public vertices: number[] = [];
 
   constructor() {
     super("boundingbox");
   }
 
-  public load(json: any): BoundingBoxAttachment {
+  public load(json: BoundingBoxAttachmentJSON): BoundingBoxAttachment {
     super.load(json);
+    this.color.load(json.color, 0x60f000ff);
     /// The x/y pairs that make up the vertices of the polygon.
-    this.vertices = json.vertices || [];
+    this.vertices = json.vertices;
     return this;
   }
+}
+
+interface MeshAttachmentJSON extends AttachmentJSON {
+  color?: ColorJSON;
+  triangles: number[];
+  edges: number[];
+  vertices: number[];
+  uvs: number[];
+  hull?: number;
 }
 
 export class MeshAttachment extends Attachment {
@@ -1158,7 +1321,7 @@ export class MeshAttachment extends Attachment {
     super("mesh");
   }
 
-  public load(json: any): MeshAttachment {
+  public load(json: MeshAttachmentJSON): MeshAttachment {
     super.load(json);
     this.color.load(json.color);
     this.triangles = json.triangles || [];
@@ -1168,6 +1331,15 @@ export class MeshAttachment extends Attachment {
     this.hull = loadInt(json, "hull", 0);
     return this;
   }
+}
+
+interface LinkedMeshAttachmentJSON extends AttachmentJSON {
+  color?: ColorJSON;
+  skin: string;
+  parent: string;
+  deform?: boolean;
+  width?: number;
+  height?: number;
 }
 
 export class LinkedMeshAttachment extends Attachment {
@@ -1182,7 +1354,7 @@ export class LinkedMeshAttachment extends Attachment {
     super("linkedmesh");
   }
 
-  public load(json: any): LinkedMeshAttachment {
+  public load(json: LinkedMeshAttachmentJSON): LinkedMeshAttachment {
     super.load(json);
     this.color.load(json.color);
     this.skin_key = loadString(json, "skin", "");
@@ -1192,6 +1364,15 @@ export class LinkedMeshAttachment extends Attachment {
     this.height = loadInt(json, "height", 0);
     return this;
   }
+}
+
+interface WeightedMeshAttachmentJSON extends AttachmentJSON {
+  color?: ColorJSON;
+  triangles: number[];
+  edges: number[];
+  vertices: number[];
+  uvs: number[];
+  hull: number;
 }
 
 export class WeightedMeshAttachment extends Attachment {
@@ -1206,7 +1387,7 @@ export class WeightedMeshAttachment extends Attachment {
     super("weightedmesh");
   }
 
-  public load(json: any): any {
+  public load(json: WeightedMeshAttachmentJSON): WeightedMeshAttachment {
     super.load(json);
     this.color.load(json.color);
     this.triangles = json.triangles || [];
@@ -1216,6 +1397,14 @@ export class WeightedMeshAttachment extends Attachment {
     this.hull = loadInt(json, "hull", 0);
     return this;
   }
+}
+
+interface PathAttachmentJSON extends AttachmentJSON {
+  color?: ColorJSON;
+  constantSpeed?: boolean;
+  lengths: number[];
+  vertexCount: number;
+  vertices: number[];
 }
 
 export class PathAttachment extends Attachment {
@@ -1230,9 +1419,9 @@ export class PathAttachment extends Attachment {
     super("path");
   }
 
-  public load(json: any): PathAttachment {
+  public load(json: PathAttachmentJSON): PathAttachment {
     super.load(json);
-    this.color.load(json.color);
+    this.color.load(json.color, 0xff7f00ff);
     this.closed = loadBool(json, "closed", false);
     this.accurate = loadBool(json, "constantSpeed", true);
     this.lengths = json.lengths || [];
@@ -1242,39 +1431,40 @@ export class PathAttachment extends Attachment {
   }
 }
 
-export class SkinSlot {
-  public attachments: {[key: string]: Attachment} = {};
-  public attachment_keys: string[] = [];
+type SkinSlotJSON = {[key: string]: AttachmentJSON};
 
-  public load(json: any): SkinSlot {
-    this.attachment_keys = Object.keys(json || {});
-    this.attachment_keys.forEach((attachment_key: string): void => {
-      const json_attachment = json[attachment_key];
-      switch (json_attachment.type) {
+export class SkinSlot {
+  public attachments: SpineMap<string, Attachment> = new SpineMap<string, Attachment>();
+
+  public load(json: SkinSlotJSON): SkinSlot {
+    this.attachments.clear();
+    Object.keys(json || {}).forEach((attachment_key: string): void => {
+      const attachment_json: AttachmentJSON = json[attachment_key];
+      switch (attachment_json.type) {
         default: case "region":
-          this.attachments[attachment_key] = new RegionAttachment().load(json_attachment);
+          this.attachments.set(attachment_key, new RegionAttachment().load(<RegionAttachmentJSON>attachment_json));
           break;
         case "boundingbox":
-          this.attachments[attachment_key] = new BoundingBoxAttachment().load(json_attachment);
+          this.attachments.set(attachment_key, new BoundingBoxAttachment().load(<BoundingBoxAttachmentJSON>attachment_json));
           break;
         case "mesh":
-          if (json_attachment.vertices.length === json_attachment.uvs.length) {
-            this.attachments[attachment_key] = new MeshAttachment().load(json_attachment);
+          if ((<MeshAttachmentJSON>attachment_json).vertices.length === (<MeshAttachmentJSON>attachment_json).uvs.length) {
+            this.attachments.set(attachment_key, new MeshAttachment().load(<MeshAttachmentJSON>attachment_json));
           } else {
-            json_attachment.type = "weightedmesh";
-            this.attachments[attachment_key] = new WeightedMeshAttachment().load(json_attachment);
+            attachment_json.type = "weightedmesh";
+            this.attachments.set(attachment_key, new WeightedMeshAttachment().load(<WeightedMeshAttachmentJSON>attachment_json));
           }
           break;
         case "linkedmesh":
-          this.attachments[attachment_key] = new LinkedMeshAttachment().load(json_attachment);
+          this.attachments.set(attachment_key, new LinkedMeshAttachment().load(<LinkedMeshAttachmentJSON>attachment_json));
           break;
         case "skinnedmesh":
-          json_attachment.type = "weightedmesh";
+          attachment_json.type = "weightedmesh";
         case "weightedmesh":
-          this.attachments[attachment_key] = new WeightedMeshAttachment().load(json_attachment);
+          this.attachments.set(attachment_key, new WeightedMeshAttachment().load(<WeightedMeshAttachmentJSON>attachment_json));
           break;
         case "path":
-          this.attachments[attachment_key] = new PathAttachment().load(json_attachment);
+          this.attachments.set(attachment_key, new PathAttachment().load(<PathAttachmentJSON>attachment_json));
           break;
       }
     });
@@ -1282,29 +1472,34 @@ export class SkinSlot {
   }
 }
 
+type SkinJSON = {[key: string]: SkinSlotJSON};
+
 export class Skin {
   public name: string = "";
-  public slots: {[key: string]: SkinSlot} = {};
-  public slot_keys: string[] = [];
+  public slots: SpineMap<string, SkinSlot> = new SpineMap<string, SkinSlot>();
 
-  public load(json: any): Skin {
+  public load(json: SkinJSON): Skin {
     this.name = loadString(json, "name", "");
-    this.slot_keys = Object.keys(json || {});
-    this.slot_keys.forEach((slot_key: string): void => {
-      this.slots[slot_key] = new SkinSlot().load(json[slot_key]);
+    Object.keys(json || {}).forEach((slot_key: string): void => {
+      this.slots.set(slot_key, new SkinSlot().load(json[slot_key]));
     });
     return this;
   }
 
   public iterateAttachments(callback: (slot_key: string, skin_slot: SkinSlot, attachment_key: string, attachment: Attachment) => void): void {
-    this.slot_keys.forEach((slot_key: string): void => {
-      const skin_slot = this.slots[slot_key];
-      skin_slot.attachment_keys.forEach((attachment_key: string): void => {
-        const attachment = skin_slot.attachments[attachment_key];
-        callback(slot_key, skin_slot, attachment.name || attachment_key, attachment);
+    this.slots.forEach((skin_slot: SkinSlot, slot_key: string): void => {
+      skin_slot.attachments.forEach((attachment: Attachment, attachment_key: string): void => {
+        callback(slot_key, skin_slot, (attachment && attachment.name) || attachment_key, attachment);
       });
     });
   }
+}
+
+interface EventJSON {
+  name: string;
+  int?: number;
+  float?: number;
+  string?: string;
 }
 
 export class Event {
@@ -1321,7 +1516,7 @@ export class Event {
     return this;
   }
 
-  public load(json: any): Event {
+  public load(json: EventJSON): Event {
     this.name = loadString(json, "name", "");
     if (typeof(json["int"]) === "number") {
       this.int_value = loadInt(json, "int", 0);
@@ -1337,6 +1532,10 @@ export class Event {
   }
 }
 
+interface KeyframeJSON {
+  time: number;
+}
+
 export class Keyframe {
   public time: number = 0;
 
@@ -1345,17 +1544,17 @@ export class Keyframe {
     return this;
   }
 
-  public load(json: any): Keyframe {
+  public load(json: KeyframeJSON): Keyframe {
     this.time = 1000 * loadFloat(json, "time", 0); // convert to ms
     return this;
   }
 
-  public save(json: any): Keyframe {
+  public save(json: KeyframeJSON): Keyframe {
     saveFloat(json, "time", this.time / 1000, 0); // convert to s
     return this;
   }
 
-  public static find(array: Keyframe[], time: number): number {
+  public static find(array: Keyframe[] | undefined, time: number): number {
     if (!array) return -1;
     if (array.length <= 0) return -1;
     if (time < array[0].time) return -1;
@@ -1416,6 +1615,10 @@ export class Timeline {
   }
 }
 
+interface BoneKeyframeJSON extends KeyframeJSON {
+  curve?: CurveJSON;
+}
+
 export class BoneKeyframe extends Keyframe {
   public curve: Curve = new Curve();
 
@@ -1423,11 +1626,16 @@ export class BoneKeyframe extends Keyframe {
     super();
   }
 
-  public load(json: any): BoneKeyframe {
+  public load(json: BoneKeyframeJSON): BoneKeyframe {
     super.load(json);
     this.curve.load(json.curve);
     return this;
   }
+}
+
+interface BonePositionKeyframeJSON extends BoneKeyframeJSON {
+  x?: number;
+  y?: number;
 }
 
 export class BonePositionKeyframe extends BoneKeyframe {
@@ -1437,12 +1645,16 @@ export class BonePositionKeyframe extends BoneKeyframe {
     super();
   }
 
-  public load(json: any): BonePositionKeyframe {
+  public load(json: BonePositionKeyframeJSON): BonePositionKeyframe {
     super.load(json);
     this.position.x = loadFloat(json, "x", 0);
     this.position.y = loadFloat(json, "y", 0);
     return this;
   }
+}
+
+interface BoneRotationKeyframeJSON extends BoneKeyframeJSON {
+  angle?: number;
 }
 
 export class BoneRotationKeyframe extends BoneKeyframe {
@@ -1452,11 +1664,16 @@ export class BoneRotationKeyframe extends BoneKeyframe {
     super();
   }
 
-  public load(json: any): BoneRotationKeyframe {
+  public load(json: BoneRotationKeyframeJSON): BoneRotationKeyframe {
     super.load(json);
     this.rotation.deg = loadFloat(json, "angle", 0);
     return this;
   }
+}
+
+interface BoneScaleKeyframeJSON extends BoneKeyframeJSON {
+  x?: number;
+  y?: number;
 }
 
 export class BoneScaleKeyframe extends BoneKeyframe {
@@ -1466,12 +1683,17 @@ export class BoneScaleKeyframe extends BoneKeyframe {
     super();
   }
 
-  public load(json: any): BoneScaleKeyframe {
+  public load(json: BoneScaleKeyframeJSON): BoneScaleKeyframe {
     super.load(json);
     this.scale.x = loadFloat(json, "x", 1);
     this.scale.y = loadFloat(json, "y", 1);
     return this;
   }
+}
+
+interface BoneShearKeyframeJSON extends BoneKeyframeJSON {
+  x?: number;
+  y?: number;
 }
 
 export class BoneShearKeyframe extends BoneKeyframe {
@@ -1481,12 +1703,19 @@ export class BoneShearKeyframe extends BoneKeyframe {
     super();
   }
 
-  public load(json: any): BoneShearKeyframe {
+  public load(json: BoneShearKeyframeJSON): BoneShearKeyframe {
     super.load(json);
     this.shear.x.deg = loadFloat(json, "x", 0);
     this.shear.y.deg = loadFloat(json, "y", 0);
     return this;
   }
+}
+
+interface BoneTimelineJSON {
+  translate: BonePositionKeyframeJSON[];
+  rotate: BoneRotationKeyframeJSON[];
+  scale: BoneScaleKeyframeJSON[];
+  shear: BoneShearKeyframeJSON[];
 }
 
 export class BoneTimeline extends Timeline {
@@ -1495,7 +1724,7 @@ export class BoneTimeline extends Timeline {
   public scale_keyframes: BoneScaleKeyframe[];
   public shear_keyframes: BoneShearKeyframe[];
 
-  public load(json: any): BoneTimeline {
+  public load(json: BoneTimelineJSON): BoneTimeline {
     this.min_time = 0;
     this.max_time = 0;
     delete this.position_keyframes;
@@ -1507,32 +1736,32 @@ export class BoneTimeline extends Timeline {
       switch (key) {
         case "translate":
           this.position_keyframes = [];
-          json.translate.forEach((translate: any): void => {
-            this.position_keyframes.push(new BonePositionKeyframe().load(translate));
+          json[key].forEach((keyframe_json: BonePositionKeyframeJSON): void => {
+            this.position_keyframes.push(new BonePositionKeyframe().load(keyframe_json));
           });
           this.position_keyframes.sort(Keyframe.compare);
           this._expandKeyframes(this.position_keyframes);
           break;
         case "rotate":
           this.rotation_keyframes = [];
-          json.rotate.forEach((rotate: any): void => {
-            this.rotation_keyframes.push(new BoneRotationKeyframe().load(rotate));
+          json[key].forEach((keyframe_json: BoneRotationKeyframeJSON): void => {
+            this.rotation_keyframes.push(new BoneRotationKeyframe().load(keyframe_json));
           });
           this.rotation_keyframes.sort(Keyframe.compare);
           this._expandKeyframes(this.rotation_keyframes);
           break;
         case "scale":
           this.scale_keyframes = [];
-          json.scale.forEach((scale: any): void => {
-            this.scale_keyframes.push(new BoneScaleKeyframe().load(scale));
+          json[key].forEach((keyframe_json: BoneScaleKeyframeJSON): void => {
+            this.scale_keyframes.push(new BoneScaleKeyframe().load(keyframe_json));
           });
           this.scale_keyframes.sort(Keyframe.compare);
           this._expandKeyframes(this.scale_keyframes);
           break;
         case "shear":
           this.shear_keyframes = [];
-          json.shear.forEach((shear: any): void => {
-            this.shear_keyframes.push(new BoneShearKeyframe().load(shear));
+          json[key].forEach((keyframe_json: BoneShearKeyframeJSON): void => {
+            this.shear_keyframes.push(new BoneShearKeyframe().load(keyframe_json));
           });
           this.shear_keyframes.sort(Keyframe.compare);
           this._expandKeyframes(this.shear_keyframes);
@@ -1547,15 +1776,22 @@ export class BoneTimeline extends Timeline {
   }
 }
 
+interface SlotKeyframeJSON extends KeyframeJSON {}
+
 export class SlotKeyframe extends Keyframe {
   constructor() {
     super();
   }
 
-  public load(json: any): SlotKeyframe {
+  public load(json: SlotKeyframeJSON): SlotKeyframe {
     super.load(json);
     return this;
   }
+}
+
+interface SlotColorKeyframeJSON extends SlotKeyframeJSON {
+  curve?: CurveJSON;
+  color?: ColorJSON;
 }
 
 export class SlotColorKeyframe extends SlotKeyframe {
@@ -1566,12 +1802,16 @@ export class SlotColorKeyframe extends SlotKeyframe {
     super();
   }
 
-  public load(json: any): SlotColorKeyframe {
+  public load(json: SlotColorKeyframeJSON): SlotColorKeyframe {
     super.load(json);
     this.curve.load(json.curve);
     this.color.load(json.color);
     return this;
   }
+}
+
+interface SlotAttachmentKeyframeJSON extends SlotKeyframeJSON {
+  name: string;
 }
 
 export class SlotAttachmentKeyframe extends SlotKeyframe {
@@ -1581,18 +1821,20 @@ export class SlotAttachmentKeyframe extends SlotKeyframe {
     super();
   }
 
-  public load(json: any): SlotAttachmentKeyframe {
+  public load(json: SlotAttachmentKeyframeJSON): SlotAttachmentKeyframe {
     super.load(json);
     this.name = loadString(json, "name", "");
     return this;
   }
 }
 
+type SlotTimelineJSON = {[key: string]: SlotKeyframeJSON[]};
+
 export class SlotTimeline extends Timeline {
   public color_keyframes: SlotColorKeyframe[];
   public attachment_keyframes: SlotAttachmentKeyframe[];
 
-  public load(json: any): SlotTimeline {
+  public load(json: SlotTimelineJSON): SlotTimeline {
     this.min_time = 0;
     this.max_time = 0;
     delete this.color_keyframes;
@@ -1602,16 +1844,16 @@ export class SlotTimeline extends Timeline {
       switch (key) {
         case "color":
           this.color_keyframes = [];
-          json[key].forEach((color: any): void => {
-            this.color_keyframes.push(new SlotColorKeyframe().load(color));
+          json[key].forEach((keyframe_json: SlotColorKeyframeJSON): void => {
+            this.color_keyframes.push(new SlotColorKeyframe().load(keyframe_json));
           });
           this.color_keyframes.sort(Keyframe.compare);
           this._expandKeyframes(this.color_keyframes);
           break;
         case "attachment":
           this.attachment_keyframes = [];
-          json[key].forEach((attachment: any): void => {
-            this.attachment_keyframes.push(new SlotAttachmentKeyframe().load(attachment));
+          json[key].forEach((keyframe_json: SlotAttachmentKeyframeJSON): void => {
+            this.attachment_keyframes.push(new SlotAttachmentKeyframe().load(keyframe_json));
           });
           this.attachment_keyframes.sort(Keyframe.compare);
           this._expandKeyframes(this.attachment_keyframes);
@@ -1626,6 +1868,8 @@ export class SlotTimeline extends Timeline {
   }
 }
 
+interface EventKeyframeJSON extends EventJSON, KeyframeJSON {}
+
 export class EventKeyframe extends Keyframe {
   public name: string = "";
   public int_value: number = 0;
@@ -1636,7 +1880,7 @@ export class EventKeyframe extends Keyframe {
     super();
   }
 
-  public load(json: any): EventKeyframe {
+  public load(json: EventKeyframeJSON): EventKeyframe {
     super.load(json);
     this.name = loadString(json, "name", "");
     if (typeof(json["int"]) === "number") {
@@ -1652,15 +1896,17 @@ export class EventKeyframe extends Keyframe {
   }
 }
 
+type EventTimelineJSON = EventKeyframeJSON[];
+
 export class EventTimeline extends Timeline {
   public event_keyframes: EventKeyframe[];
 
-  public load(json: any): EventTimeline {
+  public load(json: EventTimelineJSON): EventTimeline {
     this.min_time = 0;
     this.max_time = 0;
     this.event_keyframes = [];
-    json.forEach((event: any): void => {
-      this.event_keyframes.push(new EventKeyframe().load(event));
+    json.forEach((keyframe_json: EventKeyframeJSON): void => {
+      this.event_keyframes.push(new EventKeyframe().load(keyframe_json));
     });
     this.event_keyframes.sort(Keyframe.compare);
     this._expandKeyframes(this.event_keyframes);
@@ -1668,15 +1914,24 @@ export class EventTimeline extends Timeline {
   }
 }
 
+interface SlotOffsetJSON {
+  slot: string;
+  offset: number;
+}
+
 export class SlotOffset {
   public slot_key: string = "";
   public offset: number = 0;
 
-  public load(json: any): SlotOffset {
+  public load(json: SlotOffsetJSON): SlotOffset {
     this.slot_key = loadString(json, "slot", "");
     this.offset = loadInt(json, "offset", 0);
     return this;
   }
+}
+
+interface OrderKeyframeJSON extends KeyframeJSON {
+  offsets: SlotOffsetJSON[];
 }
 
 export class OrderKeyframe extends Keyframe {
@@ -1686,15 +1941,15 @@ export class OrderKeyframe extends Keyframe {
     super();
   }
 
-  public load(json: any): OrderKeyframe {
+  public load(json: OrderKeyframeJSON): OrderKeyframe {
     super.load(json);
     this.slot_offsets = [];
 
     Object.keys(json || {}).forEach((key: string): void => {
       switch (key) {
         case "offsets":
-          json[key].forEach((offset: any): void => {
-            this.slot_offsets.push(new SlotOffset().load(offset));
+          json[key].forEach((offset_json: SlotOffsetJSON): void => {
+            this.slot_offsets.push(new SlotOffset().load(offset_json));
           });
           break;
       }
@@ -1704,20 +1959,28 @@ export class OrderKeyframe extends Keyframe {
   }
 }
 
+type OrderTimelineJSON = OrderKeyframeJSON[];
+
 export class OrderTimeline extends Timeline {
   public order_keyframes: OrderKeyframe[];
 
-  public load(json: any): OrderTimeline {
+  public load(json: OrderTimelineJSON): OrderTimeline {
     this.min_time = 0;
     this.max_time = 0;
     this.order_keyframes = [];
-    json.forEach((order: any): void => {
-      this.order_keyframes.push(new OrderKeyframe().load(order));
+    json.forEach((keyframe_json: OrderKeyframeJSON): void => {
+      this.order_keyframes.push(new OrderKeyframe().load(keyframe_json));
     });
     this.order_keyframes.sort(Keyframe.compare);
     this._expandKeyframes(this.order_keyframes);
     return this;
   }
+}
+
+interface IkcKeyframeJSON extends KeyframeJSON {
+  curve?: CurveJSON;
+  mix?: number;
+  bendPositive?: boolean;
 }
 
 export class IkcKeyframe extends Keyframe {
@@ -1729,7 +1992,7 @@ export class IkcKeyframe extends Keyframe {
     super();
   }
 
-  public load(json: any): IkcKeyframe {
+  public load(json: IkcKeyframeJSON): IkcKeyframe {
     super.load(json);
     this.curve.load(json.curve);
     this.mix = loadFloat(json, "mix", 1);
@@ -1738,20 +2001,30 @@ export class IkcKeyframe extends Keyframe {
   }
 }
 
+type IkcTimelineJSON = IkcKeyframeJSON[];
+
 export class IkcTimeline extends Timeline {
   public ikc_keyframes: IkcKeyframe[];
 
-  public load(json: any): IkcTimeline {
+  public load(json: IkcTimelineJSON): IkcTimeline {
     this.min_time = 0;
     this.max_time = 0;
     this.ikc_keyframes = [];
-    json.forEach((ikc: any): void => {
-      this.ikc_keyframes.push(new IkcKeyframe().load(ikc));
+    json.forEach((keyframe_json: IkcKeyframeJSON): void => {
+      this.ikc_keyframes.push(new IkcKeyframe().load(keyframe_json));
     });
     this.ikc_keyframes.sort(Keyframe.compare);
     this._expandKeyframes(this.ikc_keyframes);
     return this;
   }
+}
+
+interface XfcKeyframeJSON extends KeyframeJSON {
+  curve?: CurveJSON;
+  translateMix?: number;
+  rotateMix?: number;
+  scaleMix?: number;
+  shearMix?: number;
 }
 
 export class XfcKeyframe extends Keyframe {
@@ -1765,7 +2038,7 @@ export class XfcKeyframe extends Keyframe {
     super();
   }
 
-  public load(json: any): XfcKeyframe {
+  public load(json: XfcKeyframeJSON): XfcKeyframe {
     super.load(json);
     this.curve.load(json.curve);
     this.position_mix = loadFloat(json, "translateMix", 1);
@@ -1776,20 +2049,26 @@ export class XfcKeyframe extends Keyframe {
   }
 }
 
+type XfcTimelineJSON = XfcKeyframeJSON[];
+
 export class XfcTimeline extends Timeline {
   public xfc_keyframes: XfcKeyframe[];
 
-  public load(json: any): XfcTimeline {
+  public load(json: XfcTimelineJSON): XfcTimeline {
     this.min_time = 0;
     this.max_time = 0;
     this.xfc_keyframes = [];
-    json.forEach((xfc: any): void => {
-      this.xfc_keyframes.push(new XfcKeyframe().load(xfc));
+    json.forEach((keyframe_json: XfcKeyframeJSON): void => {
+      this.xfc_keyframes.push(new XfcKeyframe().load(keyframe_json));
     });
     this.xfc_keyframes.sort(Keyframe.compare);
     this._expandKeyframes(this.xfc_keyframes);
     return this;
   }
+}
+
+interface PtcKeyframeJSON extends KeyframeJSON {
+  curve?: CurveJSON;
 }
 
 export class PtcKeyframe extends Keyframe {
@@ -1799,11 +2078,16 @@ export class PtcKeyframe extends Keyframe {
     super();
   }
 
-  public load(json: any): PtcKeyframe {
+  public load(json: PtcKeyframeJSON): PtcKeyframe {
     super.load(json);
     this.curve.load(json.curve);
     return this;
   }
+}
+
+interface PtcMixKeyframeJSON extends PtcKeyframeJSON {
+  translateMix?: number;
+  rotateMix?: number;
 }
 
 export class PtcMixKeyframe extends PtcKeyframe {
@@ -1814,12 +2098,16 @@ export class PtcMixKeyframe extends PtcKeyframe {
     super();
   }
 
-  public load(json: any): PtcMixKeyframe {
+  public load(json: PtcMixKeyframeJSON): PtcMixKeyframe {
     super.load(json);
     this.position_mix = loadFloat(json, "translateMix", 1);
     this.rotation_mix = loadFloat(json, "rotateMix", 1);
     return this;
   }
+}
+
+interface PtcSpacingKeyframeJSON extends PtcKeyframeJSON {
+  spacing?: number;
 }
 
 export class PtcSpacingKeyframe extends PtcKeyframe {
@@ -1829,11 +2117,15 @@ export class PtcSpacingKeyframe extends PtcKeyframe {
     super();
   }
 
-  public load(json: any): PtcSpacingKeyframe {
+  public load(json: PtcSpacingKeyframeJSON): PtcSpacingKeyframe {
     super.load(json);
     this.spacing = loadFloat(json, "spacing", 0);
     return this;
   }
+}
+
+interface PtcPositionKeyframeJSON extends PtcKeyframeJSON {
+  position?: number;
 }
 
 export class PtcPositionKeyframe extends PtcKeyframe {
@@ -1843,11 +2135,15 @@ export class PtcPositionKeyframe extends PtcKeyframe {
     super();
   }
 
-  public load(json: any): PtcPositionKeyframe {
+  public load(json: PtcPositionKeyframeJSON): PtcPositionKeyframe {
     super.load(json);
     this.position = loadFloat(json, "position", 0);
     return this;
   }
+}
+
+interface PtcRotationKeyframeJSON extends PtcKeyframeJSON {
+  rotation?: number;
 }
 
 export class PtcRotationKeyframe extends PtcKeyframe {
@@ -1857,11 +2153,18 @@ export class PtcRotationKeyframe extends PtcKeyframe {
     super();
   }
 
-  public load(json: any): PtcRotationKeyframe {
+  public load(json: PtcRotationKeyframeJSON): PtcRotationKeyframe {
     super.load(json);
     this.rotation.deg = loadFloat(json, "rotation", 0);
     return this;
   }
+}
+
+interface PtcTimelineJSON {
+  mix: PtcMixKeyframeJSON[];
+  spacing: PtcSpacingKeyframeJSON[];
+  position: PtcPositionKeyframeJSON[];
+  rotation: PtcRotationKeyframeJSON[];
 }
 
 export class PtcTimeline extends Timeline {
@@ -1870,7 +2173,7 @@ export class PtcTimeline extends Timeline {
   public ptc_position_keyframes: PtcPositionKeyframe[];
   public ptc_rotation_keyframes: PtcRotationKeyframe[];
 
-  public load(json: any): PtcTimeline {
+  public load(json: PtcTimelineJSON): PtcTimeline {
     this.min_time = 0;
     this.max_time = 0;
     delete this.ptc_mix_keyframes;
@@ -1882,32 +2185,32 @@ export class PtcTimeline extends Timeline {
       switch (key) {
         case "mix":
           this.ptc_mix_keyframes = [];
-          json[key].forEach((mix: any): void => {
-            this.ptc_mix_keyframes.push(new PtcMixKeyframe().load(mix));
+          json[key].forEach((keyframe_json: PtcMixKeyframeJSON): void => {
+            this.ptc_mix_keyframes.push(new PtcMixKeyframe().load(keyframe_json));
           });
           this.ptc_mix_keyframes.sort(Keyframe.compare);
           this._expandKeyframes(this.ptc_mix_keyframes);
           break;
         case "spacing":
           this.ptc_spacing_keyframes = [];
-          json[key].forEach((spacing: any): void => {
-            this.ptc_spacing_keyframes.push(new PtcSpacingKeyframe().load(spacing));
+          json[key].forEach((keyframe_json: PtcSpacingKeyframeJSON): void => {
+            this.ptc_spacing_keyframes.push(new PtcSpacingKeyframe().load(keyframe_json));
           });
           this.ptc_spacing_keyframes.sort(Keyframe.compare);
           this._expandKeyframes(this.ptc_spacing_keyframes);
           break;
         case "position":
           this.ptc_position_keyframes = [];
-          json[key].forEach((position: any): void => {
-            this.ptc_position_keyframes.push(new PtcPositionKeyframe().load(position));
+          json[key].forEach((keyframe_json: PtcPositionKeyframeJSON): void => {
+            this.ptc_position_keyframes.push(new PtcPositionKeyframe().load(keyframe_json));
           });
           this.ptc_position_keyframes.sort(Keyframe.compare);
           this._expandKeyframes(this.ptc_position_keyframes);
           break;
         case "rotation":
           this.ptc_rotation_keyframes = [];
-          json[key].forEach((rotation: any): void => {
-            this.ptc_rotation_keyframes.push(new PtcRotationKeyframe().load(rotation));
+          json[key].forEach((keyframe_json: PtcRotationKeyframeJSON): void => {
+            this.ptc_rotation_keyframes.push(new PtcRotationKeyframe().load(keyframe_json));
           });
           this.ptc_rotation_keyframes.sort(Keyframe.compare);
           this._expandKeyframes(this.ptc_rotation_keyframes);
@@ -1922,6 +2225,12 @@ export class PtcTimeline extends Timeline {
   }
 }
 
+interface FfdKeyframeJSON extends KeyframeJSON {
+  curve?: CurveJSON;
+  offset?: number;
+  vertices: number[];
+}
+
 export class FfdKeyframe extends Keyframe {
   public curve = new Curve();
   public offset = 0;
@@ -1931,7 +2240,7 @@ export class FfdKeyframe extends Keyframe {
     super();
   }
 
-  public load(json: any): FfdKeyframe {
+  public load(json: FfdKeyframeJSON): FfdKeyframe {
     super.load(json);
     this.curve.load(json.curve);
     this.offset = loadInt(json, "offset", 0);
@@ -1940,15 +2249,17 @@ export class FfdKeyframe extends Keyframe {
   }
 }
 
+type FfdTimelineJSON = FfdKeyframeJSON[];
+
 export class FfdTimeline extends Timeline {
   public ffd_keyframes: FfdKeyframe[];
 
-  public load(json: any): FfdTimeline {
+  public load(json: FfdTimelineJSON): FfdTimeline {
     this.min_time = 0;
     this.max_time = 0;
     this.ffd_keyframes = [];
-    json.forEach((ffd_keyframe: any): void => {
-      this.ffd_keyframes.push(new FfdKeyframe().load(ffd_keyframe));
+    json.forEach((keyframe_json: FfdKeyframeJSON): void => {
+      this.ffd_keyframes.push(new FfdKeyframe().load(keyframe_json));
     });
     this.ffd_keyframes.sort(Keyframe.compare);
     this._expandKeyframes(this.ffd_keyframes);
@@ -1956,52 +2267,52 @@ export class FfdTimeline extends Timeline {
   }
 }
 
+interface FfdAttachmentJSON extends FfdTimelineJSON {}
+
 export class FfdAttachment {
   public ffd_timeline: FfdTimeline = new FfdTimeline();
 
-  public load(json: any): FfdAttachment {
+  public load(json: FfdAttachmentJSON): FfdAttachment {
     this.ffd_timeline.load(json);
     return this;
   }
 }
 
-export class FfdSlot {
-  public ffd_attachments: {[key: string]: FfdAttachment} = {};
-  public ffd_attachment_keys: string[] = [];
+type FfdSlotJSON = {[key: string]: FfdAttachmentJSON};
 
-  public load(json: any): FfdSlot {
-    this.ffd_attachments = {};
-    this.ffd_attachment_keys = Object.keys(json || {});
-    this.ffd_attachment_keys.forEach((key: string): void => {
-      this.ffd_attachments[key] = new FfdAttachment().load(json[key]);
+export class FfdSlot {
+  public ffd_attachments: SpineMap<string, FfdAttachment> = new SpineMap<string, FfdAttachment>();
+
+  public load(json: FfdSlotJSON): FfdSlot {
+    this.ffd_attachments.clear();
+    Object.keys(json || {}).forEach((key: string): void => {
+      this.ffd_attachments.set(key, new FfdAttachment().load(json[key]));
     });
     return this;
   }
 
-  public iterateAttachments(callback: (ffd_attachment_key: string, ffd_attachment: FfdAttachment) => void): void {
-    this.ffd_attachment_keys.forEach((ffd_attachment_key: string): void => {
-      const ffd_attachment = this.ffd_attachments[ffd_attachment_key];
+  public iterateAttachments(callback: (ffd_attachment_key: string, ffd_attachment: FfdAttachment | undefined) => void): void {
+    this.ffd_attachments.forEach((ffd_attachment: FfdAttachment, ffd_attachment_key: string): void => {
       callback(ffd_attachment_key, ffd_attachment);
     });
   }
 }
 
-export class FfdSkin {
-  public ffd_slots: {[key: string]: FfdSlot} = {};
-  public ffd_slot_keys: string[] = [];
+type FfdSkinJSON = {[key: string]: FfdSlotJSON};
 
-  public load(json: any): FfdSkin {
-    this.ffd_slots = {};
-    this.ffd_slot_keys = Object.keys(json || {});
-    this.ffd_slot_keys.forEach((key: string): void => {
-      this.ffd_slots[key] = new FfdSlot().load(json[key]);
+export class FfdSkin {
+  public ffd_slots: SpineMap<string, FfdSlot> = new SpineMap<string, FfdSlot>();
+
+  public load(json: FfdSkinJSON): FfdSkin {
+    this.ffd_slots.clear();
+    Object.keys(json || {}).forEach((key: string): void => {
+      this.ffd_slots.set(key, new FfdSlot().load(json[key]));
     });
     return this;
   }
 
   public iterateAttachments(callback: (ffd_slot_key: string, ffd_slot: FfdSlot, ffd_attachment_key: string, ffd_attachment: FfdAttachment) => void): void {
-    this.ffd_slot_keys.forEach((ffd_slot_key: string): void => {
-      const ffd_slot = this.ffd_slots[ffd_slot_key];
+    this.ffd_slots.forEach((ffd_slot: FfdSlot, ffd_slot_key: string): void => {
       ffd_slot.iterateAttachments((ffd_attachment_key: string, ffd_attachment: FfdAttachment): void => {
         callback(ffd_slot_key, ffd_slot, ffd_attachment_key, ffd_attachment);
       });
@@ -2009,26 +2320,39 @@ export class FfdSkin {
   }
 }
 
+interface AnimationJSON {
+  bones: {[key: string]: BoneTimelineJSON};
+  slots: {[key: string]: SlotTimelineJSON};
+  events: EventTimelineJSON;
+  draworder: OrderTimelineJSON;
+  drawOrder: OrderTimelineJSON; // TODO: deprecate
+  ik: {[key: string]: IkcTimelineJSON};
+  transform: {[key: string]: XfcTimelineJSON};
+  paths: {[key: string]: PtcTimelineJSON};
+  deform: {[key: string]: FfdSkinJSON};
+  ffd: {[key: string]: FfdSkinJSON}; // TODO: deprecate
+}
+
 export class Animation extends Timeline {
   public name: string = "";
-  public bone_timeline_map: {[key: string]: BoneTimeline} = {};
-  public slot_timeline_map: {[key: string]: SlotTimeline} = {};
+  public bone_timeline_map: SpineMap<string, BoneTimeline> = new SpineMap<string, BoneTimeline>();
+  public slot_timeline_map: SpineMap<string, SlotTimeline> = new SpineMap<string, SlotTimeline>();
   public event_timeline: EventTimeline;
   public order_timeline: OrderTimeline;
-  public ikc_timeline_map: {[key: string]: IkcTimeline} = {};
-  public xfc_timeline_map: {[key: string]: XfcTimeline} = {};
-  public ptc_timeline_map: {[key: string]: PtcTimeline} = {};
-  public ffd_skins: {[key: string]: FfdSkin} = {};
+  public ikc_timeline_map: SpineMap<string, IkcTimeline> = new SpineMap<string, IkcTimeline>();
+  public xfc_timeline_map: SpineMap<string, XfcTimeline> = new SpineMap<string, XfcTimeline>();
+  public ptc_timeline_map: SpineMap<string, PtcTimeline> = new SpineMap<string, PtcTimeline>();
+  public ffd_skins: SpineMap<string, FfdSkin> = new SpineMap<string, FfdSkin>();
 
-  public load(json: any): Animation {
-    this.bone_timeline_map = {};
-    this.slot_timeline_map = {};
+  public load(json: AnimationJSON): Animation {
+    this.bone_timeline_map.clear();
+    this.slot_timeline_map.clear();
     delete this.event_timeline;
     delete this.event_timeline;
-    this.ikc_timeline_map = {};
-    this.xfc_timeline_map = {};
-    this.ptc_timeline_map = {};
-    this.ffd_skins = {};
+    this.ikc_timeline_map.clear();
+    this.xfc_timeline_map.clear();
+    this.ptc_timeline_map.clear();
+    this.ffd_skins.clear();
 
     this.min_time = 0;
     this.max_time = 0;
@@ -2037,12 +2361,12 @@ export class Animation extends Timeline {
       switch (key) {
         case "bones":
           Object.keys(json[key] || {}).forEach((bone_key: string): void => {
-            this._expandTimeline(this.bone_timeline_map[bone_key] = new BoneTimeline().load(json[key][bone_key]));
+            this._expandTimeline(this.bone_timeline_map.set(bone_key, new BoneTimeline().load(json[key][bone_key])));
           });
           break;
         case "slots":
           Object.keys(json[key] || {}).forEach((slot_key: string): void => {
-            this._expandTimeline(this.slot_timeline_map[slot_key] = new SlotTimeline().load(json[key][slot_key]));
+            this._expandTimeline(this.slot_timeline_map.set(slot_key, new SlotTimeline().load(json[key][slot_key])));
           });
           break;
         case "events":
@@ -2053,22 +2377,22 @@ export class Animation extends Timeline {
           break;
         case "ik":
           Object.keys(json[key] || {}).forEach((ikc_key: string): void => {
-            this._expandTimeline(this.ikc_timeline_map[ikc_key] = new IkcTimeline().load(json[key][ikc_key]));
+            this._expandTimeline(this.ikc_timeline_map.set(ikc_key, new IkcTimeline().load(json[key][ikc_key])));
           });
           break;
         case "transform":
           Object.keys(json[key] || {}).forEach((xfc_key: string): void => {
-            this._expandTimeline(this.xfc_timeline_map[xfc_key] = new XfcTimeline().load(json[key][xfc_key]));
+            this._expandTimeline(this.xfc_timeline_map.set(xfc_key, new XfcTimeline().load(json[key][xfc_key])));
           });
           break;
         case "paths":
           Object.keys(json[key] || {}).forEach((ptc_key: string): void => {
-            this._expandTimeline(this.ptc_timeline_map[ptc_key] = new PtcTimeline().load(json[key][ptc_key]));
+            this._expandTimeline(this.ptc_timeline_map.set(ptc_key, new PtcTimeline().load(json[key][ptc_key])));
           });
           break;
         case "deform": case "ffd":
           Object.keys(json[key] || {}).forEach((ffd_key: string): void => {
-            this.ffd_skins[ffd_key] = new FfdSkin().load(json[key][ffd_key]);
+            this.ffd_skins.set(ffd_key, new FfdSkin().load(json[key][ffd_key]));
           });
           break;
         default:
@@ -2081,6 +2405,14 @@ export class Animation extends Timeline {
   }
 }
 
+interface SkeletonJSON {
+  hash?: string;
+  spine?: string;
+  width?: number;
+  height?: number;
+  images?: string;
+}
+
 export class Skeleton {
   public hash: string = "";
   public spine: string = "";
@@ -2088,7 +2420,7 @@ export class Skeleton {
   public height: number = 0;
   public images: string = "";
 
-  public load(json: any): any {
+  public load(json: SkeletonJSON): Skeleton {
     this.hash = loadString(json, "hash", "");
     this.spine = loadString(json, "spine", "");
     this.width = loadInt(json, "width", 0);
@@ -2098,43 +2430,51 @@ export class Skeleton {
   }
 }
 
+interface DataJSON {
+  skeleton: SkeletonJSON;
+  bones: BoneJSON[];
+  ik: IkcJSON[];
+  transform: XfcJSON[];
+  path: PtcJSON[];
+  slots: SlotJSON[];
+  skins: {[key: string]: SkinJSON};
+  events: {[key: string]: EventJSON};
+  animations: {[key: string]: AnimationJSON};
+}
+
 export class Data {
   public name: string = "";
   public skeleton: Skeleton = new Skeleton();
-  public bones: {[key: string]: Bone} = {};
-  public bone_keys: string[] = [];
-  public ikcs: {[key: string]: Ikc} = {};
-  public ikc_keys: string[] = [];
-  public xfcs: {[key: string]: Xfc} = {};
-  public xfc_keys: string[] = [];
-  public ptcs: {[key: string]: Ptc} = {};
-  public ptc_keys: string[] = [];
-  public slots: {[key: string]: Slot} = {};
-  public slot_keys: string[] = [];
-  public skins: {[key: string]: Skin} = {};
-  public skin_keys: string[] = [];
-  public events: {[key: string]: Event} = {};
-  public event_keys: string[] = [];
-  public anims: {[key: string]: Animation} = {};
-  public anim_keys: string[] = [];
+  public bones: SpineMap<string, Bone> = new SpineMap<string, Bone>();
+  public ikcs: SpineMap<string, Ikc> = new SpineMap<string, Ikc>();
+  public xfcs: SpineMap<string, Xfc> = new SpineMap<string, Xfc>();
+  public ptcs: SpineMap<string, Ptc> = new SpineMap<string, Ptc>();
+  public slots: SpineMap<string, Slot> = new SpineMap<string, Slot>();
+  public skins: SpineMap<string, Skin> = new SpineMap<string, Skin>();
+  public events: SpineMap<string, Event> = new SpineMap<string, Event>();
+  public anims: SpineMap<string, Animation> = new SpineMap<string, Animation>();
 
-  public load(json: any): Data {
-    this.bones = {};
-    this.bone_keys = [];
-    this.ikcs = {};
-    this.ikc_keys = [];
-    this.xfcs = {};
-    this.xfc_keys = [];
-    this.ptcs = {};
-    this.ptc_keys = [];
-    this.slots = {};
-    this.slot_keys = [];
-    this.skins = {};
-    this.skin_keys = [];
-    this.events = {};
-    this.event_keys = [];
-    this.anims = {};
-    this.anim_keys = [];
+  public drop(): Data {
+    this.bones.clear();
+    this.ikcs.clear();
+    this.xfcs.clear();
+    this.ptcs.clear();
+    this.slots.clear();
+    this.skins.clear();
+    this.events.clear();
+    this.anims.clear();
+    return this;
+  }
+
+  public load(json: DataJSON): Data {
+    this.bones.clear();
+    this.ikcs.clear();
+    this.xfcs.clear();
+    this.ptcs.clear();
+    this.slots.clear();
+    this.skins.clear();
+    this.events.clear();
+    this.anims.clear();
 
     Object.keys(json || {}).forEach((key: string): void => {
       switch (key) {
@@ -2142,79 +2482,63 @@ export class Data {
           this.skeleton.load(json[key]);
           break;
         case "bones":
-          const json_bones: any[] = json[key];
-          json_bones.forEach((bone: any, bone_index: number): void => {
-            this.bones[bone.name] = new Bone().load(bone);
-            this.bone_keys[bone_index] = bone.name;
+          json[key].forEach((bone_json: BoneJSON, bone_index: number): void => {
+            this.bones.set(bone_json.name, new Bone().load(bone_json));
           });
           break;
         case "ik":
-          const json_ik: any[] = json[key];
-          json_ik.forEach((ikc: any, ikc_index: number): void => {
-            this.ikcs[ikc.name] = new Ikc().load(ikc);
-            this.ikc_keys[ikc_index] = ikc.name;
+          json[key].forEach((ikc_json: IkcJSON, ikc_index: number): void => {
+            this.ikcs.set(ikc_json.name, new Ikc().load(ikc_json));
           });
           // sort by order
-          this.ikc_keys.sort((a: string, b: string): number => {
-            const ikc_a: Ikc = this.ikcs[a];
-            const ikc_b: Ikc = this.ikcs[b];
-            return ikc_a.order - ikc_b.order;
+          this.ikcs.keys.sort((a: string, b: string): number => {
+            const ikc_a: Ikc | undefined = this.ikcs.get(a);
+            const ikc_b: Ikc | undefined = this.ikcs.get(b);
+            return (ikc_a && ikc_a.order || 0) - (ikc_b && ikc_b.order || 0);
           });
           break;
         case "transform":
-          const json_transform: any[] = json[key];
-          json_transform.forEach((xfc: any, xfc_index: number): void => {
-            this.xfcs[xfc.name] = new Xfc().load(xfc);
-            this.xfc_keys[xfc_index] = xfc.name;
+          json[key].forEach((xfc_json: XfcJSON, xfc_index: number): void => {
+            this.xfcs.set(xfc_json.name, new Xfc().load(xfc_json));
           });
           // sort by order
-          this.xfc_keys.sort((a: string, b: string): number => {
-            const xfc_a: Xfc = this.xfcs[a];
-            const xfc_b: Xfc = this.xfcs[b];
-            return xfc_a.order - xfc_b.order;
+          this.xfcs.keys.sort((a: string, b: string): number => {
+            const xfc_a: Xfc | undefined = this.xfcs.get(a);
+            const xfc_b: Xfc | undefined = this.xfcs.get(b);
+            return (xfc_a && xfc_a.order || 0) - (xfc_b && xfc_b.order || 0);
           });
           break;
         case "path":
-          const json_path: any[] = json[key];
-          json_path.forEach((ptc: any, ptc_index: number): void => {
-            this.ptcs[ptc.name] = new Ptc().load(ptc);
-            this.ptc_keys[ptc_index] = ptc.name;
+          json[key].forEach((ptc_json: PtcJSON, ptc_index: number): void => {
+            this.ptcs.set(ptc_json.name, new Ptc().load(ptc_json));
           });
           // sort by order
-          this.ptc_keys.sort((a: string, b: string): number => {
-            const ptc_a: Ptc = this.ptcs[a];
-            const ptc_b: Ptc = this.ptcs[b];
-            return ptc_a.order - ptc_b.order;
+          this.ptcs.keys.sort((a: string, b: string): number => {
+            const ptc_a: Ptc | undefined = this.ptcs.get(a);
+            const ptc_b: Ptc | undefined = this.ptcs.get(b);
+            return (ptc_a && ptc_a.order || 0) - (ptc_b && ptc_b.order || 0);
           });
           break;
         case "slots":
-          const json_slots: any[] = json[key];
-          json_slots.forEach((slot: any, slot_index: number): void => {
-            this.slots[slot.name] = new Slot().load(slot);
-            this.slot_keys[slot_index] = slot.name;
+          json[key].forEach((slot_json: SlotJSON, slot_index: number): void => {
+            this.slots.set(slot_json.name, new Slot().load(slot_json));
           });
           break;
         case "skins":
-          const json_skins: any = json[key] || {};
-          this.skin_keys = Object.keys(json_skins);
-          this.skin_keys.forEach((skin_key: string): void => {
-            const skin = this.skins[skin_key] = new Skin().load(json_skins[skin_key]);
+          Object.keys(json[key]).forEach((skin_key: string): void => {
+            const skin: Skin = this.skins.set(skin_key, new Skin().load(json[key][skin_key]));
             skin.name = skin.name || skin_key;
           });
           break;
         case "events":
-          const json_events: any = json[key] || {};
-          this.event_keys = Object.keys(json_events);
-          this.event_keys.forEach((event_key: string): void => {
-            const event: Event = this.events[event_key] = new Event().load(json_events[event_key]);
+          Object.keys(json[key]).forEach((event_key: string): void => {
+            const event: Event = this.events.set(event_key, new Event().load(json[key][event_key]));
             event.name = event.name || event_key;
           });
           break;
         case "animations":
-          const json_animations: any = json[key] || {};
-          this.anim_keys = Object.keys(json_animations);
-          this.anim_keys.forEach((anim_key: string): void => {
-            const anim: Animation = this.anims[anim_key] = new Animation().load(json_animations[anim_key]);
+          Object.keys(json[key]).forEach((anim_key: string): void => {
+            const anim: Animation = this.anims.set(anim_key, new Animation().load(json[key][anim_key]));
             anim.name = anim.name || anim_key;
           });
           break;
@@ -2231,75 +2555,72 @@ export class Data {
     return this;
   }
 
-  public loadSkeleton(json: any): Data {
+  public loadSkeleton(json: SkeletonJSON): Data {
     this.skeleton.load(json);
     return this;
   }
 
-  public loadEvent(name: string, json: any): Data {
-    const event: Event = this.events[name] = new Event().load(json);
+  public loadEvent(name: string, json: EventJSON): Data {
+    const event: Event = new Event().load(json);
     event.name = event.name || name;
+    this.events.set(name, event);
     return this;
   }
 
-  public loadAnimation(name: string, json: any): Data {
-    const anim = this.anims[name] = new Animation().load(json);
+  public loadAnimation(name: string, json: AnimationJSON): Data {
+    const anim: Animation = new Animation().load(json);
     anim.name = anim.name || name;
+    this.anims.set(name, anim);
     return this;
   }
 
-  public getSkins(): {[key: string]: Skin} {
+  public getSkins(): SpineMap<string, Skin> {
     return this.skins;
   }
 
-  public getEvents(): {[key: string]: Event} {
+  public getEvents(): SpineMap<string, Event> {
     return this.events;
   }
 
-  public getAnims(): {[key: string]: Animation} {
+  public getAnims(): SpineMap<string, Animation> {
     return this.anims;
   }
 
   public iterateBones(callback: (bone_key: string, bone: Bone) => void): void {
-    this.bone_keys.forEach((bone_key: string): void => {
-      const data_bone: Bone = this.bones[bone_key];
+    this.bones.forEach((data_bone: Bone, bone_key: string): void => {
       callback(bone_key, data_bone);
     });
   }
 
-  public iterateAttachments(skin_key: string, callback: (slot_key: string, data_slot: Slot, skin_slot: SkinSlot, attachment_key: string, attachment: Attachment) => void): void {
-    const skin: Skin = this.skins[skin_key];
-    const default_skin: Skin = this.skins["default"];
-    this.slot_keys.forEach((slot_key: string): void => {
-      const data_slot: Slot = this.slots[slot_key];
-      const skin_slot: SkinSlot = (skin && skin.slots[slot_key]) || default_skin.slots[slot_key];
-      let attachment: Attachment = skin_slot && skin_slot.attachments[data_slot.attachment_key];
+  public iterateAttachments(skin_key: string, callback: (slot_key: string, data_slot: Slot, skin_slot: SkinSlot | undefined, attachment_key: string, attachment: Attachment | undefined) => void): void {
+    const skin: Skin | undefined = this.skins.get(skin_key);
+    const default_skin: Skin | undefined = this.skins.get("default");
+    this.slots.forEach((data_slot: Slot, slot_key: string) => {
+      const skin_slot: SkinSlot | undefined = (skin && skin.slots.get(slot_key)) || (default_skin && default_skin.slots.get(slot_key));
+      let attachment: Attachment | undefined = skin_slot && skin_slot.attachments.get(data_slot.attachment_key);
       let attachment_key: string = (attachment && attachment.name) || data_slot.attachment_key;
       if (attachment && (attachment.type === "linkedmesh")) {
-        attachment_key = attachment && (<LinkedMeshAttachment>attachment).parent_key;
-        attachment = skin_slot && skin_slot.attachments[attachment_key];
+        attachment_key = (<LinkedMeshAttachment>attachment).parent_key;
+        attachment = skin_slot && skin_slot.attachments.get(attachment_key);
       }
       callback(slot_key, data_slot, skin_slot, attachment_key, attachment);
     });
   }
 
   public iterateSkins(callback: (skin_key: string, skin: Skin) => void): void {
-    this.skin_keys.forEach((skin_key: string): void => {
-      const skin: Skin = this.skins[skin_key];
+    this.skins.forEach((skin: Skin, skin_key: string): void => {
       callback(skin_key, skin);
     });
   }
 
   public iterateEvents(callback: (event_key: string, event: Event) => void): void {
-    this.event_keys.forEach((event_key: string): void => {
-      const event: Event = this.events[event_key];
+    this.events.forEach((event: Event, event_key: string): void => {
       callback(event_key, event);
     });
   }
 
   public iterateAnims(callback: (anim_key: string, anim: Animation) => void): void {
-    this.anim_keys.forEach((anim_key: string): void => {
-      const anim: Animation = this.anims[anim_key];
+    this.anims.forEach((anim: Animation, anim_key: string): void => {
       callback(anim_key, anim);
     });
   }
@@ -2315,26 +2636,31 @@ export class Pose {
   public wrapped_min: boolean = false;
   public wrapped_max: boolean = false;
   public dirty: boolean = true;
-  public bones: {[key: string]: Bone} = {};
-  public bone_keys: string[] = [];
-  public slots: {[key: string]: Slot} = {};
-  public slot_keys: string[] = [];
+  public bones: SpineMap<string, Bone> = new SpineMap<string, Bone>();
+  public slots: SpineMap<string, Slot> = new SpineMap<string, Slot>();
   public events: Event[] = [];
 
   constructor(data: Data) {
     this.data = data;
   }
 
+  public drop(): Pose {
+    this.bones.clear();
+    this.slots.clear();
+    this.events.length = 0;
+    return this;
+  }
+
   public curSkel(): Skeleton {
     return this.data.skeleton;
   }
 
-  public getSkins(): {[key: string]: Skin} {
+  public getSkins(): SpineMap<string, Skin> {
     return this.data.skins;
   }
 
-  public curSkin(): Skin {
-    return this.data.skins[this.skin_key];
+  public curSkin(): Skin | undefined {
+    return this.data.skins.get(this.skin_key);
   }
 
   public getSkin(): string {
@@ -2347,16 +2673,16 @@ export class Pose {
     }
   }
 
-  public getAnims(): {[key: string]: Animation} {
+  public getAnims(): SpineMap<string, Animation> {
     return this.data.anims;
   }
 
-  public curAnim(): Animation {
-    return this.data.anims[this.anim_key];
+  public curAnim(): Animation | undefined {
+    return this.data.anims.get(this.anim_key);
   }
 
   public curAnimLength(): number {
-    const anim: Animation = this.data.anims[this.anim_key];
+    const anim: Animation | undefined = this.data.anims.get(this.anim_key);
     return (anim && anim.length) || 0;
   }
 
@@ -2367,7 +2693,7 @@ export class Pose {
   public setAnim(anim_key: string): void {
     if (this.anim_key !== anim_key) {
       this.anim_key = anim_key;
-      const anim: Animation = this.data.anims[this.anim_key];
+      const anim: Animation | undefined = this.data.anims.get(this.anim_key);
       if (anim) {
         this.time = wrap(this.time, anim.min_time, anim.max_time);
       }
@@ -2382,7 +2708,7 @@ export class Pose {
   }
 
   public setTime(time: number): void {
-    const anim: Animation = this.data.anims[this.anim_key];
+    const anim: Animation | undefined = this.data.anims.get(this.anim_key);
     if (anim) {
       time = wrap(time, anim.min_time, anim.max_time);
     }
@@ -2409,7 +2735,7 @@ export class Pose {
     this.prev_time = this.time; // save previous time
     this.time += this.elapsed_time; // accumulate elapsed time
 
-    const anim: Animation = this.data.anims[this.anim_key];
+    const anim: Animation | undefined = this.data.anims.get(this.anim_key);
     this.wrapped_min = false;
     this.wrapped_max = false;
     if (anim) {
@@ -2428,16 +2754,15 @@ export class Pose {
     this.elapsed_time = 0; // reset elapsed time for next strike
   }
 
-  private _strikeBones(anim: Animation): void {
-    this.data.bone_keys.forEach((bone_key: string): void => {
-      const data_bone: Bone = this.data.bones[bone_key];
-      const pose_bone: Bone = this.bones[bone_key] || (this.bones[bone_key] = new Bone());
+  private _strikeBones(anim: Animation | undefined): void {
+    this.data.bones.forEach((data_bone: Bone, bone_key: string): void => {
+      const pose_bone: Bone = this.bones.get(bone_key) || this.bones.set(bone_key, new Bone());
 
       // start with a copy of the data bone
       pose_bone.copy(data_bone);
 
       // tween anim bone if keyframes are available
-      const bone_timeline: BoneTimeline = anim && anim.bone_timeline_map[bone_key];
+      const bone_timeline: BoneTimeline | undefined = anim && anim.bone_timeline_map.get(bone_key);
       if (bone_timeline) {
         Keyframe.evaluate(bone_timeline.position_keyframes, this.time, (keyframe0: BonePositionKeyframe, keyframe1: BonePositionKeyframe, k: number) => {
           const pct: number = keyframe0.curve.evaluate(k);
@@ -2464,21 +2789,21 @@ export class Pose {
       }
     });
 
-    this.bone_keys = this.data.bone_keys;
-
     this.iterateBones((bone_key: string, bone: Bone): void => {
       Bone.flatten(bone, this.bones);
     });
   }
 
-  private _strikeIkcs(anim: Animation): void {
-    this.data.ikc_keys.forEach((ikc_key: string): void => {
-      const ikc: Ikc = this.data.ikcs[ikc_key];
+  private _strikeIkcs(anim: Animation | undefined): void {
+    this.data.ikcs.forEach((ikc: Ikc, ikc_key: string): void => {
+      const ikc_target: Bone | undefined = this.bones.get(ikc.target_key);
+      if (!ikc_target) return;
+      Bone.flatten(ikc_target, this.bones);
 
       let ikc_mix: number = ikc.mix;
       let ikc_bend_positive: boolean = ikc.bend_positive;
 
-      const ikc_timeline: IkcTimeline = anim && anim.ikc_timeline_map[ikc_key];
+      const ikc_timeline: IkcTimeline | undefined = anim && anim.ikc_timeline_map.get(ikc_key);
       if (ikc_timeline) {
         Keyframe.evaluate(ikc_timeline.ikc_keyframes, this.time, (keyframe0: IkcKeyframe, keyframe1: IkcKeyframe, k: number) => {
           ikc_mix = tween(keyframe0.mix, keyframe1.mix, keyframe0.curve.evaluate(k));
@@ -2494,15 +2819,13 @@ export class Pose {
         return;
       }
 
-      const target: Bone = this.bones[ikc.target_key];
-      Bone.flatten(target, this.bones);
-
       switch (ikc.bone_keys.length) {
         case 1: {
-          const bone: Bone = this.bones[ikc.bone_keys[0]];
+          const bone: Bone | undefined = this.bones.get(ikc.bone_keys[0]);
+          if (!bone) return;
           Bone.flatten(bone, this.bones);
-          let a1: number = Math.atan2(target.world_space.position.y - bone.world_space.position.y, target.world_space.position.x - bone.world_space.position.x);
-          const bone_parent: Bone = this.bones[bone.parent_key];
+          let a1: number = Math.atan2(ikc_target.world_space.position.y - bone.world_space.position.y, ikc_target.world_space.position.x - bone.world_space.position.x);
+          const bone_parent: Bone | undefined = this.bones.get(bone.parent_key);
           if (bone_parent) {
             Bone.flatten(bone_parent, this.bones);
             if (Matrix.determinant(bone_parent.world_space.scale) < 0) {
@@ -2515,9 +2838,11 @@ export class Pose {
           break;
         }
         case 2: {
-          const parent: Bone = this.bones[ikc.bone_keys[0]];
+          const parent: Bone | undefined = this.bones.get(ikc.bone_keys[0]);
+          if (!parent) return;
           Bone.flatten(parent, this.bones);
-          const child: Bone = this.bones[ikc.bone_keys[1]];
+          const child: Bone | undefined = this.bones.get(ikc.bone_keys[1]);
+          if (!child) return;
           Bone.flatten(child, this.bones);
           ///const px: number = parent.local_space.position.x;
           ///const py: number = parent.local_space.position.y;
@@ -2539,9 +2864,9 @@ export class Pose {
             csx = -csx;
             offset2 = Math.PI;
           }
-          const t: Vector = Vector.copy(target.world_space.position, new Vector());
+          const t: Vector = Vector.copy(ikc_target.world_space.position, new Vector());
           const d: Vector = Vector.copy(child.world_space.position, new Vector());
-          const pp: Bone = this.bones[parent.parent_key];
+          const pp: Bone | undefined = this.bones.get(parent.parent_key);
           if (pp) {
             Bone.flatten(pp, this.bones);
             Space.untransform(pp.world_space, t, t);
@@ -2623,16 +2948,17 @@ export class Pose {
     });
   }
 
-  private _strikeXfcs(anim: Animation): void {
-    this.data.xfc_keys.forEach((xfc_key: string): void => {
-      const xfc: Xfc = this.data.xfcs[xfc_key];
+  private _strikeXfcs(anim: Animation | undefined): void {
+    this.data.xfcs.forEach((xfc: Xfc, xfc_key: string): void => {
+      const xfc_target: Bone | undefined = this.bones.get(xfc.target_key);
+      if (!xfc_target) return;
 
       let xfc_position_mix: number = xfc.position_mix;
       let xfc_rotation_mix: number = xfc.rotation_mix;
       let xfc_scale_mix: number = xfc.scale_mix;
       let xfc_shear_mix: number = xfc.shear_mix;
 
-      const xfc_timeline: XfcTimeline = anim && anim.xfc_timeline_map[xfc_key];
+      const xfc_timeline: XfcTimeline | undefined = anim && anim.xfc_timeline_map.get(xfc_key);
       if (xfc_timeline) {
         Keyframe.evaluate(xfc_timeline.xfc_keyframes, this.time, (keyframe0: XfcKeyframe, keyframe1: XfcKeyframe, k: number) => {
           const pct: number = keyframe0.curve.evaluate(k);
@@ -2643,7 +2969,6 @@ export class Pose {
         });
       }
 
-      const xfc_target: Bone = this.bones[xfc.target_key];
       const xfc_position: Position = xfc.position;
       const xfc_rotation: Rotation = xfc.rotation;
       const xfc_scale: Scale = xfc.scale;
@@ -2656,7 +2981,8 @@ export class Pose {
       ///let offsetShearY = this.data.offsetShearY * degRadReflect;
 
       xfc.bone_keys.forEach((bone_key: string) => {
-        const xfc_bone: Bone = this.bones[bone_key];
+        const xfc_bone: Bone | undefined = this.bones.get(bone_key);
+        if (!xfc_bone) return;
 
         if (xfc_position_mix !== 0) {
           ///let temp = this.temp;
@@ -2704,16 +3030,15 @@ export class Pose {
     });
   }
 
-  private _strikeSlots(anim: Animation): void {
-    this.data.slot_keys.forEach((slot_key: string): void => {
-      const data_slot: Slot = this.data.slots[slot_key];
-      const pose_slot: Slot = this.slots[slot_key] || (this.slots[slot_key] = new Slot());
+  private _strikeSlots(anim: Animation | undefined): void {
+    this.data.slots.forEach((data_slot: Slot, slot_key: string): void => {
+      const pose_slot: Slot = this.slots.get(slot_key) || this.slots.set(slot_key, new Slot());
 
       // start with a copy of the data slot
       pose_slot.copy(data_slot);
 
       // tween anim slot if keyframes are available
-      const slot_timeline: SlotTimeline = anim && anim.slot_timeline_map[slot_key];
+      const slot_timeline: SlotTimeline | undefined = anim && anim.slot_timeline_map.get(slot_key);
       if (slot_timeline) {
         Keyframe.evaluate(slot_timeline.color_keyframes, this.time, (keyframe0: SlotColorKeyframe, keyframe1: SlotColorKeyframe, k: number) => {
           keyframe0.color.tween(keyframe1.color, keyframe0.curve.evaluate(k), pose_slot.color);
@@ -2726,35 +3051,33 @@ export class Pose {
       }
     });
 
-    this.slot_keys = this.data.slot_keys;
+    this.data.slots.keys.forEach((key: string, index: number) => { this.slots.keys[index] = key; });
 
-    if (anim && anim.order_timeline) {
-      Keyframe.evaluate(anim.order_timeline.order_keyframes, this.time, (keyframe0: OrderKeyframe, keyframe1: OrderKeyframe, k: number) => {
-        this.slot_keys = this.data.slot_keys.slice(0); // copy array before reordering
+    const order_timeline: OrderTimeline | undefined = anim && anim.order_timeline;
+    if (order_timeline) {
+      Keyframe.evaluate(order_timeline.order_keyframes, this.time, (keyframe0: OrderKeyframe, keyframe1: OrderKeyframe, k: number) => {
         keyframe0.slot_offsets.forEach((slot_offset: SlotOffset): void => {
-          const slot_index: number = this.slot_keys.indexOf(slot_offset.slot_key);
+          const slot_index: number = this.slots.keys.indexOf(slot_offset.slot_key);
           if (slot_index !== -1) {
             // delete old position
-            this.slot_keys.splice(slot_index, 1);
+            this.slots.keys.splice(slot_index, 1);
             // insert new position
-            this.slot_keys.splice(slot_index + slot_offset.offset, 0, slot_offset.slot_key);
+            this.slots.keys.splice(slot_index + slot_offset.offset, 0, slot_offset.slot_key);
           }
         });
       });
     }
   }
 
-  private _strikePtcs(anim: Animation): void {
-    const skin: Skin = this.data.skins[this.skin_key];
-    const default_skin: Skin = this.data.skins["default"];
+  private _strikePtcs(anim: Animation | undefined): void {
+    const skin: Skin | undefined = this.data.skins.get(this.skin_key);
+    const default_skin: Skin | undefined = this.data.skins.get("default");
 
-    this.data.ptc_keys.forEach((ptc_key: string): void => {
-      const ptc: Ptc = this.data.ptcs[ptc_key];
-
+    this.data.ptcs.forEach((ptc: Ptc, ptc_key: string): void => {
       const slot_key: string = ptc.target_key;
-      const slot: Slot = this.slots[slot_key];
-      const skin_slot: SkinSlot = (skin && skin.slots[slot_key]) || default_skin.slots[slot_key];
-      const ptc_target: Attachment = skin_slot && skin_slot.attachments[slot.attachment_key];
+      const slot: Slot | undefined = this.slots.get(slot_key);
+      const skin_slot: SkinSlot | undefined = (skin && skin.slots.get(slot_key)) || (default_skin && default_skin.slots.get(slot_key));
+      const ptc_target: Attachment | undefined = slot && skin_slot && skin_slot.attachments.get(slot.attachment_key);
 
       if (!(ptc_target instanceof PathAttachment)) return;
 
@@ -2769,10 +3092,10 @@ export class Pose {
       let ptc_rotation_mix: number = ptc.rotation_mix;
       const ptc_rotation: Rotation = ptc.rotation;
 
-      const ptc_timeline: PtcTimeline = anim && anim.ptc_timeline_map[ptc_key];
+      const ptc_timeline: PtcTimeline | undefined = anim && anim.ptc_timeline_map.get(ptc_key);
       if (ptc_timeline) {
         Keyframe.evaluate(ptc_timeline.ptc_mix_keyframes, this.time, (keyframe0: PtcMixKeyframe, keyframe1: PtcMixKeyframe, k: number) => {
-          const pct = keyframe0.curve.evaluate(k);
+          const pct: number = keyframe0.curve.evaluate(k);
           ptc_position_mix = tween(keyframe0.position_mix, keyframe1.position_mix, pct);
           ptc_rotation_mix = tween(keyframe0.rotation_mix, keyframe1.rotation_mix, pct);
         });
@@ -2791,7 +3114,7 @@ export class Pose {
       }
 
       ptc.bone_keys.forEach((bone_key: string): void => {
-        const ptc_bone: Bone = this.bones[bone_key];
+        const ptc_bone: Bone | undefined = this.bones.get(bone_key);
 
         if (!ptc_bone) return;
 
@@ -2820,13 +3143,13 @@ export class Pose {
     });
   }
 
-  private _strikeEvents(anim: Animation): void {
+  private _strikeEvents(anim: Animation | undefined): void {
     this.events.length = 0;
 
     if (anim && anim.event_timeline) {
       const make_event = (event_keyframe: EventKeyframe): Event => {
         const pose_event: Event = new Event();
-        const data_event: Event = this.data.events[event_keyframe.name];
+        const data_event: Event | undefined = this.data.events.get(event_keyframe.name);
         if (data_event) {
           pose_event.copy(data_event);
         }
@@ -2889,23 +3212,21 @@ export class Pose {
   }
 
   public iterateBones(callback: (bone_key: string, bone: Bone) => void): void {
-    this.bone_keys.forEach((bone_key: string): void => {
-      const bone: Bone = this.bones[bone_key];
+    this.bones.forEach((bone: Bone, bone_key: string): void => {
       callback(bone_key, bone);
     });
   }
 
-  public iterateAttachments(callback: (slot_key: string, pose_slot: Slot, skin_slot: SkinSlot, attachment_key: string, attachment: Attachment) => void): void {
-    const skin: Skin = this.data.skins[this.skin_key];
-    const default_skin: Skin = this.data.skins["default"];
-    this.slot_keys.forEach((slot_key: string): void => {
-      const pose_slot: Slot = this.slots[slot_key];
-      const skin_slot: SkinSlot = (skin && skin.slots[slot_key]) || default_skin.slots[slot_key];
-      let attachment: Attachment = skin_slot && skin_slot.attachments[pose_slot.attachment_key];
+  public iterateAttachments(callback: (slot_key: string, pose_slot: Slot, skin_slot: SkinSlot | undefined, attachment_key: string, attachment: Attachment | undefined) => void): void {
+    const skin: Skin | undefined = this.data.skins.get(this.skin_key);
+    const default_skin: Skin | undefined = this.data.skins.get("default");
+    this.slots.forEach((pose_slot: Slot, slot_key: string): void => {
+      const skin_slot: SkinSlot | undefined = (skin && skin.slots.get(slot_key)) || (default_skin && default_skin.slots.get(slot_key));
+      let attachment: Attachment | undefined = skin_slot && skin_slot.attachments.get(pose_slot.attachment_key);
       let attachment_key: string = (attachment && attachment.name) || pose_slot.attachment_key;
       if (attachment && (attachment.type === "linkedmesh")) {
-        attachment_key = attachment && (<LinkedMeshAttachment>attachment).parent_key;
-        attachment = skin_slot && skin_slot.attachments[attachment_key];
+        attachment_key = (<LinkedMeshAttachment>attachment).parent_key;
+        attachment = skin_slot && skin_slot.attachments.get(attachment_key);
       }
       callback(slot_key, pose_slot, skin_slot, attachment_key, attachment);
     });

@@ -2,6 +2,7 @@
   "compilerOptions": {
     "target": "es5",
     "module": "system",
+    "lib": [ "ES6" ],
     "inlineSourceMap": true,
     "noImplicitAny": true,
     "noImplicitReturns": true,
