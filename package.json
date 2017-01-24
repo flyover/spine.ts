@@ -12,6 +12,7 @@
   "devDependencies": {},
   "scripts": {
     "build": "tsc",
+    "build-demo": "tsc -p demo",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
