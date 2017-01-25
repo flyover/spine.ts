@@ -214,15 +214,8 @@ export class RenderWebGL {
     spine_pose.iterateAttachments((slot_key: string, slot: Spine.Slot, skin_slot: Spine.SkinSlot, attachment_key: string, attachment: Spine.Attachment): void => {
       if (!attachment) { return; }
       if (attachment.type === "boundingbox") { return; }
-      const site: Atlas.Site | null = atlas_data && atlas_data.sites[attachment.path || attachment.name || attachment_key];
-      const page: Atlas.Page | null = site && site.page;
-      const image_key: string = (page && page.name) || attachment.path || attachment.name || attachment_key;
-      const texture: RenderTexture | undefined = this.textures.get(image_key);
-      if (!texture) { return; }
       mat4x4Identity(this.modelview);
       mat3x3Identity(this.texmatrix);
-      mat3x3ApplyAtlasPageTexcoord(this.texmatrix, page);
-      mat3x3ApplyAtlasSiteTexcoord(this.texmatrix, site);
       vec4CopyColor(this.color, slot.color);
       this.color[3] *= alpha;
       gl.enable(gl.BLEND);
@@ -238,7 +231,7 @@ export class RenderWebGL {
       const render_slot: RenderSlot | undefined = (render_skin && render_skin.slot_map.get(slot_key)) || (render_skin_default && render_skin_default.slot_map.get(slot_key));
       const render_attachment: RenderAttachment | undefined = render_slot && render_slot.attachment_map.get(attachment_key);
       if (render_attachment) {
-        render_attachment.drawPose(spine_pose, spine_pose.skin_key, slot_key, slot, attachment_key, attachment, texture, site);
+        render_attachment.drawPose(spine_pose, atlas_data, spine_pose.skin_key, slot_key, slot, attachment_key, attachment);
       }
     });
     this.color[3] = alpha;
@@ -260,7 +253,7 @@ class RenderSlot {
 interface RenderAttachment {
   loadData(spine_data: Spine.Data, skin_key: string, slot_key: string, attachment_key: string, attachment: Spine.Attachment): RenderAttachment;
   dropData(spine_data: Spine.Data, skin_key: string, slot_key: string, attachment_key: string, attachment: Spine.Attachment): RenderAttachment;
-  drawPose(spine_pose: Spine.Pose, skin_key: string, slot_key: string, slot: Spine.Slot, attachment_key: string, attachment: Spine.Attachment, texture: RenderTexture, site: Atlas.Site | null): void;
+  drawPose(spine_pose: Spine.Pose, atlas_data: Atlas.Data | null, skin_key: string, slot_key: string, slot: Spine.Slot, attachment_key: string, attachment: Spine.Attachment): void;
 }
 
 class RenderRegionAttachment implements RenderAttachment {
@@ -278,9 +271,16 @@ class RenderRegionAttachment implements RenderAttachment {
     return this;
   }
 
-  drawPose(spine_pose: Spine.Pose, skin_key: string, slot_key: string, slot: Spine.Slot, attachment_key: string, attachment: Spine.RegionAttachment, texture: RenderTexture, site: Atlas.Site | null): void {
+  drawPose(spine_pose: Spine.Pose, atlas_data: Atlas.Data | null, skin_key: string, slot_key: string, slot: Spine.Slot, attachment_key: string, attachment: Spine.RegionAttachment): void {
     const gl: WebGLRenderingContext = this.render.gl;
     const bone: Spine.Bone | undefined = spine_pose.bones.get(slot.bone_key);
+    const site: Atlas.Site | null = atlas_data && atlas_data.sites[attachment.path || attachment.name || attachment_key];
+    const page: Atlas.Page | null = site && site.page;
+    const image_key: string = (page && page.name) || attachment.path || attachment.name || attachment_key;
+    const texture: RenderTexture | undefined = this.render.textures.get(image_key);
+    if (!texture) { return; }
+    mat3x3ApplyAtlasPageTexcoord(this.render.texmatrix, page);
+    mat3x3ApplyAtlasSiteTexcoord(this.render.texmatrix, site);
     bone && mat4x4ApplySpace(this.render.modelview, bone.world_space);
     mat4x4ApplySpace(this.render.modelview, attachment.local_space);
     mat4x4Scale(this.render.modelview, attachment.width / 2, attachment.height / 2);
@@ -327,7 +327,7 @@ class RenderMeshAttachment implements RenderAttachment {
       const ffd_attachment: Spine.FfdAttachment | undefined = ffd_slot && ffd_slot.ffd_attachments.get(attachment_key);
       if (ffd_attachment) {
         const render_ffd_attachment: RenderFfdAttachment = this.ffd_attachment_map.set(anim_key, new RenderFfdAttachment());
-        ffd_attachment.ffd_timeline.ffd_keyframes.forEach((ffd_keyframe: Spine.FfdKeyframe, ffd_keyframe_index: number): void => {
+        ffd_attachment.ffd_timeline.keyframes.forEach((ffd_keyframe: Spine.FfdKeyframe, ffd_keyframe_index: number): void => {
           const render_ffd_keyframe: RenderFfdKeyframe = render_ffd_attachment.ffd_keyframes[ffd_keyframe_index] = new RenderFfdKeyframe();
           const vertex_position_morph: Float32Array = new Float32Array(2 * vertex_count);
           vertex_position_morph.subarray(ffd_keyframe.offset, ffd_keyframe.offset + ffd_keyframe.vertices.length).set(new Float32Array(ffd_keyframe.vertices));
@@ -351,9 +351,14 @@ class RenderMeshAttachment implements RenderAttachment {
     return this;
   }
 
-  drawPose(spine_pose: Spine.Pose, skin_key: string, slot_key: string, slot: Spine.Slot, attachment_key: string, attachment: Spine.MeshAttachment, texture: RenderTexture, site: Atlas.Site | null): void {
+  drawPose(spine_pose: Spine.Pose, atlas_data: Atlas.Data | null, skin_key: string, slot_key: string, slot: Spine.Slot, attachment_key: string, attachment: Spine.MeshAttachment): void {
     const gl: WebGLRenderingContext = this.render.gl;
     const bone: Spine.Bone | undefined = spine_pose.bones.get(slot.bone_key);
+    const site: Atlas.Site | null = atlas_data && atlas_data.sites[attachment.path || attachment.name || attachment_key];
+    const page: Atlas.Page | null = site && site.page;
+    const image_key: string = (page && page.name) || attachment.path || attachment.name || attachment_key;
+    const texture: RenderTexture | undefined = this.render.textures.get(image_key);
+    if (!texture) { return; }
     bone && mat4x4ApplySpace(this.render.modelview, bone.world_space);
     mat4x4ApplyAtlasSitePosition(this.render.modelview, site);
     const anim: Spine.Animation | undefined = spine_pose.data.anims.get(spine_pose.anim_key);
@@ -361,12 +366,16 @@ class RenderMeshAttachment implements RenderAttachment {
     const ffd_slot: Spine.FfdSlot | undefined = ffd_skin && ffd_skin.ffd_slots.get(slot_key);
     const ffd_attachment: Spine.FfdAttachment | undefined = ffd_slot && ffd_slot.ffd_attachments.get(attachment_key);
     const ffd_timeline: Spine.FfdTimeline | undefined = ffd_attachment && ffd_attachment.ffd_timeline;
-    const ffd_keyframes: Spine.FfdKeyframe[] | undefined = ffd_timeline && ffd_timeline.ffd_keyframes;
+    const ffd_keyframes: Spine.FfdKeyframe[] | undefined = ffd_timeline && ffd_timeline.keyframes;
     const ffd_keyframe0_index: number = Spine.Keyframe.find(ffd_keyframes, spine_pose.time);
     const ffd_keyframe1_index: number = ffd_keyframe0_index + 1 || ffd_keyframe0_index;
     const ffd_keyframe0: Spine.FfdKeyframe | undefined = (ffd_keyframes && ffd_keyframes[ffd_keyframe0_index]);
     const ffd_keyframe1: Spine.FfdKeyframe | undefined = (ffd_keyframes && ffd_keyframes[ffd_keyframe1_index]) || ffd_keyframe0;
-    const shader: RenderShader = (ffd_keyframe0) ? this.render.ffd_mesh_shader : this.render.mesh_shader;
+    const ffd_weight: number = Spine.FfdKeyframe.interpolate(ffd_keyframe0, ffd_keyframe1, spine_pose.time);
+    const render_ffd_attachment: RenderFfdAttachment | undefined = this.ffd_attachment_map.get(spine_pose.anim_key);
+    const render_ffd_keyframe0: RenderFfdKeyframe | undefined = (render_ffd_attachment && render_ffd_attachment.ffd_keyframes[ffd_keyframe0_index]);
+    const render_ffd_keyframe1: RenderFfdKeyframe | undefined = (render_ffd_attachment && render_ffd_attachment.ffd_keyframes[ffd_keyframe1_index]) || render_ffd_keyframe0;
+    const shader: RenderShader = ffd_keyframe0 ? this.render.ffd_mesh_shader : this.render.mesh_shader;
     gl.useProgram(shader.program);
     gl.uniformMatrix4fv(shader.uniforms.get("uProjection") || 0, false, this.render.projection);
     gl.uniformMatrix4fv(shader.uniforms.get("uModelview") || 0, false, this.render.modelview);
@@ -377,15 +386,9 @@ class RenderMeshAttachment implements RenderAttachment {
     gl.uniform1i(shader.uniforms.get("uSampler") || 0, 0);
     glSetupAttribute(gl, shader, "aPosition", this.vertex_position);
     glSetupAttribute(gl, shader, "aTexCoord", this.vertex_texcoord);
-    if (ffd_keyframe0 && ffd_keyframe1) {
-      const weight: number = (ffd_keyframe0.time === ffd_keyframe1.time) ? 0 : ffd_keyframe0.curve.evaluate((spine_pose.time - ffd_keyframe0.time) / (ffd_keyframe1.time - ffd_keyframe0.time));
-      const render_ffd_attachment: RenderFfdAttachment | undefined = this.ffd_attachment_map.get(spine_pose.anim_key);
-      const render_ffd_keyframe0: RenderFfdKeyframe | undefined = (render_ffd_attachment && render_ffd_attachment.ffd_keyframes[ffd_keyframe0_index]);
-      const render_ffd_keyframe1: RenderFfdKeyframe | undefined = (render_ffd_attachment && render_ffd_attachment.ffd_keyframes[ffd_keyframe1_index]) || render_ffd_keyframe0;
-      gl.uniform1f(shader.uniforms.get("uMorphWeight") || 0, weight);
-      render_ffd_keyframe0 && glSetupAttribute(gl, shader, "aPositionMorph0", render_ffd_keyframe0.vertex_position_morph);
-      render_ffd_keyframe1 && glSetupAttribute(gl, shader, "aPositionMorph1", render_ffd_keyframe1.vertex_position_morph);
-    }
+    ffd_keyframe0 && gl.uniform1f(shader.uniforms.get("uMorphWeight") || 0, ffd_weight);
+    render_ffd_keyframe0 && glSetupAttribute(gl, shader, "aPositionMorph0", render_ffd_keyframe0.vertex_position_morph);
+    render_ffd_keyframe1 && glSetupAttribute(gl, shader, "aPositionMorph1", render_ffd_keyframe1.vertex_position_morph);
     const vertex_triangle: RenderVertex = this.vertex_triangle;
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vertex_triangle.buffer);
     gl.drawElements(gl.TRIANGLES, vertex_triangle.count, vertex_triangle.type, 0);
@@ -471,7 +474,7 @@ class RenderWeightedMeshAttachment implements RenderAttachment {
       const ffd_attachment: Spine.FfdAttachment | undefined = ffd_slot && ffd_slot.ffd_attachments.get(attachment_key);
       if (ffd_attachment) {
         const render_ffd_attachment: RenderFfdAttachment = this.ffd_attachment_map.set(anim_key, new RenderFfdAttachment());
-        ffd_attachment.ffd_timeline.ffd_keyframes.forEach((ffd_keyframe: Spine.FfdKeyframe, ffd_keyframe_index: number): void => {
+        ffd_attachment.ffd_timeline.keyframes.forEach((ffd_keyframe: Spine.FfdKeyframe, ffd_keyframe_index: number): void => {
           const render_ffd_keyframe: RenderFfdKeyframe = render_ffd_attachment.ffd_keyframes[ffd_keyframe_index] = new RenderFfdKeyframe();
           const vertex_position_morph: Float32Array = new Float32Array(2 * vertex_count);
           for (let vertex_index: number = 0, parse_index: number = 0, ffd_index: number = 0; vertex_index < vertex_count; ++vertex_index) {
@@ -511,8 +514,15 @@ class RenderWeightedMeshAttachment implements RenderAttachment {
     return this;
   }
 
-  drawPose(spine_pose: Spine.Pose, skin_key: string, slot_key: string, slot: Spine.Slot, attachment_key: string, attachment: Spine.WeightedMeshAttachment, texture: RenderTexture, site: Atlas.Site | null): void {
+  drawPose(spine_pose: Spine.Pose, atlas_data: Atlas.Data | null, skin_key: string, slot_key: string, slot: Spine.Slot, attachment_key: string, attachment: Spine.WeightedMeshAttachment): void {
     const gl: WebGLRenderingContext = this.render.gl;
+    const site: Atlas.Site | null = atlas_data && atlas_data.sites[attachment.path || attachment.name || attachment_key];
+    const page: Atlas.Page | null = site && site.page;
+    const image_key: string = (page && page.name) || attachment.path || attachment.name || attachment_key;
+    const texture: RenderTexture | undefined = this.render.textures.get(image_key);
+    if (!texture) { return; }
+    mat3x3ApplyAtlasPageTexcoord(this.render.texmatrix, page);
+    mat3x3ApplyAtlasSiteTexcoord(this.render.texmatrix, site);
     // update skin shader modelview array
     const blend_bone_index_array: number[] = this.blend_bone_index_array;
     for (let index: number = 0; index < blend_bone_index_array.length; ++index) {
@@ -533,12 +543,16 @@ class RenderWeightedMeshAttachment implements RenderAttachment {
     const ffd_slot: Spine.FfdSlot | undefined = ffd_skin && ffd_skin.ffd_slots.get(slot_key);
     const ffd_attachment: Spine.FfdAttachment | undefined = ffd_slot && ffd_slot.ffd_attachments.get(attachment_key);
     const ffd_timeline: Spine.FfdTimeline | undefined = ffd_attachment && ffd_attachment.ffd_timeline;
-    const ffd_keyframes: Spine.FfdKeyframe[] | undefined = ffd_timeline && ffd_timeline.ffd_keyframes;
+    const ffd_keyframes: Spine.FfdKeyframe[] | undefined = ffd_timeline && ffd_timeline.keyframes;
     const ffd_keyframe0_index: number = Spine.Keyframe.find(ffd_keyframes, spine_pose.time);
     const ffd_keyframe1_index: number = ffd_keyframe0_index + 1 || ffd_keyframe0_index;
     const ffd_keyframe0: Spine.FfdKeyframe | undefined = (ffd_keyframes && ffd_keyframes[ffd_keyframe0_index]);
     const ffd_keyframe1: Spine.FfdKeyframe | undefined = (ffd_keyframes && ffd_keyframes[ffd_keyframe1_index]) || ffd_keyframe0;
-    const shader: RenderShader = (ffd_keyframe0) ? this.render.ffd_skin_shader : this.render.skin_shader;
+    const ffd_weight: number = Spine.FfdKeyframe.interpolate(ffd_keyframe0, ffd_keyframe1, spine_pose.time);
+    const render_ffd_attachment: RenderFfdAttachment | undefined = this.ffd_attachment_map.get(spine_pose.anim_key);
+    const render_ffd_keyframe0: RenderFfdKeyframe | undefined = (render_ffd_attachment && render_ffd_attachment.ffd_keyframes[ffd_keyframe0_index]);
+    const render_ffd_keyframe1: RenderFfdKeyframe | undefined = (render_ffd_attachment && render_ffd_attachment.ffd_keyframes[ffd_keyframe1_index]) || render_ffd_keyframe0;
+    const shader: RenderShader = ffd_keyframe0 ? this.render.ffd_skin_shader : this.render.skin_shader;
     gl.useProgram(shader.program);
     gl.uniformMatrix4fv(shader.uniforms.get("uProjection") || 0, false, this.render.projection);
     gl.uniformMatrix4fv(shader.uniforms.get("uModelviewArray[0]") || 0, false, this.render.skin_shader_modelview_array);
@@ -550,15 +564,9 @@ class RenderWeightedMeshAttachment implements RenderAttachment {
     glSetupAttribute(gl, shader, "aPosition", this.vertex_position);
     glSetupAttribute(gl, shader, "aTexCoord", this.vertex_texcoord);
     glSetupAttribute(gl, shader, "aBlenders{index}", this.vertex_blenders, this.render.skin_shader_blenders_count);
-    if (ffd_keyframe0 && ffd_keyframe1) {
-      const weight: number = (ffd_keyframe0.time === ffd_keyframe1.time) ? 0 : ffd_keyframe0.curve.evaluate((spine_pose.time - ffd_keyframe0.time) / (ffd_keyframe1.time - ffd_keyframe0.time));
-      const render_ffd_attachment: RenderFfdAttachment | undefined = this.ffd_attachment_map.get(spine_pose.anim_key);
-      const render_ffd_keyframe0: RenderFfdKeyframe | undefined = (render_ffd_attachment && render_ffd_attachment.ffd_keyframes[ffd_keyframe0_index]);
-      const render_ffd_keyframe1: RenderFfdKeyframe | undefined = (render_ffd_attachment && render_ffd_attachment.ffd_keyframes[ffd_keyframe1_index]) || render_ffd_keyframe0;
-      gl.uniform1f(shader.uniforms.get("uMorphWeight") || 0, weight);
-      render_ffd_keyframe0 && glSetupAttribute(gl, shader, "aPositionMorph0", render_ffd_keyframe0.vertex_position_morph);
-      render_ffd_keyframe1 && glSetupAttribute(gl, shader, "aPositionMorph1", render_ffd_keyframe1.vertex_position_morph);
-    }
+    ffd_keyframe0 && gl.uniform1f(shader.uniforms.get("uMorphWeight") || 0, ffd_weight);
+    render_ffd_keyframe0 && glSetupAttribute(gl, shader, "aPositionMorph0", render_ffd_keyframe0.vertex_position_morph);
+    render_ffd_keyframe1 && glSetupAttribute(gl, shader, "aPositionMorph1", render_ffd_keyframe1.vertex_position_morph);
     const vertex_triangle: RenderVertex = this.vertex_triangle;
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, vertex_triangle.buffer);
     gl.drawElements(gl.TRIANGLES, vertex_triangle.count, vertex_triangle.type, 0);

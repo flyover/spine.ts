@@ -353,7 +353,9 @@ export function start(): void {
 
     spine_pose.strike();
 
-    // spine_pose.events.forEach((event) => { console.log("event", event.name, event.int_value, event.float_value, event.string_value); });
+    spine_pose.events.forEach((event: Spine.Event, event_key: string): void => {
+      ///console.log("event", event_key, event.int_value, event.float_value, event.string_value);
+    });
 
     if (anim_blend > 0) {
       spine_pose_next.strike();
