@@ -1619,17 +1619,17 @@ interface KeyframeJSON {
   time: number;
 }
 
+type KeyframeConstructor<T extends Keyframe> = { new(): T; };
+
 export class Timeline<T extends Keyframe> {
   public range: Range = new Range();
   public keyframes: T[] = [];
 
-  public __load__(json: KeyframeJSON[], ctor: { new(): T; }): this {
+  public load(json: KeyframeJSON[], ctor: KeyframeConstructor<T>): this {
     this.range.reset();
     this.keyframes.length = 0;
-    json.forEach((keyframe_json: KeyframeJSON): void => {
-      const keyframe: T = new ctor().load(keyframe_json);
-      this.range.expandPoint(keyframe.time);
-      this.keyframes.push(keyframe);
+    json.forEach((keyframe_json: KeyframeJSON, index: number): void => {
+      this.range.expandPoint((this.keyframes[index] = new ctor().load(keyframe_json)).time);
     });
     this.keyframes.sort(Keyframe.compare);
     return this;
@@ -1674,7 +1674,7 @@ interface BonePositionKeyframeJSON extends CurveKeyframeJSON {
 
 export class BonePositionTimeline extends Timeline<BonePositionKeyframe> {
   public load(json: BonePositionTimelineJSON): this {
-    return super.__load__(json, BonePositionKeyframe);
+    return super.load(json, BonePositionKeyframe);
   }
 }
 
@@ -1695,7 +1695,7 @@ interface BoneRotationKeyframeJSON extends CurveKeyframeJSON {
 
 export class BoneRotationTimeline extends Timeline<BoneRotationKeyframe> {
   public load(json: BoneRotationTimelineJSON): this {
-    return super.__load__(json, BoneRotationKeyframe);
+    return super.load(json, BoneRotationKeyframe);
   }
 }
 
@@ -1718,7 +1718,7 @@ interface BoneScaleKeyframeJSON extends CurveKeyframeJSON {
 
 export class BoneScaleTimeline extends Timeline<BoneScaleKeyframe> {
   public load(json: BoneScaleTimelineJSON): this {
-    return super.__load__(json, BoneScaleKeyframe);
+    return super.load(json, BoneScaleKeyframe);
   }
 }
 
@@ -1741,7 +1741,7 @@ interface BoneShearKeyframeJSON extends CurveKeyframeJSON {
 
 export class BoneShearTimeline extends Timeline<BoneShearKeyframe> {
   public load(json: BoneShearTimelineJSON): this {
-    return super.__load__(json, BoneShearKeyframe);
+    return super.load(json, BoneShearKeyframe);
   }
 }
 
@@ -1790,7 +1790,7 @@ interface SlotColorKeyframeJSON extends CurveKeyframeJSON {
 
 export class SlotColorTimeline extends Timeline<SlotColorKeyframe> {
   public load(json: SlotColorTimelineJSON): this {
-    return super.__load__(json, SlotColorKeyframe);
+    return super.load(json, SlotColorKeyframe);
   }
 }
 
@@ -1811,7 +1811,7 @@ interface SlotAttachmentKeyframeJSON extends KeyframeJSON {
 
 export class SlotAttachmentTimeline extends Timeline<SlotAttachmentKeyframe> {
   public load(json: SlotAttachmentTimelineJSON): this {
-    return super.__load__(json, SlotAttachmentKeyframe);
+    return super.load(json, SlotAttachmentKeyframe);
   }
 }
 
@@ -1852,7 +1852,7 @@ interface EventKeyframeJSON extends EventJSON, KeyframeJSON {}
 
 export class EventTimeline extends Timeline<EventKeyframe> {
   public load(json: EventTimelineJSON): this {
-    return super.__load__(json, EventKeyframe);
+    return super.load(json, EventKeyframe);
   }
 }
 
@@ -1892,7 +1892,7 @@ interface OrderKeyframeJSON extends KeyframeJSON {
 
 export class OrderTimeline extends Timeline<OrderKeyframe> {
   public load(json: OrderTimelineJSON): this {
-    return super.__load__(json, OrderKeyframe);
+    return super.load(json, OrderKeyframe);
   }
 }
 
@@ -1916,7 +1916,7 @@ interface IkcKeyframeJSON extends CurveKeyframeJSON {
 
 export class IkcTimeline extends Timeline<IkcKeyframe> {
   public load(json: IkcTimelineJSON): this {
-    return super.__load__(json, IkcKeyframe);
+    return super.load(json, IkcKeyframe);
   }
 }
 
@@ -1946,7 +1946,7 @@ interface XfcKeyframeJSON extends CurveKeyframeJSON {
 
 export class XfcTimeline extends Timeline<XfcKeyframe> {
   public load(json: XfcTimelineJSON): this {
-    return super.__load__(json, XfcKeyframe);
+    return super.load(json, XfcKeyframe);
   }
 }
 
@@ -1970,7 +1970,7 @@ interface PtcMixKeyframeJSON extends CurveKeyframeJSON {
 
 export class PtcMixTimeline extends Timeline<PtcMixKeyframe> {
   public load(json: PtcMixTimelineJSON): this {
-    return super.__load__(json, PtcMixKeyframe);
+    return super.load(json, PtcMixKeyframe);
   }
 }
 
@@ -1991,7 +1991,7 @@ interface PtcSpacingKeyframeJSON extends CurveKeyframeJSON {
 
 export class PtcSpacingTimeline extends Timeline<PtcSpacingKeyframe> {
   public load(json: PtcSpacingTimelineJSON): this {
-    return super.__load__(json, PtcSpacingKeyframe);
+    return super.load(json, PtcSpacingKeyframe);
   }
 }
 
@@ -2012,7 +2012,7 @@ interface PtcPositionKeyframeJSON extends CurveKeyframeJSON {
 
 export class PtcPositionTimeline extends Timeline<PtcPositionKeyframe> {
   public load(json: PtcPositionTimelineJSON): this {
-    return super.__load__(json, PtcPositionKeyframe);
+    return super.load(json, PtcPositionKeyframe);
   }
 }
 
@@ -2033,7 +2033,7 @@ interface PtcRotationKeyframeJSON extends CurveKeyframeJSON {
 
 export class PtcRotationTimeline extends Timeline<PtcRotationKeyframe> {
   public load(json: PtcRotationTimelineJSON): this {
-    return super.__load__(json, PtcRotationKeyframe);
+    return super.load(json, PtcRotationKeyframe);
   }
 }
 
@@ -2085,7 +2085,7 @@ interface FfdKeyframeJSON extends CurveKeyframeJSON {
 
 export class FfdTimeline extends Timeline<FfdKeyframe> {
   public load(json: FfdTimelineJSON): this {
-    return super.__load__(json, FfdKeyframe);
+    return super.load(json, FfdKeyframe);
   }
 }
 
