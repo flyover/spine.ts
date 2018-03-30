@@ -359,6 +359,8 @@ class RenderMeshAttachment implements RenderAttachment {
     const image_key: string = (page && page.name) || attachment.path || attachment.name || attachment_key;
     const texture: RenderTexture | undefined = this.render.textures.get(image_key);
     if (!texture) { return; }
+    mat3x3ApplyAtlasPageTexcoord(this.render.texmatrix, page);
+    mat3x3ApplyAtlasSiteTexcoord(this.render.texmatrix, site);
     bone && mat4x4ApplySpace(this.render.modelview, bone.world_space);
     mat4x4ApplyAtlasSitePosition(this.render.modelview, site);
     const anim: Spine.Animation | undefined = spine_pose.data.anims.get(spine_pose.anim_key);
@@ -445,8 +447,9 @@ class RenderWeightedMeshAttachment implements RenderAttachment {
       blender_array.forEach((blender: Blender): void => { blender.weight /= weight_sum; });
       const position: Spine.Vector = new Spine.Vector();
       blender_array.forEach((blender: Blender, blender_index: number): void => {
-        const bone_key: string = spine_data.bones.keys[blender.bone_index];
-        const bone: Spine.Bone | undefined = spine_data.bones.get(bone_key);
+        ///const bone_key: string = spine_data.bones._keys[blender.bone_index];
+        ///const bone: Spine.Bone | undefined = spine_data.bones.get(bone_key);
+        const bone: Spine.Bone | undefined = spine_data.bones.getByIndex(blender.bone_index);
         const blend_position: Spine.Vector = new Spine.Vector();
         bone && Spine.Space.transform(bone.world_space, blender.position, blend_position);
         position.selfAdd(blend_position.selfScale(blender.weight));
@@ -482,8 +485,9 @@ class RenderWeightedMeshAttachment implements RenderAttachment {
             parse_index = parseBlenders(attachment.vertices, parse_index, (blender: Blender): void => { blender_array.push(blender); });
             const position_morph: Spine.Vector = new Spine.Vector();
             blender_array.forEach((blender: Blender): void => {
-              const bone_key: string = spine_data.bones.keys[blender.bone_index];
-              const bone: Spine.Bone | undefined = spine_data.bones.get(bone_key);
+              ///const bone_key: string = spine_data.bones._keys[blender.bone_index];
+              ///const bone: Spine.Bone | undefined = spine_data.bones.get(bone_key);
+              const bone: Spine.Bone | undefined = spine_data.bones.getByIndex(blender.bone_index);
               const blend_position: Spine.Vector = new Spine.Vector();
               blend_position.x = ffd_keyframe.vertices[ffd_index - ffd_keyframe.offset] || 0; ++ffd_index;
               blend_position.y = ffd_keyframe.vertices[ffd_index - ffd_keyframe.offset] || 0; ++ffd_index;
@@ -528,7 +532,8 @@ class RenderWeightedMeshAttachment implements RenderAttachment {
     for (let index: number = 0; index < blend_bone_index_array.length; ++index) {
       if (index < this.render.skin_shader_modelview_count) {
         const bone_index: number = blend_bone_index_array[index];
-        const bone_key: string = spine_pose.bones.keys[bone_index];
+        ///const bone_key: string = spine_pose.bones._keys[bone_index];
+        const bone_key: string = spine_pose.bones.key(bone_index);
         const bone: Spine.Bone | undefined = spine_pose.bones.get(bone_key);
         const render_bone: RenderBone | undefined = this.render.bone_map.get(bone_key);
         const modelview: Float32Array = this.render.skin_shader_modelview_array.subarray(index * 16, (index + 1) * 16);
@@ -619,7 +624,7 @@ class RenderVertex {
   public type: number; // FLOAT, BYTE, UNSIGNED_BYTE, SHORT, UNSIGNED_SHORT, INT, UNSIGNED_INT
   public size: number; // size in elements per vertex
   public count: number; // number of vertices
-  public type_array: RenderVertexType;
+  public typed_array: RenderVertexType;
   public buffer: WebGLBuffer | null;
   public buffer_type: number; // ARRAY_BUFFER or ELEMENT_ARRAY_BUFFER
   public buffer_draw: number; // STREAM_DRAW, STATIC_DRAW or DYNAMIC_DRAW
@@ -922,24 +927,24 @@ export function glDropShader(gl: WebGLRenderingContext, shader: RenderShader): v
   shader.program = null;
 }
 
-export function glMakeVertex(gl: WebGLRenderingContext, type_array: RenderVertexType, size: number, buffer_type: number, buffer_draw: number): RenderVertex {
+export function glMakeVertex(gl: WebGLRenderingContext, typed_array: RenderVertexType, size: number, buffer_type: number, buffer_draw: number): RenderVertex {
   const vertex: RenderVertex = new RenderVertex();
-  if (type_array instanceof Float32Array) { vertex.type = gl.FLOAT; }
-  else if (type_array instanceof Int8Array) { vertex.type = gl.BYTE; }
-  else if (type_array instanceof Uint8Array) { vertex.type = gl.UNSIGNED_BYTE; }
-  else if (type_array instanceof Int16Array) { vertex.type = gl.SHORT; }
-  else if (type_array instanceof Uint16Array) { vertex.type = gl.UNSIGNED_SHORT; }
-  else if (type_array instanceof Int32Array) { vertex.type = gl.INT; }
-  else if (type_array instanceof Uint32Array) { vertex.type = gl.UNSIGNED_INT; }
+  if (typed_array instanceof Float32Array) { vertex.type = gl.FLOAT; }
+  else if (typed_array instanceof Int8Array) { vertex.type = gl.BYTE; }
+  else if (typed_array instanceof Uint8Array) { vertex.type = gl.UNSIGNED_BYTE; }
+  else if (typed_array instanceof Int16Array) { vertex.type = gl.SHORT; }
+  else if (typed_array instanceof Uint16Array) { vertex.type = gl.UNSIGNED_SHORT; }
+  else if (typed_array instanceof Int32Array) { vertex.type = gl.INT; }
+  else if (typed_array instanceof Uint32Array) { vertex.type = gl.UNSIGNED_INT; }
   else { vertex.type = gl.NONE; throw new Error(); }
   vertex.size = size;
-  vertex.count = type_array.length / vertex.size;
-  vertex.type_array = type_array;
+  vertex.count = typed_array.length / vertex.size;
+  vertex.typed_array = typed_array;
   vertex.buffer = gl.createBuffer();
   vertex.buffer_type = buffer_type;
   vertex.buffer_draw = buffer_draw;
   gl.bindBuffer(vertex.buffer_type, vertex.buffer);
-  gl.bufferData(vertex.buffer_type, vertex.type_array, vertex.buffer_draw);
+  gl.bufferData(vertex.buffer_type, vertex.typed_array, vertex.buffer_draw);
   return vertex;
 }
 
@@ -955,7 +960,9 @@ export function glMakeTexture(gl: WebGLRenderingContext, image: HTMLImageElement
   const texture: RenderTexture = new RenderTexture();
   texture.texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture.texture);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+  if (image) {
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+  }
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, min_filter);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, mag_filter);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrap_s);
@@ -974,7 +981,7 @@ export function glDropTexture(gl: WebGLRenderingContext, texture: RenderTexture)
 export function glSetupAttribute(gl: WebGLRenderingContext, shader: RenderShader, format: string, vertex: RenderVertex, count: number = 0): void {
   gl.bindBuffer(vertex.buffer_type, vertex.buffer);
   if (count > 0) {
-    const sizeof_vertex: number = vertex.type_array.BYTES_PER_ELEMENT * vertex.size; // in bytes
+    const sizeof_vertex: number = vertex.typed_array.BYTES_PER_ELEMENT * vertex.size; // in bytes
     const stride: number = sizeof_vertex * count;
     for (let index: number = 0; index < count; ++index) {
       const offset: number = sizeof_vertex * index;

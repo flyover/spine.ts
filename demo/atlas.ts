@@ -31,13 +31,12 @@ export class Data {
   public pages: Page[] = [];
   public sites: {[key: string]: Site} = {};
 
-  public drop(): Data {
+  public free(): void {
     this.pages = [];
     this.sites = {};
-    return this;
   }
 
-  public import(text: string): Data {
+  public import(text: string): this {
     return this.importAtlasText(text);
   }
 
@@ -45,7 +44,7 @@ export class Data {
     return this.exportAtlasText(text);
   }
 
-  public importAtlasText(text: string): Data {
+  public importAtlasText(text: string): this {
     const lines: string[] = text.split(/\n|\r\n/);
     return this.importAtlasTextLines(lines);
   }
@@ -55,7 +54,7 @@ export class Data {
     return text + lines.join("\n");
   }
 
-  public importAtlasTextLines(lines: string[]): Data {
+  public importAtlasTextLines(lines: string[]): this {
     this.pages = [];
     this.sites = {};
     let page: Page | null = null;
@@ -153,13 +152,13 @@ export class Data {
     return lines;
   }
 
-  public importTpsText(tps_text: string): Data {
+  public importTpsText(tps_text: string): this {
     this.pages = [];
     this.sites = {};
     return this.importTpsTextPage(tps_text, 0);
   }
 
-  public importTpsTextPage(tps_text: string, page_index: number = 0): Data {
+  public importTpsTextPage(tps_text: string, page_index: number = 0): this {
     const tps_json: any = JSON.parse(tps_text);
     const page: Page = this.pages[page_index] = new Page();
     if (tps_json.meta) {

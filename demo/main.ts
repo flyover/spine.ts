@@ -104,9 +104,9 @@ export function start(): void {
   function loadFile(file: any, callback: () => void): void {
     render_ctx2d.dropData(spine_data, atlas_data);
     render_webgl.dropData(spine_data, atlas_data);
-    spine_pose.drop();
-    spine_pose_next.drop();
-    spine_data.drop();
+    spine_pose.free();
+    spine_pose_next.free();
+    spine_data.free();
     atlas_data = null;
 
     const images: Spine.Map<string, HTMLImageElement> = new Spine.Map<string, HTMLImageElement>();
@@ -189,7 +189,7 @@ export function start(): void {
 
   ///addFile("Mario/", "export/Mario.json", "export/Mario.atlas");
 
-  addFile("Splatoon-FanArt/", "Data/splatoon.json", "Data/splatoon.Atlas.txt", 0.5);
+  addFile("Splatoon-FanArt/", "Data/splatoon.json", "Data/splatoon.atlas.txt", 0.5);
   addFile("ExplorerQ/", "ExplorerQ.json");
   addFile("examples/alien/", "export/alien.json", "export/alien.atlas");
   addFile("examples/dragon/", "export/dragon.json", "export/dragon.atlas");
@@ -264,14 +264,15 @@ export function start(): void {
   }
 
   function updateSkin() {
-    const skin_keys: string[] = spine_data.skins.keys;
-    const skin_key: string = skin_keys[skin_index];
+    //const skin_keys: string[] = spine_data.skins._keys;
+    //const skin_key: string = skin_keys[skin_index];
+    const skin_key: string = spine_data.skins.key(skin_index);
     spine_pose.setSkin(skin_key);
     spine_pose_next.setSkin(skin_key);
   }
 
   function updateAnim() {
-    const anim_keys: string[] = file.anim_keys || spine_data.anims.keys;
+    const anim_keys: string[] = file.anim_keys || spine_data.anims._keys;
     const anim_key: string = anim_keys[anim_index];
     spine_pose.setAnim(anim_key);
     const anim_key_next: string = anim_keys[(anim_index + 1) % anim_keys.length];
@@ -305,10 +306,10 @@ export function start(): void {
       anim_time += dt * anim_rate;
 
       if (anim_time >= (anim_length * anim_repeat)) {
-        const anim_keys: string[] = file.anim_keys || spine_data.anims.keys;
+        const anim_keys: string[] = file.anim_keys || spine_data.anims._keys;
         if (++anim_index >= anim_keys.length) {
           anim_index = 0;
-          const skin_keys: string[] = spine_data.skins.keys;
+          const skin_keys: string[] = spine_data.skins._keys;
           if (++skin_index >= skin_keys.length) {
             skin_index = 0;
             if (files.length > 1) {
@@ -330,9 +331,10 @@ export function start(): void {
         updateAnim();
       }
 
-      const skin_keys: string[] = spine_data.skins.keys;
-      const skin_key: string = skin_keys[skin_index];
-      const anim_keys: string[] = file.anim_keys || spine_data.anims.keys;
+      //const skin_keys: string[] = spine_data.skins._keys;
+      //const skin_key: string = skin_keys[skin_index];
+      const skin_key: string = spine_data.skins.key(skin_index);
+      const anim_keys: string[] = file.anim_keys || spine_data.anims._keys;
       const anim_key: string = anim_keys[anim_index];
       const anim_key_next: string = anim_keys[(anim_index + 1) % anim_keys.length];
       messages.innerHTML = "skin: " + skin_key + ", anim: " + anim_key + ", next anim: " + anim_key_next + "<br>" + file.path + file.json_url;

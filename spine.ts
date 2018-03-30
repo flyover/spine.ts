@@ -32,67 +32,83 @@
 
 export let EPSILON: number = 1e-6;
 
-export { SpineMap as Map }
+export { SpineMap as Map };
 
 class SpineMap<K, V> {
-  public keys: K[] = [];
-  public map: Map<K, V>;
+  public _keys: K[] = [];
+  private _map: Map<K, V>;
 
   constructor(...args: any[]) {
-    this.map = new Map<K, V>(args);
-    this.map.forEach((value: V, key: K): void => {
-      this.keys.push(key);
+    this._map = new Map<K, V>(args);
+    this._map.forEach((value: V, key: K): void => {
+      this._keys.push(key);
     });
   }
 
   public clear(): void {
-    this.keys.length = 0;
-    this.map.clear();
+    this._keys.length = 0;
+    this._map.clear();
+  }
+
+  public key(index: number): K {
+    return this._keys[index];
   }
 
   public has(key: K): boolean {
-    return this.map.has(key);
+    return this._map.has(key);
   }
 
   public hasByIndex(index: number): boolean {
-    return this.has(this.keys[index]);
+    return this.has(this._keys[index]);
   }
 
   public get(key: K): V | undefined {
-    return this.map.get(key);
+    return this._map.get(key);
   }
 
   public getByIndex(index: number): V | undefined {
-    return this.get(this.keys[index]);
+    return this.get(this._keys[index]);
   }
 
   public set(key: K, value: V): V {
-    if (!this.map.has(key)) {
-      this.keys.push(key);
+    if (!this._map.has(key)) {
+      this._keys.push(key);
     }
-    this.map.set(key, value);
+    this._map.set(key, value);
     return value;
   }
 
   public setByIndex(index: number, value: V): V {
-    return this.set(this.keys[index], value);
+    return this.set(this._keys[index], value);
   }
 
   public delete(key: K): void {
-    this.keys.splice(this.keys.indexOf(key), 1);
-    this.map.delete(key);
+    this._keys.splice(this._keys.indexOf(key), 1);
+    this._map.delete(key);
   }
 
   public deleteByIndex(index: number): void {
-    this.delete(this.keys[index]);
+    this.delete(this._keys[index]);
   }
 
   public forEach(callback: (value: V, key: K, index: number, map: SpineMap<K, V>) => void): void {
-    this.keys.forEach((key: K, index: number, array: K[]): void => {
-      const value: V | undefined = this.map.get(key);
+    this._keys.forEach((key: K, index: number, array: K[]): void => {
+      const value: V | undefined = this._map.get(key);
       if (!value) throw new Error();
       callback(value, key, index, this);
     });
+  }
+
+  public map<T>(callback: (value: V, key: K, index: number, map: SpineMap<K, V>) => T): T[] {
+    const array: T[] = [];
+    this.forEach((value: V, key: K, index: number, map: SpineMap<K, V>): void => {
+      array.push(callback(value, key, index, map));
+    });
+    return array;
+  }
+
+  public sortKeys(callback: (a: K, b: K) => number): void {
+    this._keys.sort(callback);
   }
 }
 
@@ -205,7 +221,7 @@ export class Color {
   }
 }
 
-type ColorJSON = number | string;
+export type ColorJSON = number | string;
 
 // from: http://github.com/arian/cubic-bezier
 export function BezierCurve(x1: number, y1: number, x2: number, y2: number, epsilon: number = EPSILON): (t: number) => number {
@@ -363,9 +379,9 @@ export class Curve {
   }
 }
 
-type CurveJSON = string | number[];
+export type CurveJSON = string | number[];
 
-export function signum(n: number): number { return (n < 0) ? (-1) : (n > 0) ? (1) : (n); }
+export function sign(n: number): number { return (n < 0) ? (-1) : (n > 0) ? (1) : (n); }
 
 export function wrap(num: number, min: number, max: number): number {
   if (min < max) {
@@ -499,7 +515,7 @@ export class Vector {
   }
 
   public selfAdd(other: Vector): this {
-    ///return Vector.add(this, other, this);
+    // return Vector.add(this, other, this);
     this.x += other.x;
     this.y += other.y;
     return this;
@@ -516,7 +532,7 @@ export class Vector {
   }
 
   public selfSubtract(other: Vector): this {
-    ///return Vector.subtract(this, other, this);
+    // return Vector.subtract(this, other, this);
     this.x -= other.x;
     this.y -= other.y;
     return this;
@@ -746,10 +762,10 @@ export class Rotation extends Angle {
 }
 
 export class Scale extends Matrix {
-  public get x(): number { return (Math.abs(this.c) < EPSILON) ? (this.a) : (signum(this.a) * Math.sqrt(this.a * this.a + this.c * this.c)); }
+  public get x(): number { return (Math.abs(this.c) < EPSILON) ? (this.a) : (sign(this.a) * Math.sqrt(this.a * this.a + this.c * this.c)); }
   public set x(value: number) { this.a = value; this.c = 0; }
 
-  public get y(): number { return (Math.abs(this.b) < EPSILON) ? (this.d) : (signum(this.d) * Math.sqrt(this.b * this.b + this.d * this.d)); }
+  public get y(): number { return (Math.abs(this.b) < EPSILON) ? (this.d) : (sign(this.d) * Math.sqrt(this.b * this.b + this.d * this.d)); }
   public set y(value: number) { this.b = 0; this.d = value; }
 }
 
@@ -945,7 +961,7 @@ export class Space {
   }
 }
 
-interface SpaceJSON {
+export interface SpaceJSON {
   x: number;
   y: number;
   rotation: number;
@@ -992,7 +1008,7 @@ export class Bone {
         case "noRotationOrReflection": this.inherit_rotation = false; break;
         case "noScale": this.inherit_scale = false; break;
         case "noScaleOrReflection": this.inherit_scale = false; break;
-        default: console.log("TODO: Space.transform", json.transform); break;
+        default: throw new Error("TODO: Space.transform: " + json.transform);
       }
     }
     return this;
@@ -1049,7 +1065,7 @@ export class Bone {
   }
 }
 
-interface BoneJSON extends SpaceJSON {
+export interface BoneJSON extends SpaceJSON {
   name: string;
   color?: ColorJSON;
   parent?: string;
@@ -1060,17 +1076,17 @@ interface BoneJSON extends SpaceJSON {
 }
 
 export class Constraint {
-  ///public name: string = "";
+  // public name: string = "";
   public order: number = 0;
 
   public load(json: ConstraintJSON): this {
-    ///this.name = loadString(json, "name", "");
+    // this.name = loadString(json, "name", "");
     this.order = loadInt(json, "order", 0);
     return this;
   }
 }
 
-interface ConstraintJSON {
+export interface ConstraintJSON {
   name: string;
   order: number;
 }
@@ -1091,7 +1107,7 @@ export class Ikc extends Constraint {
   }
 }
 
-interface IkcJSON extends ConstraintJSON {
+export interface IkcJSON extends ConstraintJSON {
   bones: string[];
   target: string;
   mix: number;
@@ -1129,7 +1145,7 @@ export class Xfc extends Constraint {
   }
 }
 
-interface XfcJSON extends ConstraintJSON {
+export interface XfcJSON extends ConstraintJSON {
   bones: string[];
   target: string;
   translateMix: number;
@@ -1173,7 +1189,7 @@ export class Ptc extends Constraint {
   }
 }
 
-interface PtcJSON extends ConstraintJSON {
+export interface PtcJSON extends ConstraintJSON {
   bones: string[];
   target: string;
   spacingMode: string;
@@ -1186,11 +1202,13 @@ interface PtcJSON extends ConstraintJSON {
   rotation: number;
 }
 
+export type BlendMode = "normal" | "additive" | "multiply" | "screen";
+
 export class Slot {
   public bone_key: string = "";
   public color: Color = new Color();
   public attachment_key: string = "";
-  public blend: string = "normal";
+  public blend: BlendMode = "normal";
 
   public copy(other: Slot): this {
     this.bone_key = other.bone_key;
@@ -1204,24 +1222,26 @@ export class Slot {
     this.bone_key = loadString(json, "bone", "");
     this.color.load(json.color);
     this.attachment_key = loadString(json, "attachment", "");
-    this.blend = loadString(json, "blend", "normal");
+    this.blend = loadString(json, "blend", "normal") as BlendMode;
     return this;
   }
 }
 
-interface SlotJSON {
+export interface SlotJSON {
   name: string;
   bone: string;
   color?: ColorJSON;
   attachment: string;
-  blend?: string;
+  blend?: BlendMode;
 }
 
+export type AttachmentType = "region" | "boundingbox" | "mesh" | "linkedmesh" | "skinnedmesh" | "weightedmesh" | "path";
+
 export class Attachment {
-  public type: string = "";
+  public type: AttachmentType | "" = "";
   public name: string = "";
 
-  constructor(type: string) {
+  constructor(type: AttachmentType) {
     this.type = type;
   }
 
@@ -1235,8 +1255,8 @@ export class Attachment {
   }
 }
 
-interface AttachmentJSON {
-  type: string;
+export interface AttachmentJSON {
+  type: AttachmentType;
   name?: string;
 }
 
@@ -1262,7 +1282,7 @@ export class RegionAttachment extends Attachment {
   }
 }
 
-interface RegionAttachmentJSON extends AttachmentJSON, SpaceJSON {
+export interface RegionAttachmentJSON extends AttachmentJSON, SpaceJSON {
   path?: string;
   color?: ColorJSON;
   width?: number;
@@ -1288,7 +1308,7 @@ export class BoundingBoxAttachment extends Attachment {
   }
 }
 
-interface BoundingBoxAttachmentJSON extends AttachmentJSON {
+export interface BoundingBoxAttachmentJSON extends AttachmentJSON {
   color?: ColorJSON;
   vertexCount: number;
   vertices: number[];
@@ -1320,7 +1340,7 @@ export class MeshAttachment extends Attachment {
   }
 }
 
-interface MeshAttachmentJSON extends AttachmentJSON {
+export interface MeshAttachmentJSON extends AttachmentJSON {
   path?: string;
   color?: ColorJSON;
   triangles: number[];
@@ -1354,7 +1374,7 @@ export class LinkedMeshAttachment extends Attachment {
   }
 }
 
-interface LinkedMeshAttachmentJSON extends AttachmentJSON {
+export interface LinkedMeshAttachmentJSON extends AttachmentJSON {
   color?: ColorJSON;
   skin?: string;
   parent: string;
@@ -1389,7 +1409,7 @@ export class WeightedMeshAttachment extends Attachment {
   }
 }
 
-interface WeightedMeshAttachmentJSON extends AttachmentJSON {
+export interface WeightedMeshAttachmentJSON extends AttachmentJSON {
   path?: string;
   color?: ColorJSON;
   triangles: number[];
@@ -1423,7 +1443,7 @@ export class PathAttachment extends Attachment {
   }
 }
 
-interface PathAttachmentJSON extends AttachmentJSON {
+export interface PathAttachmentJSON extends AttachmentJSON {
   color?: ColorJSON;
   closed?: boolean;
   constantSpeed?: boolean;
@@ -1470,7 +1490,7 @@ export class SkinSlot {
   }
 }
 
-type SkinSlotJSON = {[key: string]: AttachmentJSON};
+export type SkinSlotJSON = {[key: string]: AttachmentJSON};
 
 export class Skin {
   public name: string = "";
@@ -1497,9 +1517,19 @@ export class Skin {
       });
     });
   }
+
+  public mapAttachments<T>(callback: (attachment: Attachment, attachment_key: string, skin_slot: SkinSlot, slot_key: string) => T): T[] {
+    const array: T[] = [];
+    this.slots.forEach((skin_slot: SkinSlot, slot_key: string): void => {
+      skin_slot.attachments.forEach((attachment: Attachment, attachment_key: string): void => {
+        array.push(callback(attachment, (attachment && attachment.name) || attachment_key, skin_slot, slot_key));
+      });
+    });
+    return array;
+  }
 }
 
-type SkinJSON = {[key: string]: SkinSlotJSON};
+export type SkinJSON = {[key: string]: SkinSlotJSON};
 
 export class Event {
   public int_value: number = 0;
@@ -1527,7 +1557,7 @@ export class Event {
   }
 }
 
-interface EventJSON {
+export interface EventJSON {
   int?: number;
   float?: number;
   string?: string;
@@ -1565,9 +1595,8 @@ export class Range {
 export abstract class Keyframe {
   public time: number = 0;
 
-  public drop(): this {
+  public free(): void {
     this.time = 0;
-    return this;
   }
 
   public load(json: KeyframeJSON): this {
@@ -1609,23 +1638,23 @@ export abstract class Keyframe {
     return (!keyframe0 || !keyframe1 || keyframe0.time === keyframe1.time) ? 0 : (time - keyframe0.time) / (keyframe1.time - keyframe0.time);
   }
 
-  public static evaluate(keyframes: Keyframe[], time: number, callback: (keyframe0: Keyframe, keyframe1: Keyframe, k: number, keyframe0_index: number, keyframe1_index: number) => void): void {
+  public static evaluate<T extends Keyframe>(keyframes: T[], time: number, callback: (keyframe0: T, keyframe1: T, k: number, keyframe0_index: number, keyframe1_index: number) => void): void {
     const keyframe0_index: number = Keyframe.find(keyframes, time);
     if (keyframe0_index !== -1) {
       const keyframe1_index: number = keyframe0_index + 1;
-      const keyframe0: Keyframe = keyframes[keyframe0_index];
-      const keyframe1: Keyframe = keyframes[keyframe1_index] || keyframe0;
+      const keyframe0: T = keyframes[keyframe0_index];
+      const keyframe1: T = keyframes[keyframe1_index] || keyframe0;
       const k: number = Keyframe.interpolate(keyframe0, keyframe1, time);
       callback(keyframe0, keyframe1, k, keyframe0_index, keyframe1_index);
     }
   }
 }
 
-interface KeyframeJSON {
+export interface KeyframeJSON {
   time: number;
 }
 
-type KeyframeConstructor<T extends Keyframe> = { new(): T; };
+export type KeyframeConstructor<T extends Keyframe> = { new(): T; };
 
 export class Timeline<T extends Keyframe> {
   public range: Range = new Range();
@@ -1641,7 +1670,7 @@ export class Timeline<T extends Keyframe> {
     return this;
   }
 
-  public static evaluate<T extends Keyframe>(timeline: Timeline<T>, time: number, callback: (keyframe0: Keyframe, keyframe1: Keyframe, k: number, keyframe0_index: number, keyframe1_index: number) => void): void {
+  public static evaluate<T extends Keyframe>(timeline: Timeline<T>, time: number, callback: (keyframe0: T, keyframe1: T, k: number, keyframe0_index: number, keyframe1_index: number) => void): void {
     timeline && Keyframe.evaluate(timeline.keyframes, time, callback);
   }
 }
@@ -1673,7 +1702,7 @@ export class BonePositionKeyframe extends CurveKeyframe {
   }
 }
 
-interface BonePositionKeyframeJSON extends CurveKeyframeJSON {
+export interface BonePositionKeyframeJSON extends CurveKeyframeJSON {
   x?: number;
   y?: number;
 }
@@ -1684,7 +1713,7 @@ export class BonePositionTimeline extends Timeline<BonePositionKeyframe> {
   }
 }
 
-type BonePositionTimelineJSON = BonePositionKeyframeJSON[];
+export type BonePositionTimelineJSON = BonePositionKeyframeJSON[];
 
 export class BoneRotationKeyframe extends CurveKeyframe {
   public rotation: Rotation = new Rotation();
@@ -1695,7 +1724,7 @@ export class BoneRotationKeyframe extends CurveKeyframe {
   }
 }
 
-interface BoneRotationKeyframeJSON extends CurveKeyframeJSON {
+export interface BoneRotationKeyframeJSON extends CurveKeyframeJSON {
   angle?: number;
 }
 
@@ -1705,7 +1734,7 @@ export class BoneRotationTimeline extends Timeline<BoneRotationKeyframe> {
   }
 }
 
-type BoneRotationTimelineJSON = BoneRotationKeyframeJSON[];
+export type BoneRotationTimelineJSON = BoneRotationKeyframeJSON[];
 
 export class BoneScaleKeyframe extends CurveKeyframe {
   public scale: Scale = new Scale();
@@ -1717,7 +1746,7 @@ export class BoneScaleKeyframe extends CurveKeyframe {
   }
 }
 
-interface BoneScaleKeyframeJSON extends CurveKeyframeJSON {
+export interface BoneScaleKeyframeJSON extends CurveKeyframeJSON {
   x?: number;
   y?: number;
 }
@@ -1728,7 +1757,7 @@ export class BoneScaleTimeline extends Timeline<BoneScaleKeyframe> {
   }
 }
 
-type BoneScaleTimelineJSON = BoneScaleKeyframeJSON[];
+export type BoneScaleTimelineJSON = BoneScaleKeyframeJSON[];
 
 export class BoneShearKeyframe extends CurveKeyframe {
   public shear: Shear = new Shear();
@@ -1740,7 +1769,7 @@ export class BoneShearKeyframe extends CurveKeyframe {
   }
 }
 
-interface BoneShearKeyframeJSON extends CurveKeyframeJSON {
+export interface BoneShearKeyframeJSON extends CurveKeyframeJSON {
   x?: number;
   y?: number;
 }
@@ -1751,7 +1780,7 @@ export class BoneShearTimeline extends Timeline<BoneShearKeyframe> {
   }
 }
 
-type BoneShearTimelineJSON = BoneShearKeyframeJSON[];
+export type BoneShearTimelineJSON = BoneShearKeyframeJSON[];
 
 export class BoneTimeline {
   public range: Range = new Range();
@@ -1774,7 +1803,7 @@ export class BoneTimeline {
   }
 }
 
-interface BoneTimelineJSON {
+export interface BoneTimelineJSON {
   translate: BonePositionTimelineJSON;
   rotate: BoneRotationTimelineJSON;
   scale: BoneScaleTimelineJSON;
@@ -1790,7 +1819,7 @@ export class SlotColorKeyframe extends CurveKeyframe {
   }
 }
 
-interface SlotColorKeyframeJSON extends CurveKeyframeJSON {
+export interface SlotColorKeyframeJSON extends CurveKeyframeJSON {
   color?: ColorJSON;
 }
 
@@ -1800,7 +1829,7 @@ export class SlotColorTimeline extends Timeline<SlotColorKeyframe> {
   }
 }
 
-type SlotColorTimelineJSON = SlotColorKeyframeJSON[];
+export type SlotColorTimelineJSON = SlotColorKeyframeJSON[];
 
 export class SlotAttachmentKeyframe extends Keyframe {
   public name: string = "";
@@ -1811,7 +1840,7 @@ export class SlotAttachmentKeyframe extends Keyframe {
   }
 }
 
-interface SlotAttachmentKeyframeJSON extends KeyframeJSON {
+export interface SlotAttachmentKeyframeJSON extends KeyframeJSON {
   name: string;
 }
 
@@ -1821,7 +1850,7 @@ export class SlotAttachmentTimeline extends Timeline<SlotAttachmentKeyframe> {
   }
 }
 
-type SlotAttachmentTimelineJSON = SlotAttachmentKeyframeJSON[];
+export type SlotAttachmentTimelineJSON = SlotAttachmentKeyframeJSON[];
 
 export class SlotTimeline {
   public range: Range = new Range();
@@ -1838,7 +1867,7 @@ export class SlotTimeline {
   }
 }
 
-interface SlotTimelineJSON {
+export interface SlotTimelineJSON {
   color: SlotColorTimelineJSON;
   attachment: SlotAttachmentTimelineJSON;
 }
@@ -1854,7 +1883,7 @@ export class EventKeyframe extends Keyframe {
   }
 }
 
-interface EventKeyframeJSON extends EventJSON, KeyframeJSON {}
+export interface EventKeyframeJSON extends EventJSON, KeyframeJSON {}
 
 export class EventTimeline extends Timeline<EventKeyframe> {
   public load(json: EventTimelineJSON): this {
@@ -1862,7 +1891,7 @@ export class EventTimeline extends Timeline<EventKeyframe> {
   }
 }
 
-type EventTimelineJSON = EventKeyframeJSON[];
+export type EventTimelineJSON = EventKeyframeJSON[];
 
 export class SlotOffset {
   public slot_key: string = "";
@@ -1875,7 +1904,7 @@ export class SlotOffset {
   }
 }
 
-interface SlotOffsetJSON {
+export interface SlotOffsetJSON {
   slot: string;
   offset: number;
 }
@@ -1892,7 +1921,7 @@ export class OrderKeyframe extends Keyframe {
   }
 }
 
-interface OrderKeyframeJSON extends KeyframeJSON {
+export interface OrderKeyframeJSON extends KeyframeJSON {
   offsets?: SlotOffsetJSON[];
 }
 
@@ -1902,7 +1931,7 @@ export class OrderTimeline extends Timeline<OrderKeyframe> {
   }
 }
 
-type OrderTimelineJSON = OrderKeyframeJSON[];
+export type OrderTimelineJSON = OrderKeyframeJSON[];
 
 export class IkcKeyframe extends CurveKeyframe {
   public mix: number = 1;
@@ -1915,7 +1944,7 @@ export class IkcKeyframe extends CurveKeyframe {
   }
 }
 
-interface IkcKeyframeJSON extends CurveKeyframeJSON {
+export interface IkcKeyframeJSON extends CurveKeyframeJSON {
   mix?: number;
   bendPositive?: boolean;
 }
@@ -1926,7 +1955,7 @@ export class IkcTimeline extends Timeline<IkcKeyframe> {
   }
 }
 
-type IkcTimelineJSON = IkcKeyframeJSON[];
+export type IkcTimelineJSON = IkcKeyframeJSON[];
 
 export class XfcKeyframe extends CurveKeyframe {
   public position_mix: number = 1;
@@ -1943,7 +1972,7 @@ export class XfcKeyframe extends CurveKeyframe {
   }
 }
 
-interface XfcKeyframeJSON extends CurveKeyframeJSON {
+export interface XfcKeyframeJSON extends CurveKeyframeJSON {
   translateMix?: number;
   rotateMix?: number;
   scaleMix?: number;
@@ -1956,7 +1985,7 @@ export class XfcTimeline extends Timeline<XfcKeyframe> {
   }
 }
 
-type XfcTimelineJSON = XfcKeyframeJSON[];
+export type XfcTimelineJSON = XfcKeyframeJSON[];
 
 export class PtcMixKeyframe extends CurveKeyframe {
   public position_mix: number = 0;
@@ -1969,7 +1998,7 @@ export class PtcMixKeyframe extends CurveKeyframe {
   }
 }
 
-interface PtcMixKeyframeJSON extends CurveKeyframeJSON {
+export interface PtcMixKeyframeJSON extends CurveKeyframeJSON {
   translateMix?: number;
   rotateMix?: number;
 }
@@ -1980,7 +2009,7 @@ export class PtcMixTimeline extends Timeline<PtcMixKeyframe> {
   }
 }
 
-type PtcMixTimelineJSON = PtcMixKeyframeJSON[];
+export type PtcMixTimelineJSON = PtcMixKeyframeJSON[];
 
 export class PtcSpacingKeyframe extends CurveKeyframe {
   public spacing: number = 0;
@@ -1991,7 +2020,7 @@ export class PtcSpacingKeyframe extends CurveKeyframe {
   }
 }
 
-interface PtcSpacingKeyframeJSON extends CurveKeyframeJSON {
+export interface PtcSpacingKeyframeJSON extends CurveKeyframeJSON {
   spacing?: number;
 }
 
@@ -2001,7 +2030,7 @@ export class PtcSpacingTimeline extends Timeline<PtcSpacingKeyframe> {
   }
 }
 
-type PtcSpacingTimelineJSON = PtcSpacingKeyframeJSON[];
+export type PtcSpacingTimelineJSON = PtcSpacingKeyframeJSON[];
 
 export class PtcPositionKeyframe extends CurveKeyframe {
   public position: number = 0;
@@ -2012,7 +2041,7 @@ export class PtcPositionKeyframe extends CurveKeyframe {
   }
 }
 
-interface PtcPositionKeyframeJSON extends CurveKeyframeJSON {
+export interface PtcPositionKeyframeJSON extends CurveKeyframeJSON {
   position?: number;
 }
 
@@ -2022,7 +2051,7 @@ export class PtcPositionTimeline extends Timeline<PtcPositionKeyframe> {
   }
 }
 
-type PtcPositionTimelineJSON = PtcPositionKeyframeJSON[];
+export type PtcPositionTimelineJSON = PtcPositionKeyframeJSON[];
 
 export class PtcRotationKeyframe extends CurveKeyframe {
   public rotation: Rotation = new Rotation();
@@ -2033,7 +2062,7 @@ export class PtcRotationKeyframe extends CurveKeyframe {
   }
 }
 
-interface PtcRotationKeyframeJSON extends CurveKeyframeJSON {
+export interface PtcRotationKeyframeJSON extends CurveKeyframeJSON {
   rotation?: number;
 }
 
@@ -2043,9 +2072,9 @@ export class PtcRotationTimeline extends Timeline<PtcRotationKeyframe> {
   }
 }
 
-type PtcRotationTimelineJSON = PtcRotationKeyframeJSON[];
+export type PtcRotationTimelineJSON = PtcRotationKeyframeJSON[];
 
-interface PtcTimelineJSON {
+export interface PtcTimelineJSON {
   mix: PtcMixTimelineJSON;
   spacing: PtcSpacingTimelineJSON;
   position: PtcPositionTimelineJSON;
@@ -2084,7 +2113,7 @@ export class FfdKeyframe extends CurveKeyframe {
   }
 }
 
-interface FfdKeyframeJSON extends CurveKeyframeJSON {
+export interface FfdKeyframeJSON extends CurveKeyframeJSON {
   offset?: number;
   vertices: number[];
 }
@@ -2095,7 +2124,7 @@ export class FfdTimeline extends Timeline<FfdKeyframe> {
   }
 }
 
-type FfdTimelineJSON = FfdKeyframeJSON[];
+export type FfdTimelineJSON = FfdKeyframeJSON[];
 
 export class FfdAttachment {
   public ffd_timeline: FfdTimeline = new FfdTimeline();
@@ -2106,7 +2135,7 @@ export class FfdAttachment {
   }
 }
 
-interface FfdAttachmentJSON extends FfdTimelineJSON {}
+export interface FfdAttachmentJSON extends FfdTimelineJSON {}
 
 export class FfdSlot {
   public ffd_attachments: SpineMap<string, FfdAttachment> = new SpineMap<string, FfdAttachment>();
@@ -2132,7 +2161,7 @@ export class FfdSlot {
   }
 }
 
-type FfdSlotJSON = {[key: string]: FfdAttachmentJSON};
+export type FfdSlotJSON = {[key: string]: FfdAttachmentJSON};
 
 export class FfdSkin {
   public ffd_slots: SpineMap<string, FfdSlot> = new SpineMap<string, FfdSlot>();
@@ -2160,10 +2189,10 @@ export class FfdSkin {
   }
 }
 
-type FfdSkinJSON = {[key: string]: FfdSlotJSON};
+export type FfdSkinJSON = {[key: string]: FfdSlotJSON};
 
 export class Animation {
-  ///public name: string = "";
+  // public name: string = "";
   public range: Range = new Range();
   public bone_timeline_map: SpineMap<string, BoneTimeline> = new SpineMap<string, BoneTimeline>();
   public slot_timeline_map: SpineMap<string, SlotTimeline> = new SpineMap<string, SlotTimeline>();
@@ -2211,7 +2240,7 @@ export class Animation {
   }
 }
 
-interface AnimationJSON {
+export interface AnimationJSON {
   bones: {[key: string]: BoneTimelineJSON};
   slots: {[key: string]: SlotTimelineJSON};
   events: EventTimelineJSON;
@@ -2241,7 +2270,7 @@ export class Skeleton {
   }
 }
 
-interface SkeletonJSON {
+export interface SkeletonJSON {
   hash?: string;
   spine?: string;
   width?: number;
@@ -2261,7 +2290,7 @@ export class Data {
   public events: SpineMap<string, Event> = new SpineMap<string, Event>();
   public anims: SpineMap<string, Animation> = new SpineMap<string, Animation>();
 
-  public drop(): Data {
+  public free(): void {
     this.bones.clear();
     this.ikcs.clear();
     this.xfcs.clear();
@@ -2270,7 +2299,6 @@ export class Data {
     this.skins.clear();
     this.events.clear();
     this.anims.clear();
-    return this;
   }
 
   public load(json: DataJSON): this {
@@ -2291,7 +2319,7 @@ export class Data {
       this.ikcs.set(ikc_json.name, new Ikc().load(ikc_json));
     });
     // sort by order
-    this.ikcs.keys.sort((a: string, b: string): number => {
+    this.ikcs.sortKeys((a: string, b: string): number => {
       const ikc_a: Ikc | undefined = this.ikcs.get(a);
       const ikc_b: Ikc | undefined = this.ikcs.get(b);
       return (ikc_a && ikc_a.order || 0) - (ikc_b && ikc_b.order || 0);
@@ -2300,7 +2328,7 @@ export class Data {
       this.xfcs.set(xfc_json.name, new Xfc().load(xfc_json));
     });
     // sort by order
-    this.xfcs.keys.sort((a: string, b: string): number => {
+    this.xfcs.sortKeys((a: string, b: string): number => {
       const xfc_a: Xfc | undefined = this.xfcs.get(a);
       const xfc_b: Xfc | undefined = this.xfcs.get(b);
       return (xfc_a && xfc_a.order || 0) - (xfc_b && xfc_b.order || 0);
@@ -2309,7 +2337,7 @@ export class Data {
       this.ptcs.set(ptc_json.name, new Ptc().load(ptc_json));
     });
     // sort by order
-    this.ptcs.keys.sort((a: string, b: string): number => {
+    this.ptcs.sortKeys((a: string, b: string): number => {
       const ptc_a: Ptc | undefined = this.ptcs.get(a);
       const ptc_b: Ptc | undefined = this.ptcs.get(b);
       return (ptc_a && ptc_a.order || 0) - (ptc_b && ptc_b.order || 0);
@@ -2335,9 +2363,9 @@ export class Data {
     return this;
   }
 
-  public save(json: any = {}): DataJSON {
+  public save(json: DataJSON = {} as DataJSON): DataJSON {
     // TODO
-    return <DataJSON>json;
+    return json;
   }
 
   public loadSkeleton(json: SkeletonJSON): this {
@@ -2377,13 +2405,13 @@ export class Data {
     this.bones.forEach(callback);
   }
 
-  public iterateAttachments(skin_key: string, callback: (slot_key: string, slot: Slot, skin_slot: SkinSlot | undefined, attachment_key: string, attachment: Attachment | undefined) => void): void {
+  public iterateAttachments(skin_key: string, callback: (slot_key: string, slot: Slot, skin_slot: SkinSlot, attachment_key: string, attachment: Attachment) => void): void {
     this.forEachAttachment(skin_key, (attachment: Attachment, attachment_key: string, slot: Slot, slot_key: string, skin_slot: SkinSlot): void => {
       callback(slot_key, slot, skin_slot, attachment_key, attachment);
     });
   }
 
-  public forEachAttachment(skin_key: string, callback: (attachment: Attachment | undefined, attachment_key: string, slot: Slot, slot_key: string, skin_slot: SkinSlot | undefined) => void): void {
+  public forEachAttachment(skin_key: string, callback: (attachment: Attachment, attachment_key: string, slot: Slot, slot_key: string, skin_slot: SkinSlot) => void): void {
     const skin: Skin | undefined = this.skins.get(skin_key);
     const default_skin: Skin | undefined = this.skins.get("default");
     this.slots.forEach((slot: Slot, slot_key: string): void => {
@@ -2394,7 +2422,9 @@ export class Data {
         attachment_key = (<LinkedMeshAttachment>attachment).parent_key;
         attachment = skin_slot && skin_slot.attachments.get(attachment_key);
       }
-      callback(attachment, attachment_key, slot, slot_key, skin_slot);
+      if (attachment && skin_slot) {
+        callback(attachment, attachment_key, slot, slot_key, skin_slot);
+      }
     });
   }
 
@@ -2408,6 +2438,10 @@ export class Data {
     this.skins.forEach(callback);
   }
 
+  public mapSkins<T>(callback: (skin: Skin, skin_key: string) => T): T[] {
+    return this.skins.map(callback);
+  }
+
   public iterateEvents(callback: (event_key: string, event: Event) => void): void {
     this.forEachEvent((event: Event, event_key: string): void => {
       callback(event_key, event);
@@ -2418,6 +2452,10 @@ export class Data {
     this.events.forEach(callback);
   }
 
+  public mapEvents<T>(callback: (event: Event, event_key: string) => T): T[] {
+    return this.events.map(callback);
+  }
+
   public iterateAnims(callback: (anim_key: string, anim: Animation) => void): void {
     this.forEachAnim((anim: Animation, anim_key: string): void => {
       callback(anim_key, anim);
@@ -2426,6 +2464,10 @@ export class Data {
 
   public forEachAnim(callback: (anim: Animation, anim_key: string) => void): void {
     this.anims.forEach(callback);
+  }
+
+  public mapAnims<T>(callback: (anim: Animation, anim_key: string) => T): T[] {
+    return this.anims.map(callback);
   }
 }
 
@@ -2459,11 +2501,10 @@ export class Pose {
     this.data = data;
   }
 
-  public drop(): Pose {
+  public free(): void {
     this.bones.clear();
     this.slots.clear();
     this.events.clear();
-    return this;
   }
 
   public curSkel(): Skeleton {
@@ -2482,10 +2523,11 @@ export class Pose {
     return this.skin_key;
   }
 
-  public setSkin(skin_key: string): void {
+  public setSkin(skin_key: string): this {
     if (this.skin_key !== skin_key) {
       this.skin_key = skin_key;
     }
+    return this;
   }
 
   public getAnims(): SpineMap<string, Animation> {
@@ -2505,7 +2547,7 @@ export class Pose {
     return this.anim_key;
   }
 
-  public setAnim(anim_key: string): void {
+  public setAnim(anim_key: string): this {
     if (this.anim_key !== anim_key) {
       this.anim_key = anim_key;
       const anim: Animation | undefined = this.data.anims.get(this.anim_key);
@@ -2516,24 +2558,25 @@ export class Pose {
       this.elapsed_time = 0;
       this.dirty = true;
     }
+    return this;
   }
 
   public getTime(): number {
     return this.time;
   }
 
-  public setTime(time: number): void {
+  public setTime(time: number): this {
     const anim: Animation | undefined = this.data.anims.get(this.anim_key);
     if (anim) {
       time = anim.range.wrap(time);
     }
-
     if (this.time !== time) {
       this.time = time;
       this.prev_time = this.time;
       this.elapsed_time = 0;
       this.dirty = true;
     }
+    return this;
   }
 
   public update(elapsed_time: number): void {
@@ -2659,8 +2702,8 @@ export class Pose {
           const child: Bone | undefined = this.bones.get(ikc.bone_keys[1]);
           if (!child) return;
           Bone.flatten(child, this.bones);
-          ///const px: number = parent.local_space.position.x;
-          ///const py: number = parent.local_space.position.y;
+          // const px: number = parent.local_space.position.x;
+          // const py: number = parent.local_space.position.y;
           let psx: number = parent.local_space.scale.x;
           let psy: number = parent.local_space.scale.y;
           let cy: number = child.local_space.position.y;
@@ -2791,26 +2834,26 @@ export class Pose {
 
       let ta = xfc_target.world_space.affine.matrix.a, tb = xfc_target.world_space.affine.matrix.b;
       let tc = xfc_target.world_space.affine.matrix.c, td = xfc_target.world_space.affine.matrix.d;
-      ///let degRadReflect = ta * td - tb * tc > 0 ? MathUtils.degRad : -MathUtils.degRad;
-      ///let offsetRotation = this.data.offsetRotation * degRadReflect;
-      ///let offsetShearY = this.data.offsetShearY * degRadReflect;
+      // let degRadReflect = ta * td - tb * tc > 0 ? MathUtils.degRad : -MathUtils.degRad;
+      // let offsetRotation = this.data.offsetRotation * degRadReflect;
+      // let offsetShearY = this.data.offsetShearY * degRadReflect;
 
       xfc.bone_keys.forEach((bone_key: string): void => {
         const xfc_bone: Bone | undefined = this.bones.get(bone_key);
         if (!xfc_bone) return;
 
         if (xfc_position_mix !== 0) {
-          ///let temp = this.temp;
-          ///xfc_target.localToWorld(temp.set(xfc_position.x, xfc_position.y));
-          ///xfc_bone.world_space.affine.vector.x += (temp.x - xfc_bone.world_space.affine.vector.x) * xfc_position_mix;
-          ///xfc_bone.world_space.affine.vector.y += (temp.y - xfc_bone.world_space.affine.vector.y) * xfc_position_mix;
+          // let temp = this.temp;
+          // xfc_target.localToWorld(temp.set(xfc_position.x, xfc_position.y));
+          // xfc_bone.world_space.affine.vector.x += (temp.x - xfc_bone.world_space.affine.vector.x) * xfc_position_mix;
+          // xfc_bone.world_space.affine.vector.y += (temp.y - xfc_bone.world_space.affine.vector.y) * xfc_position_mix;
           const xfc_world_position: Vector = Space.transform(xfc_target.world_space, xfc_position, new Vector());
           xfc_bone.world_space.position.tween(xfc_world_position, xfc_position_mix, xfc_bone.world_space.position);
         }
 
         if (xfc_rotation_mix !== 0) {
-          let a = xfc_bone.world_space.affine.matrix.a; ///, b = xfc_bone.world_space.affine.matrix.b;
-          let c = xfc_bone.world_space.affine.matrix.c; ///, d = xfc_bone.world_space.affine.matrix.d;
+          let a = xfc_bone.world_space.affine.matrix.a; // , b = xfc_bone.world_space.affine.matrix.b;
+          let c = xfc_bone.world_space.affine.matrix.c; // , d = xfc_bone.world_space.affine.matrix.d;
           let r = Math.atan2(tc, ta) - Math.atan2(c, a) + xfc_rotation.rad;
           r = wrapAngleRadians(r);
           r *= xfc_rotation_mix;
@@ -2866,18 +2909,18 @@ export class Pose {
       }
     });
 
-    this.data.slots.keys.forEach((key: string, index: number): void => { this.slots.keys[index] = key; });
+    this.data.slots._keys.forEach((key: string, index: number): void => { this.slots._keys[index] = key; });
 
     const order_timeline: OrderTimeline | undefined = anim && anim.order_timeline;
     if (order_timeline) {
       Timeline.evaluate(order_timeline, this.time, (keyframe0: OrderKeyframe, keyframe1: OrderKeyframe, k: number): void => {
         keyframe0.slot_offsets.forEach((slot_offset: SlotOffset): void => {
-          const slot_index: number = this.slots.keys.indexOf(slot_offset.slot_key);
+          const slot_index: number = this.slots._keys.indexOf(slot_offset.slot_key);
           if (slot_index !== -1) {
             // delete old position
-            this.slots.keys.splice(slot_index, 1);
+            this.slots._keys.splice(slot_index, 1);
             // insert new position
-            this.slots.keys.splice(slot_index + slot_offset.offset, 0, slot_offset.slot_key);
+            this.slots._keys.splice(slot_index + slot_offset.offset, 0, slot_offset.slot_key);
           }
         });
       });
@@ -2940,12 +2983,17 @@ export class Pose {
           case "fixed":
           case "percent":
             break;
+          default:
+            ptc_spacing;
         }
 
         switch (ptc_position_mode) {
           case "fixed":
           case "percent":
             break;
+          default:
+            ptc_position;
+            ptc_position_mix;
         }
 
         switch (ptc_rotation_mode) {
@@ -2953,7 +3001,10 @@ export class Pose {
           case "chain":
           case "chainscale":
             break;
-        }
+          default:
+            ptc_rotation;
+            ptc_rotation_mix;
+      }
       });
     });
   }
@@ -3036,13 +3087,13 @@ export class Pose {
     this.bones.forEach(callback);
   }
 
-  public iterateAttachments(callback: (slot_key: string, slot: Slot, skin_slot: SkinSlot | undefined, attachment_key: string, attachment: Attachment | undefined) => void): void {
+  public iterateAttachments(callback: (slot_key: string, slot: Slot, skin_slot: SkinSlot, attachment_key: string, attachment: Attachment) => void): void {
     this.forEachAttachment((attachment: Attachment, attachment_key: string, slot: Slot, slot_key: string, skin_slot: SkinSlot): void => {
       callback(slot_key, slot, skin_slot, attachment_key, attachment);
     });
   }
 
-  public forEachAttachment(callback: (attachment: Attachment | undefined, attachment_key: string, slot: Slot, slot_key: string, skin_slot: SkinSlot | undefined) => void): void {
+  public forEachAttachment(callback: (attachment: Attachment, attachment_key: string, slot: Slot, slot_key: string, skin_slot: SkinSlot) => void): void {
     const skin: Skin | undefined = this.data.skins.get(this.skin_key);
     const default_skin: Skin | undefined = this.data.skins.get("default");
     this.slots.forEach((slot: Slot, slot_key: string): void => {
@@ -3053,14 +3104,16 @@ export class Pose {
         attachment_key = (<LinkedMeshAttachment>attachment).parent_key;
         attachment = skin_slot && skin_slot.attachments.get(attachment_key);
       }
-      callback(attachment, attachment_key, slot, slot_key, skin_slot);
+      if (attachment && skin_slot) {
+        callback(attachment, attachment_key, slot, slot_key, skin_slot);
+      }
     });
   }
 
   public iterateEvents(callback: (event_key: string, event: Event) => void): void {
     this.forEachEvent((event: Event, event_key: string): void => {
       callback(event_key, event);
-    })
+    });
   }
 
   public forEachEvent(callback: (event: Event, event_key: string) => void): void {

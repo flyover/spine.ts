@@ -1,13 +1,14 @@
 {
-  "name": "spine.ts",
+  "name": "@flyover/spine",
   "version": "1.0.0",
   "description": "spine.ts",
   "main": "index.js",
+  "types": "index.ts",
   "dependencies": {
-    "@types/systemjs": "^0.19.33",
-    "plugin-typescript": "^5.3.3",
-    "systemjs": "^0.20.14",
-    "typescript": "^2.3.4"
+    "@types/systemjs": "^0.20.6",
+    "plugin-typescript": "^8.0.0",
+    "systemjs": "^0.21.0",
+    "typescript": "^2.8.1"
   },
   "devDependencies": {},
   "scripts": {

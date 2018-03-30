@@ -391,8 +391,9 @@ class RenderWeightedMeshAttachment implements RenderAttachment {
         position.x = attachment.vertices[index++];
         position.y = attachment.vertices[index++];
         const weight: number = attachment.vertices[index++];
-        const bone_key: string = spine_data.bones.keys[bone_index];
-        const bone: Spine.Bone | undefined = spine_data.bones.get(bone_key);
+        ///const bone_key: string = spine_data.bones._keys[bone_index];
+        ///const bone: Spine.Bone | undefined = spine_data.bones.get(bone_key);
+        const bone: Spine.Bone | undefined = spine_data.bones.getByIndex(bone_index);
         bone && Spine.Space.transform(bone.world_space, position, position);
         setup_position_x += position.x * weight;
         setup_position_y += position.y * weight;
@@ -433,8 +434,9 @@ class RenderWeightedMeshAttachment implements RenderAttachment {
           position.x = attachment.vertices[index++];
           position.y = attachment.vertices[index++];
           const weight: number = attachment.vertices[index++];
-          const bone_key: string = spine_pose.bones.keys[bone_index];
-          const bone: Spine.Bone | undefined = spine_pose.bones.get(bone_key);
+          ///const bone_key: string = spine_pose.bones._keys[bone_index];
+          ///const bone: Spine.Bone | undefined = spine_pose.bones.get(bone_key);
+          const bone: Spine.Bone | undefined = spine_pose.bones.getByIndex(bone_index);
           const x0: number = ffd_keyframe0.vertices[ffd_index - ffd_keyframe0.offset] || 0;
           const x1: number = ffd_keyframe1.vertices[ffd_index - ffd_keyframe1.offset] || 0;
           position.x += Spine.tween(x0, x1, ffd_weight); ++ffd_index;
@@ -460,8 +462,9 @@ class RenderWeightedMeshAttachment implements RenderAttachment {
           position.x = attachment.vertices[index++];
           position.y = attachment.vertices[index++];
           const weight: number = attachment.vertices[index++];
-          const bone_key: string = spine_pose.bones.keys[bone_index];
-          const bone: Spine.Bone | undefined = spine_pose.bones.get(bone_key);
+          ///const bone_key: string = spine_pose.bones._keys[bone_index];
+          ///const bone: Spine.Bone | undefined = spine_pose.bones.get(bone_key);
+          const bone: Spine.Bone | undefined = spine_pose.bones.getByIndex(bone_index);
           bone && Spine.Space.transform(bone.world_space, position, position);
           blend_position_x += position.x * weight;
           blend_position_y += position.y * weight;
