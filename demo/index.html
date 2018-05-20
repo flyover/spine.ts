@@ -5,30 +5,23 @@
 		<meta charset="utf-8" />
 		<title>Spine TypeScript Demo</title>
 		<style>body { background-image: url("bg.png"); background-repeat: repeat; }</style>
-		<script type="text/javascript" src="https://unpkg.com/systemjs@0.21.0/dist/system.js"></script>
+		<script type="text/javascript" src="https://unpkg.com/systemjs@0.21.3/dist/system.js"></script>
 		<!--script type="text/javascript" src="../node_modules/systemjs/dist/system.js"></script-->
 		<script type="text/javascript">
 		function boot(event) {
-			var transpile = false;
+			var transpile = !false;
 			if (transpile) {
 				SystemJS.config({
-					packages: {
-						"typescript": { "main": "lib/typescript.js", "meta": { "lib/typescript.js": { "exports": "ts" } } },
-						"plugin-typescript": { "main": "lib/plugin.js" }
-					},
-					map: {
-						"typescript": "https://unpkg.com/typescript@2.8.1",
-						///"typescript": "../node_modules/typescript",
-						"plugin-typescript": "https://unpkg.com/plugin-typescript@8.0.0",
-						///"plugin-typescript": "../node_modules/plugin-typescript"
-					},
+					packages: { "typescript": { main: "lib/typescript.js", meta: { "lib/typescript.js": { exports: "ts" } } } },
+					// map: { "typescript": "../../node_modules/typescript", }
+					map: { "typescript": "https://unpkg.com/typescript@2.8.3", }
+				});
+				SystemJS.config({
+					packages: { "plugin-typescript": { main: "lib/plugin.js" } },
+					// map: { "plugin-typescript": "../../node_modules/plugin-typescript" },
+					map: { "plugin-typescript": "https://unpkg.com/plugin-typescript@8.0.0" },
 					transpiler: "plugin-typescript",
-					typescriptOptions: {
-						"module": "system",
-						"types": [ "systemjs" ],
-						"typeCheck": true, // also accepts "strict"
-						"tsconfig": true // also accepts a path
-					}
+					typescriptOptions: { tsconfig: true, module: "system" }
 				});
 			}
 			SystemJS.config({
