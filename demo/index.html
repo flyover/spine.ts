@@ -9,7 +9,7 @@
 		<!--script type="text/javascript" src="../node_modules/systemjs/dist/system.js"></script-->
 		<script type="text/javascript">
 		function boot(event) {
-			var transpile = !false;
+			var transpile = false;
 			if (transpile) {
 				SystemJS.config({
 					packages: { "typescript": { main: "lib/typescript.js", meta: { "lib/typescript.js": { exports: "ts" } } } },
