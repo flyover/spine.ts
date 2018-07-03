@@ -2,7 +2,7 @@
   "name": "@flyover/spine",
   "version": "1.0.0",
   "description": "spine.ts",
-  "main": "index.js",
+  "main": "dist/index.js",
   "types": "index.ts",
   "dependencies": {
     "@types/systemjs": "^0.20.6",

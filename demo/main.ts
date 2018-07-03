@@ -126,13 +126,13 @@ export function start(): void {
     const file_atlas_url: string = (file.atlas_url) ? (file_path + file.atlas_url) : ("");
 
     counter_inc();
-    loadText(file_json_url, (err: string, json_text: string): void => {
+    loadText(file_json_url, (err: string | null, json_text: string | null): void => {
       if (err) { console.log("error loading:", file_json_url); }
       if (!err && json_text) {
         spine_data.load(JSON.parse(json_text));
       }
       counter_inc();
-      loadText(file_atlas_url, (err: string, atlas_text: string): void => {
+      loadText(file_atlas_url, (err: string | null, atlas_text: string | null): void => {
         if (!err && atlas_text) {
           // load atlas page images
           atlas_data = new Atlas.Data().import(atlas_text);
@@ -141,10 +141,10 @@ export function start(): void {
             const image_key: string = page.name;
             const image_url: string = dir_path + "/" + image_key;
             counter_inc();
-            images.set(image_key, loadImage(image_url, (err: string, image: HTMLImageElement): void => {
+            images.set(image_key, loadImage(image_url, (err: string | null, image: HTMLImageElement | null): void => {
               if (err) console.log("error loading:", image_url);
-              page.w = page.w || image.width;
-              page.h = page.h || image.height;
+              page.w = page.w || image && image.width || 0;
+              page.h = page.h || image && image.height || 0;
               counter_dec();
             }));
           });
@@ -160,7 +160,7 @@ export function start(): void {
                   const image_key: string = attachment_key;
                   const image_url: string = file_path + spine_data.skeleton.images + image_key + ".png";
                   counter_inc();
-                  images.set(image_key, loadImage(image_url, (err: string, image: HTMLImageElement): void => {
+                  images.set(image_key, loadImage(image_url, (err: string | null, image: HTMLImageElement | null): void => {
                     if (err) console.log("error loading:", image_url);
                     counter_dec();
                   }));

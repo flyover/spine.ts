@@ -23,13 +23,23 @@
 					transpiler: "plugin-typescript",
 					typescriptOptions: { tsconfig: true, module: "system" }
 				});
+				SystemJS.config({
+					packages: {
+						"..": { defaultExtension: "ts" },
+						".": { defaultExtension: "ts" }
+					}
+				});
+			} else {
+				SystemJS.config({
+					baseURL: "dist/demo"
+				});
+				SystemJS.config({
+					packages: {
+						"..": { defaultExtension: "js" },
+						".": { defaultExtension: "js" }
+					}
+				});
 			}
-			SystemJS.config({
-				packages: {
-					"..": { defaultExtension: transpile ? "ts" : "js" },
-					".": { defaultExtension: transpile ? "ts" : "js" }
-				}
-			});
 			SystemJS.import("main").then(function(module) {
 				module.start();
 			}).catch(function (error) {

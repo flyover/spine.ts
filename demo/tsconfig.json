@@ -2,15 +2,16 @@
     "compilerOptions": {
         "target": "ES2016",
         "module": "system",
-        "inlineSourceMap": true,
+        "strict": true,
         "noImplicitAny": true,
         "noImplicitReturns": true,
         "noImplicitThis": true,
-        "noImplicitUseStrict": true,
         "strictNullChecks": true,
         "noUnusedLocals": true,
-        "noUnusedParameters": false
-    },
+        "noUnusedParameters": false,
+        "inlineSourceMap": true,
+        "outDir": "dist"
+        },
     "files": [
         "main.ts",
         "atlas.ts",

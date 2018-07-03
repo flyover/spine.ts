@@ -1784,10 +1784,10 @@ export type BoneShearTimelineJSON = BoneShearKeyframeJSON[];
 
 export class BoneTimeline {
   public range: Range = new Range();
-  public position_timeline: BonePositionTimeline;
-  public rotation_timeline: BoneRotationTimeline;
-  public scale_timeline: BoneScaleTimeline;
-  public shear_timeline: BoneShearTimeline;
+  public position_timeline?: BonePositionTimeline;
+  public rotation_timeline?: BoneRotationTimeline;
+  public scale_timeline?: BoneScaleTimeline;
+  public shear_timeline?: BoneShearTimeline;
 
   public load(json: BoneTimelineJSON): this {
     this.range.reset();
@@ -1854,8 +1854,8 @@ export type SlotAttachmentTimelineJSON = SlotAttachmentKeyframeJSON[];
 
 export class SlotTimeline {
   public range: Range = new Range();
-  public color_timeline: SlotColorTimeline;
-  public attachment_timeline: SlotAttachmentTimeline;
+  public color_timeline?: SlotColorTimeline;
+  public attachment_timeline?: SlotAttachmentTimeline;
 
   public load(json: SlotTimelineJSON): this {
     this.range.reset();
@@ -2083,10 +2083,10 @@ export interface PtcTimelineJSON {
 
 export class PtcTimeline {
   public range: Range = new Range();
-  public ptc_mix_timeline: PtcMixTimeline;
-  public ptc_spacing_timeline: PtcSpacingTimeline;
-  public ptc_position_timeline: PtcPositionTimeline;
-  public ptc_rotation_timeline: PtcRotationTimeline;
+  public ptc_mix_timeline?: PtcMixTimeline;
+  public ptc_spacing_timeline?: PtcSpacingTimeline;
+  public ptc_position_timeline?: PtcPositionTimeline;
+  public ptc_rotation_timeline?: PtcRotationTimeline;
 
   public load(json: PtcTimelineJSON): this {
     this.range.reset();
@@ -2196,8 +2196,8 @@ export class Animation {
   public range: Range = new Range();
   public bone_timeline_map: SpineMap<string, BoneTimeline> = new SpineMap<string, BoneTimeline>();
   public slot_timeline_map: SpineMap<string, SlotTimeline> = new SpineMap<string, SlotTimeline>();
-  public event_timeline: EventTimeline;
-  public order_timeline: OrderTimeline;
+  public event_timeline?: EventTimeline;
+  public order_timeline?: OrderTimeline;
   public ikc_timeline_map: SpineMap<string, IkcTimeline> = new SpineMap<string, IkcTimeline>();
   public xfc_timeline_map: SpineMap<string, XfcTimeline> = new SpineMap<string, XfcTimeline>();
   public ptc_timeline_map: SpineMap<string, PtcTimeline> = new SpineMap<string, PtcTimeline>();
@@ -2622,28 +2622,36 @@ export class Pose {
       // tween anim bone if keyframes are available
       const bone_timeline: BoneTimeline | undefined = anim && anim.bone_timeline_map.get(bone_key);
       if (bone_timeline) {
-        Timeline.evaluate(bone_timeline.position_timeline, this.time, (keyframe0: BonePositionKeyframe, keyframe1: BonePositionKeyframe, k: number): void => {
-          const pct: number = keyframe0.curve.evaluate(k);
-          pose_bone.local_space.position.x += tween(keyframe0.position.x, keyframe1.position.x, pct);
-          pose_bone.local_space.position.y += tween(keyframe0.position.y, keyframe1.position.y, pct);
-        });
+        if (bone_timeline.position_timeline) {
+          Timeline.evaluate(bone_timeline.position_timeline, this.time, (keyframe0: BonePositionKeyframe, keyframe1: BonePositionKeyframe, k: number): void => {
+            const pct: number = keyframe0.curve.evaluate(k);
+            pose_bone.local_space.position.x += tween(keyframe0.position.x, keyframe1.position.x, pct);
+            pose_bone.local_space.position.y += tween(keyframe0.position.y, keyframe1.position.y, pct);
+          });
+        }
 
-        Timeline.evaluate(bone_timeline.rotation_timeline, this.time, (keyframe0: BoneRotationKeyframe, keyframe1: BoneRotationKeyframe, k: number): void => {
-          const pct: number = keyframe0.curve.evaluate(k);
-          pose_bone.local_space.rotation.rad += tweenAngleRadians(keyframe0.rotation.rad, keyframe1.rotation.rad, pct);
-        });
+        if (bone_timeline.rotation_timeline) {
+            Timeline.evaluate(bone_timeline.rotation_timeline, this.time, (keyframe0: BoneRotationKeyframe, keyframe1: BoneRotationKeyframe, k: number): void => {
+            const pct: number = keyframe0.curve.evaluate(k);
+            pose_bone.local_space.rotation.rad += tweenAngleRadians(keyframe0.rotation.rad, keyframe1.rotation.rad, pct);
+          });
+        }
 
-        Timeline.evaluate(bone_timeline.scale_timeline, this.time, (keyframe0: BoneScaleKeyframe, keyframe1: BoneScaleKeyframe, k: number): void => {
-          const pct: number = keyframe0.curve.evaluate(k);
-          pose_bone.local_space.scale.a *= tween(keyframe0.scale.a, keyframe1.scale.a, pct);
-          pose_bone.local_space.scale.d *= tween(keyframe0.scale.d, keyframe1.scale.d, pct);
-        });
+        if (bone_timeline.scale_timeline) {
+          Timeline.evaluate(bone_timeline.scale_timeline, this.time, (keyframe0: BoneScaleKeyframe, keyframe1: BoneScaleKeyframe, k: number): void => {
+            const pct: number = keyframe0.curve.evaluate(k);
+            pose_bone.local_space.scale.a *= tween(keyframe0.scale.a, keyframe1.scale.a, pct);
+            pose_bone.local_space.scale.d *= tween(keyframe0.scale.d, keyframe1.scale.d, pct);
+          });
+        }
 
-        Timeline.evaluate(bone_timeline.shear_timeline, this.time, (keyframe0: BoneShearKeyframe, keyframe1: BoneShearKeyframe, k: number): void => {
-          const pct: number = keyframe0.curve.evaluate(k);
-          pose_bone.local_space.shear.x.rad += tweenAngleRadians(keyframe0.shear.x.rad, keyframe1.shear.x.rad, pct);
-          pose_bone.local_space.shear.y.rad += tweenAngleRadians(keyframe0.shear.y.rad, keyframe1.shear.y.rad, pct);
-        });
+        if (bone_timeline.shear_timeline) {
+          Timeline.evaluate(bone_timeline.shear_timeline, this.time, (keyframe0: BoneShearKeyframe, keyframe1: BoneShearKeyframe, k: number): void => {
+            const pct: number = keyframe0.curve.evaluate(k);
+            pose_bone.local_space.shear.x.rad += tweenAngleRadians(keyframe0.shear.x.rad, keyframe1.shear.x.rad, pct);
+            pose_bone.local_space.shear.y.rad += tweenAngleRadians(keyframe0.shear.y.rad, keyframe1.shear.y.rad, pct);
+          });
+        }
       }
     });
 
@@ -2898,14 +2906,18 @@ export class Pose {
       // tween anim slot if keyframes are available
       const slot_timeline: SlotTimeline | undefined = anim && anim.slot_timeline_map.get(slot_key);
       if (slot_timeline) {
-        Timeline.evaluate(slot_timeline.color_timeline, this.time, (keyframe0: SlotColorKeyframe, keyframe1: SlotColorKeyframe, k: number): void => {
-          keyframe0.color.tween(keyframe1.color, keyframe0.curve.evaluate(k), pose_slot.color);
-        });
+        if (slot_timeline.color_timeline) {
+          Timeline.evaluate(slot_timeline.color_timeline, this.time, (keyframe0: SlotColorKeyframe, keyframe1: SlotColorKeyframe, k: number): void => {
+            keyframe0.color.tween(keyframe1.color, keyframe0.curve.evaluate(k), pose_slot.color);
+          });
+        }
 
-        Timeline.evaluate(slot_timeline.attachment_timeline, this.time, (keyframe0: SlotAttachmentKeyframe, keyframe1: SlotAttachmentKeyframe, k: number): void => {
-          // no tweening attachments
-          pose_slot.attachment_key = keyframe0.name;
-        });
+        if (slot_timeline.attachment_timeline) {
+          Timeline.evaluate(slot_timeline.attachment_timeline, this.time, (keyframe0: SlotAttachmentKeyframe, keyframe1: SlotAttachmentKeyframe, k: number): void => {
+            // no tweening attachments
+            pose_slot.attachment_key = keyframe0.name;
+          });
+        }
       }
     });
 
@@ -2952,23 +2964,31 @@ export class Pose {
 
       const ptc_timeline: PtcTimeline | undefined = anim && anim.ptc_timeline_map.get(ptc_key);
       if (ptc_timeline) {
-        Timeline.evaluate(ptc_timeline.ptc_mix_timeline, this.time, (keyframe0: PtcMixKeyframe, keyframe1: PtcMixKeyframe, k: number): void => {
-          const pct: number = keyframe0.curve.evaluate(k);
-          ptc_position_mix = tween(keyframe0.position_mix, keyframe1.position_mix, pct);
-          ptc_rotation_mix = tween(keyframe0.rotation_mix, keyframe1.rotation_mix, pct);
-        });
+        if (ptc_timeline.ptc_mix_timeline) {
+          Timeline.evaluate(ptc_timeline.ptc_mix_timeline, this.time, (keyframe0: PtcMixKeyframe, keyframe1: PtcMixKeyframe, k: number): void => {
+            const pct: number = keyframe0.curve.evaluate(k);
+            ptc_position_mix = tween(keyframe0.position_mix, keyframe1.position_mix, pct);
+            ptc_rotation_mix = tween(keyframe0.rotation_mix, keyframe1.rotation_mix, pct);
+          });
+        }
 
-        Timeline.evaluate(ptc_timeline.ptc_spacing_timeline, this.time, (keyframe0: PtcSpacingKeyframe, keyframe1: PtcSpacingKeyframe, k: number): void => {
-          ptc_spacing = tween(keyframe0.spacing, keyframe1.spacing, keyframe0.curve.evaluate(k));
-        });
+        if (ptc_timeline.ptc_spacing_timeline) {
+          Timeline.evaluate(ptc_timeline.ptc_spacing_timeline, this.time, (keyframe0: PtcSpacingKeyframe, keyframe1: PtcSpacingKeyframe, k: number): void => {
+            ptc_spacing = tween(keyframe0.spacing, keyframe1.spacing, keyframe0.curve.evaluate(k));
+          });
+        }
 
-        Timeline.evaluate(ptc_timeline.ptc_position_timeline, this.time, (keyframe0: PtcPositionKeyframe, keyframe1: PtcPositionKeyframe, k: number): void => {
-          ptc_position = tween(keyframe0.position, keyframe1.position, keyframe0.curve.evaluate(k));
-        });
+        if (ptc_timeline.ptc_position_timeline) {
+          Timeline.evaluate(ptc_timeline.ptc_position_timeline, this.time, (keyframe0: PtcPositionKeyframe, keyframe1: PtcPositionKeyframe, k: number): void => {
+            ptc_position = tween(keyframe0.position, keyframe1.position, keyframe0.curve.evaluate(k));
+          });
+        }
 
-        Timeline.evaluate(ptc_timeline.ptc_rotation_timeline, this.time, (keyframe0: PtcRotationKeyframe, keyframe1: PtcRotationKeyframe, k: number): void => {
-          ptc_rotation.rad = tweenAngleRadians(keyframe0.rotation.rad, keyframe1.rotation.rad, keyframe0.curve.evaluate(k));
-        });
+        if (ptc_timeline.ptc_rotation_timeline) {
+          Timeline.evaluate(ptc_timeline.ptc_rotation_timeline, this.time, (keyframe0: PtcRotationKeyframe, keyframe1: PtcRotationKeyframe, k: number): void => {
+            ptc_rotation.rad = tweenAngleRadians(keyframe0.rotation.rad, keyframe1.rotation.rad, keyframe0.curve.evaluate(k));
+          });
+        }
       }
 
       ptc.bone_keys.forEach((bone_key: string): void => {

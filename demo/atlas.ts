@@ -25,6 +25,9 @@ export class Site {
   public original_w: number = 0;
   public original_h: number = 0;
   public index: number = -1;
+  constructor(page: Page) {
+    this.page = page;
+  }
 }
 
 export class Data {
@@ -116,8 +119,7 @@ export class Data {
             site.original_w = site.original_w || site.w;
             site.original_h = site.original_h || site.h;
           }
-          site = new Site();
-          site.page = page;
+          site = new Site(page);
           this.sites[line] = site;
         }
       }
@@ -169,8 +171,7 @@ export class Data {
     }
     Object.keys(tps_json.frames || {}).forEach((key: string): void => {
       const frame: any = tps_json.frames[key];
-      const site: Site = this.sites[key] = new Site();
-      site.page = page;
+      const site: Site = this.sites[key] = new Site(page);
       site.x = frame.frame.x;
       site.y = frame.frame.y;
       site.w = frame.frame.w;

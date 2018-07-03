@@ -303,9 +303,9 @@ class RenderRegionAttachment implements RenderAttachment {
 
 class RenderMeshAttachment implements RenderAttachment {
   public render: RenderWebGL;
-  public vertex_position: RenderVertex;
-  public vertex_texcoord: RenderVertex;
-  public vertex_triangle: RenderVertex;
+  public vertex_position!: RenderVertex;
+  public vertex_texcoord!: RenderVertex;
+  public vertex_triangle!: RenderVertex;
   public ffd_attachment_map: Spine.Map<string, RenderFfdAttachment> = new Spine.Map<string, RenderFfdAttachment>();
 
   constructor(render: RenderWebGL) {
@@ -400,10 +400,10 @@ class RenderMeshAttachment implements RenderAttachment {
 
 class RenderWeightedMeshAttachment implements RenderAttachment {
   public render: RenderWebGL;
-  public vertex_position: RenderVertex;
-  public vertex_blenders: RenderVertex;
-  public vertex_texcoord: RenderVertex;
-  public vertex_triangle: RenderVertex;
+  public vertex_position!: RenderVertex;
+  public vertex_blenders!: RenderVertex;
+  public vertex_texcoord!: RenderVertex;
+  public vertex_triangle!: RenderVertex;
   public blend_bone_index_array: number[] = [];
   public ffd_attachment_map: Spine.Map<string, RenderFfdAttachment> = new Spine.Map<string, RenderFfdAttachment>();
 
@@ -590,7 +590,7 @@ class RenderFfdAttachment {
 }
 
 class RenderFfdKeyframe {
-  vertex_position_morph: RenderVertex;
+  vertex_position_morph!: RenderVertex;
 }
 
 function repeat(format: string, count: number): string[] {
@@ -609,29 +609,29 @@ function flatten(array: (string|string[])[], out: string[] = []): string[] {
 }
 
 class RenderShader {
-  public vs_src: string[];
-  public fs_src: string[];
-  public vs: WebGLShader | null;
-  public fs: WebGLShader | null;
-  public program: WebGLProgram | null;
-  public uniforms: Map<string, WebGLUniformLocation>;
-  public attribs: Map<string, GLint>;
+  public vs_src: string[] = [];
+  public fs_src: string[] = [];
+  public vs: WebGLShader | null = null;
+  public fs: WebGLShader | null = null;
+  public program: WebGLProgram | null = null;
+  public uniforms: Map<string, WebGLUniformLocation> = new Map();
+  public attribs: Map<string, GLint> = new Map();
 }
 
 type RenderVertexType = Float32Array | Int8Array | Uint8Array | Int16Array | Uint16Array | Int32Array | Uint32Array;
 
 class RenderVertex {
-  public type: number; // FLOAT, BYTE, UNSIGNED_BYTE, SHORT, UNSIGNED_SHORT, INT, UNSIGNED_INT
-  public size: number; // size in elements per vertex
-  public count: number; // number of vertices
-  public typed_array: RenderVertexType;
-  public buffer: WebGLBuffer | null;
-  public buffer_type: number; // ARRAY_BUFFER or ELEMENT_ARRAY_BUFFER
-  public buffer_draw: number; // STREAM_DRAW, STATIC_DRAW or DYNAMIC_DRAW
+  public type!: number; // FLOAT, BYTE, UNSIGNED_BYTE, SHORT, UNSIGNED_SHORT, INT, UNSIGNED_INT
+  public size!: number; // size in elements per vertex
+  public count!: number; // number of vertices
+  public typed_array!: RenderVertexType;
+  public buffer: WebGLBuffer | null = null;
+  public buffer_type!: number; // ARRAY_BUFFER or ELEMENT_ARRAY_BUFFER
+  public buffer_draw!: number; // STREAM_DRAW, STATIC_DRAW or DYNAMIC_DRAW
 }
 
 class RenderTexture {
-  public texture: WebGLTexture | null;
+  public texture: WebGLTexture | null = null;
 }
 
 export function vec4Identity(v: Float32Array): Float32Array {

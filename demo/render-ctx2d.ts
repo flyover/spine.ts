@@ -283,10 +283,10 @@ class RenderBoundingBoxAttachment implements RenderAttachment {
 
 class RenderMeshAttachment implements RenderAttachment {
   public render: RenderCtx2D;
-  public vertex_count: number;
-  public vertex_position: Float32Array;
-  public vertex_texcoord: Float32Array;
-  public vertex_triangle: Uint16Array;
+  public vertex_count!: number;
+  public vertex_position!: Float32Array;
+  public vertex_texcoord!: Float32Array;
+  public vertex_triangle!: Uint16Array;
 
   constructor(render: RenderCtx2D) {
     this.render = render;
@@ -365,11 +365,11 @@ class RenderMeshAttachment implements RenderAttachment {
 
 class RenderWeightedMeshAttachment implements RenderAttachment {
   public render: RenderCtx2D;
-  public vertex_count: number;
-  public vertex_setup_position: Float32Array;
-  public vertex_blend_position: Float32Array;
-  public vertex_texcoord: Float32Array;
-  public vertex_triangle: Uint16Array;
+  public vertex_count!: number;
+  public vertex_setup_position!: Float32Array;
+  public vertex_blend_position!: Float32Array;
+  public vertex_texcoord!: Float32Array;
+  public vertex_triangle!: Uint16Array;
 
   constructor(render: RenderCtx2D) {
     this.render = render;
