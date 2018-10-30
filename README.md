@@ -5,4 +5,4 @@ spine.ts
 
 A TypeScript API for the Spine JSON animation data format.
 
-https://cdn.rawgit.com/flyover/spine.ts/master/demo/index.html
+https://flyover.github.io/spine.ts/demo/
