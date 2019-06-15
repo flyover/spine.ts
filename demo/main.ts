@@ -191,21 +191,35 @@ export function start(): void {
 
   addFile("Splatoon-FanArt/", "Data/splatoon.json", "Data/splatoon.atlas.txt", 0.5);
   addFile("ExplorerQ/", "ExplorerQ.json");
-  addFile("examples/alien/", "export/alien.json", "export/alien.atlas");
-  addFile("examples/dragon/", "export/dragon.json", "export/dragon.atlas");
-  addFile("examples/goblins/", "export/goblins.json", "export/goblins.atlas");
-  addFile("examples/goblins/", "export/goblins-mesh.json", "export/goblins-mesh.atlas");
-  addFile("examples/goblins/", "export/goblins-ffd.json", "export/goblins-ffd.atlas");
-  addFile("examples/hero/", "export/hero-mesh.json", "export/hero-mesh.atlas");
-  addFile("examples/hero/", "export/hero.json", "export/hero.atlas");
-  addFile("examples/powerup/", "export/powerup.json", "export/powerup.atlas");
-  addFile("examples/raptor/", "export/raptor.json", "export/raptor.atlas", 0.5);
-  addFile("examples/speedy/", "export/speedy.json", "export/speedy.atlas");
-  addFile("examples/spineboy-old/", "export/spineboy-old.json", "export/spineboy-old.atlas");
-  addFile("examples/spineboy/", "export/spineboy.json", "export/spineboy.atlas", 0.5);
-  addFile("examples/spineboy/", "export/spineboy-mesh.json", "export/spineboy-mesh.atlas", 0.5);
-  addFile("examples/spineboy/", "export/spineboy-hoverboard.json", "export/spineboy-hoverboard.atlas", 0.5);
-  addFile("examples/spinosaurus/", "export/spinosaurus.json", "export/spinosaurus.atlas", 0.5);
+
+  addFile("examples/tank/", "export/tank-pro.json", "export/tank.atlas", 0.25);
+  // addFile("examples/goblins/", "images/pack.json", "images/pack.atlas");
+  addFile("examples/goblins/", "export/goblins-pro.json", "export/goblins.atlas");
+  addFile("examples/goblins/", "export/goblins-ess.json", "export/goblins.atlas");
+  addFile("examples/raptor/", "export/raptor-pro.json", "export/raptor.atlas", 0.5);
+  addFile("examples/vine/", "export/vine-pro.json", "export/vine.atlas", 0.5);
+  addFile("examples/owl/", "export/owl-pro.json", "export/owl.atlas", 0.5);
+  addFile("examples/spinosaurus/", "export/spinosaurus-ess.json", undefined, 0.5);
+  addFile("examples/windmill/", "export/windmill-ess.json", "export/windmill.atlas", 0.5);
+  addFile("examples/alien/", "export/alien-pro.json", "export/alien.atlas");
+  addFile("examples/alien/", "export/alien-ess.json", "export/alien.atlas");
+  addFile("examples/coin/", "export/coin-pro.json", "export/coin.atlas", 0.5);
+  addFile("examples/speedy/", "export/speedy-ess.json", "export/speedy.atlas");
+  addFile("examples/dragon/", "export/dragon-ess.json", "export/dragon.atlas");
+  addFile("examples/powerup/", "export/powerup-pro.json", "export/powerup.atlas");
+  addFile("examples/powerup/", "export/powerup-ess.json", "export/powerup.atlas");
+  // addFile("examples/export/", "atlas-0.5-pma.json", "atlas-0.5-pma.atlas");
+  // addFile("examples/export/", "atlas-1.0-pma.json", "atlas-1.0-pma.atlas");
+  // addFile("examples/export/", "json.json", "json.atlas");
+  // addFile("examples/export/", "atlas-0.5.json", "atlas-0.5.atlas");
+  // addFile("examples/export/", "binary.json", "binary.atlas");
+  // addFile("examples/export/", "atlas-1.0.json", "atlas-1.0.atlas");
+  addFile("examples/hero/", "export/hero-ess.json", "export/hero.atlas");
+  addFile("examples/hero/", "export/hero-pro.json", "export/hero.atlas");
+  addFile("examples/stretchyman/", "export/stretchyman-pro.json", "export/stretchyman.atlas", 0.5);
+  addFile("examples/stretchyman/", "export/stretchyman-stretchy-ik-pro.json", "export/stretchyman.atlas", 0.5);
+  addFile("examples/spineboy/", "export/spineboy-pro.json", "export/spineboy.atlas", 0.5);
+  addFile("examples/spineboy/", "export/spineboy-ess.json", "export/spineboy.atlas", 0.5);
 
   ///const esoteric: string = "https://raw.githubusercontent.com/EsotericSoftware/spine-runtimes/master/";
 

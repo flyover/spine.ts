@@ -14,6 +14,7 @@
   "scripts": {
     "build": "tsc",
     "build-demo": "tsc -p demo",
+    "watch-demo": "tsc -p demo --watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

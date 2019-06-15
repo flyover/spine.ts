@@ -1235,7 +1235,7 @@ export interface SlotJSON {
   blend?: BlendMode;
 }
 
-export type AttachmentType = "region" | "boundingbox" | "mesh" | "linkedmesh" | "skinnedmesh" | "weightedmesh" | "path";
+export type AttachmentType = "region" | "boundingbox" | "mesh" | "linkedmesh" | "skinnedmesh" | "weightedmesh" | "path" | "clipping";
 
 export class Attachment {
   public type: AttachmentType | "" = "";
@@ -1452,6 +1452,39 @@ export interface PathAttachmentJSON extends AttachmentJSON {
   vertices: number[];
 }
 
+export class ClippingAttachment extends Attachment {
+  // public color: Color = new Color();
+  // public closed: boolean = false;
+  // public accurate: boolean = true;
+  // public lengths: number[] = [];
+  // public vertex_count: number = 0;
+  // public vertices: number[] = [];
+
+  constructor() {
+    super("clipping");
+  }
+
+  public load(json: ClippingAttachmentJSON): this {
+    super.load(json);
+    // this.color.load(json.color, 0xff7f00ff);
+    // this.closed = loadBool(json, "closed", false);
+    // this.accurate = loadBool(json, "constantSpeed", true);
+    // this.lengths = json.lengths || [];
+    // this.vertex_count = loadInt(json, "vertexCount", 0);
+    // this.vertices = json.vertices || [];
+    return this;
+  }
+}
+
+export interface ClippingAttachmentJSON extends AttachmentJSON {
+  // color?: ColorJSON;
+  // closed?: boolean;
+  // constantSpeed?: boolean;
+  // lengths: number[];
+  // vertexCount: number;
+  // vertices: number[];
+}
+
 export class SkinSlot {
   public attachments: SpineMap<string, Attachment> = new SpineMap<string, Attachment>();
 
@@ -1483,6 +1516,9 @@ export class SkinSlot {
           break;
         case "path":
           this.attachments.set(key, new PathAttachment().load(<PathAttachmentJSON>json[key]));
+          break;
+        case "clipping":
+          this.attachments.set(key, new ClippingAttachment().load(<ClippingAttachmentJSON>json[key]));
           break;
       }
     });
