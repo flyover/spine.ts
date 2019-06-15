@@ -854,6 +854,7 @@ export function mat4x4ApplyAtlasSitePosition(m: Float32Array, site: Atlas.Site |
 
 export function glCompileShader(gl: WebGLRenderingContext, src: string[], type: number): WebGLShader | null {
   let shader: WebGLShader | null = gl.createShader(type);
+  if (shader === null) { return null; }
   gl.shaderSource(shader, src.join("\n"));
   gl.compileShader(shader);
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
@@ -866,7 +867,9 @@ export function glCompileShader(gl: WebGLRenderingContext, src: string[], type: 
 }
 
 export function glLinkProgram(gl: WebGLRenderingContext, vs: WebGLShader | null, fs: WebGLShader | null): WebGLProgram | null {
+  if (vs === null || fs === null) { return null; }
   let program: WebGLProgram | null = gl.createProgram();
+  if (program === null) { return null; }
   gl.attachShader(program, vs);
   gl.attachShader(program, fs);
   gl.linkProgram(program);
@@ -881,6 +884,7 @@ export function glLinkProgram(gl: WebGLRenderingContext, vs: WebGLShader | null,
 }
 
 export function glGetUniforms(gl: WebGLRenderingContext, program: WebGLProgram | null, uniforms: Map<string, WebGLUniformLocation> = new Map<string, WebGLUniformLocation>()): Map<string, WebGLUniformLocation> {
+  if (program === null) { return uniforms; }
   const count: number = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
   for (let index: number = 0; index < count; ++index) {
     const uniform: WebGLActiveInfo | null = gl.getActiveUniform(program, index);
@@ -893,6 +897,7 @@ export function glGetUniforms(gl: WebGLRenderingContext, program: WebGLProgram |
 }
 
 export function glGetAttribs(gl: WebGLRenderingContext, program: WebGLProgram | null, attribs: Map<string, number> = new Map<string, number>()): Map<string, number> {
+  if (program === null) { return attribs; }
   const count: number = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
   for (let index: number = 0; index < count; ++index) {
     const attrib: WebGLActiveInfo | null = gl.getActiveAttrib(program, index);
