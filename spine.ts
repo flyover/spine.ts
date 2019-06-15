@@ -1453,12 +1453,10 @@ export interface PathAttachmentJSON extends AttachmentJSON {
 }
 
 export class ClippingAttachment extends Attachment {
-  // public color: Color = new Color();
-  // public closed: boolean = false;
-  // public accurate: boolean = true;
-  // public lengths: number[] = [];
-  // public vertex_count: number = 0;
-  // public vertices: number[] = [];
+  public color: Color = new Color();
+  public end: string = "";
+  public vertex_count: number = 0;
+  public vertices: number[] = [];
 
   constructor() {
     super("clipping");
@@ -1466,23 +1464,19 @@ export class ClippingAttachment extends Attachment {
 
   public load(json: ClippingAttachmentJSON): this {
     super.load(json);
-    // this.color.load(json.color, 0xff7f00ff);
-    // this.closed = loadBool(json, "closed", false);
-    // this.accurate = loadBool(json, "constantSpeed", true);
-    // this.lengths = json.lengths || [];
-    // this.vertex_count = loadInt(json, "vertexCount", 0);
-    // this.vertices = json.vertices || [];
+    this.color.load(json.color, 0xff7f00ff);
+    this.end = loadString(json, "end", "");
+    this.vertex_count = loadInt(json, "vertexCount", 0);
+    this.vertices = json.vertices || [];
     return this;
   }
 }
 
 export interface ClippingAttachmentJSON extends AttachmentJSON {
-  // color?: ColorJSON;
-  // closed?: boolean;
-  // constantSpeed?: boolean;
-  // lengths: number[];
-  // vertexCount: number;
-  // vertices: number[];
+  color?: ColorJSON;
+  end: string;
+  vertexCount: number;
+  vertices: number[];
 }
 
 export class SkinSlot {
