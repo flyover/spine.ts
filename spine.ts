@@ -684,8 +684,8 @@ export class Matrix {
 }
 
 export class Affine {
-  public vector: Vector = new Vector();
-  public matrix: Matrix = new Matrix();
+  public readonly vector: Vector = new Vector();
+  public readonly matrix: Matrix = new Matrix();
 
   public static copy(affine: Affine, out: Affine = new Affine()): Affine {
     Vector.copy(affine.vector, out.vector);
@@ -753,7 +753,7 @@ export class Position extends Vector {
 }
 
 export class Rotation extends Angle {
-  public matrix: Matrix = new Matrix();
+  public readonly matrix: Matrix = new Matrix();
   public updateMatrix(m: Matrix = this.matrix): Matrix {
     m.a = this.cos; m.b = -this.sin;
     m.c = this.sin; m.d = this.cos;
@@ -770,9 +770,9 @@ export class Scale extends Matrix {
 }
 
 export class Shear {
-  public x: Angle = new Angle();
-  public y: Angle = new Angle();
-  public matrix: Matrix = new Matrix();
+  public readonly x: Angle = new Angle();
+  public readonly y: Angle = new Angle();
+  public readonly matrix: Matrix = new Matrix();
 
   public updateMatrix(m: Matrix = this.matrix): Matrix {
     m.a = this.x.cos; m.b = -this.y.sin;
@@ -816,11 +816,11 @@ export class Shear {
 }
 
 export class Space {
-  public position: Position = new Position();
-  public rotation: Rotation = new Rotation();
-  public scale: Scale = new Scale();
-  public shear: Shear = new Shear();
-  public affine: Affine = new Affine();
+  public readonly position: Position = new Position();
+  public readonly rotation: Rotation = new Rotation();
+  public readonly scale: Scale = new Scale();
+  public readonly shear: Shear = new Shear();
+  public readonly affine: Affine = new Affine();
 
   public updateAffine(affine: Affine = this.affine): Affine {
     Vector.copy(this.position, affine.vector);
@@ -972,11 +972,11 @@ export interface SpaceJSON {
 }
 
 export class Bone {
-  public color: Color = new Color();
+  public readonly color: Color = new Color();
   public parent_key: string = "";
   public length: number = 0;
-  public local_space: Space = new Space();
-  public world_space: Space = new Space();
+  public readonly local_space: Space = new Space();
+  public readonly world_space: Space = new Space();
   public inherit_rotation: boolean = true;
   public inherit_scale: boolean = true;
   public transform: string = "normal";
@@ -1118,13 +1118,13 @@ export class Xfc extends Constraint {
   public bone_keys: string[] = [];
   public target_key: string = "";
   public position_mix: number = 1;
-  public position: Position = new Position();
+  public readonly position: Position = new Position();
   public rotation_mix: number = 1;
-  public rotation: Rotation = new Rotation();
+  public readonly rotation: Rotation = new Rotation();
   public scale_mix: number = 1;
-  public scale: Scale = new Scale();
+  public readonly scale: Scale = new Scale();
   public shear_mix: number = 1;
-  public shear: Shear = new Shear();
+  public readonly shear: Shear = new Shear();
 
   public load(json: XfcJSON): this {
     super.load(json);
@@ -1171,7 +1171,7 @@ export class Ptc extends Constraint {
   public position: number = 0;
   public rotation_mode: string = "tangent"; // "tangent", "chain", "chainscale"
   public rotation_mix: number = 1;
-  public rotation: Rotation = new Rotation();
+  public readonly rotation: Rotation = new Rotation();
 
   public load(json: PtcJSON): this {
     super.load(json);
@@ -1206,7 +1206,7 @@ export type BlendMode = "normal" | "additive" | "multiply" | "screen";
 
 export class Slot {
   public bone_key: string = "";
-  public color: Color = new Color();
+  public readonly color: Color = new Color();
   public attachment_key: string = "";
   public blend: BlendMode = "normal";
 
@@ -1262,8 +1262,8 @@ export interface AttachmentJSON {
 
 export class RegionAttachment extends Attachment {
   public path: string = "";
-  public color: Color = new Color();
-  public local_space: Space = new Space();
+  public readonly color: Color = new Color();
+  public readonly local_space: Space = new Space();
   public width: number = 0;
   public height: number = 0;
 
@@ -1290,7 +1290,7 @@ export interface RegionAttachmentJSON extends AttachmentJSON, SpaceJSON {
 }
 
 export class BoundingBoxAttachment extends Attachment {
-  public color: Color = new Color();
+  public readonly color: Color = new Color();
   public vertex_count: number = 0;
   public vertices: number[] = [];
 
@@ -1316,7 +1316,7 @@ export interface BoundingBoxAttachmentJSON extends AttachmentJSON {
 
 export class MeshAttachment extends Attachment {
   public path: string = "";
-  public color: Color = new Color();
+  public readonly color: Color = new Color();
   public triangles: number[] = [];
   public edges: number[] = [];
   public vertices: number[] = [];
@@ -1351,7 +1351,7 @@ export interface MeshAttachmentJSON extends AttachmentJSON {
 }
 
 export class LinkedMeshAttachment extends Attachment {
-  public color: Color = new Color();
+  public readonly color: Color = new Color();
   public skin_key: string = "";
   public parent_key: string = "";
   public inherit_deform: boolean = true;
@@ -1385,7 +1385,7 @@ export interface LinkedMeshAttachmentJSON extends AttachmentJSON {
 
 export class WeightedMeshAttachment extends Attachment {
   public path: string = "";
-  public color: Color = new Color();
+  public readonly color: Color = new Color();
   public triangles: number[] = [];
   public edges: number[] = [];
   public vertices: number[] = [];
@@ -1420,7 +1420,7 @@ export interface WeightedMeshAttachmentJSON extends AttachmentJSON {
 }
 
 export class PathAttachment extends Attachment {
-  public color: Color = new Color();
+  public readonly color: Color = new Color();
   public closed: boolean = false;
   public accurate: boolean = true;
   public lengths: number[] = [];
@@ -1453,7 +1453,7 @@ export interface PathAttachmentJSON extends AttachmentJSON {
 }
 
 export class ClippingAttachment extends Attachment {
-  public color: Color = new Color();
+  public readonly color: Color = new Color();
   public end: string = "";
   public vertex_count: number = 0;
   public vertices: number[] = [];
@@ -1480,7 +1480,7 @@ export interface ClippingAttachmentJSON extends AttachmentJSON {
 }
 
 export class SkinSlot {
-  public attachments: SpineMap<string, Attachment> = new SpineMap<string, Attachment>();
+  public readonly attachments: SpineMap<string, Attachment> = new SpineMap<string, Attachment>();
 
   public load(json: SkinSlotJSON): this {
     this.attachments.clear();
@@ -1524,7 +1524,7 @@ export type SkinSlotJSON = {[key: string]: AttachmentJSON};
 
 export class Skin {
   public name: string = "";
-  public slots: SpineMap<string, SkinSlot> = new SpineMap<string, SkinSlot>();
+  public readonly slots: SpineMap<string, SkinSlot> = new SpineMap<string, SkinSlot>();
 
   public load(json: SkinJSON): this {
     this.name = loadString(json, "name", "");
@@ -1687,7 +1687,7 @@ export interface KeyframeJSON {
 export type KeyframeConstructor<T extends Keyframe> = { new(): T; };
 
 export class Timeline<T extends Keyframe> {
-  public range: Range = new Range();
+  public readonly range: Range = new Range();
   public keyframes: T[] = [];
 
   public load(json: KeyframeJSON[], ctor: KeyframeConstructor<T>): this {
@@ -1706,7 +1706,7 @@ export class Timeline<T extends Keyframe> {
 }
 
 export class CurveKeyframe extends Keyframe {
-  public curve: Curve = new Curve();
+  public readonly curve: Curve = new Curve();
   public load(json: CurveKeyframeJSON): this {
     super.load(json);
     this.curve.load(json.curve);
@@ -1723,7 +1723,7 @@ export interface CurveKeyframeJSON extends KeyframeJSON {
 }
 
 export class BonePositionKeyframe extends CurveKeyframe {
-  public position: Position = new Position();
+  public readonly position: Position = new Position();
   public load(json: BonePositionKeyframeJSON): this {
     super.load(json);
     this.position.x = loadFloat(json, "x", 0);
@@ -1746,7 +1746,7 @@ export class BonePositionTimeline extends Timeline<BonePositionKeyframe> {
 export type BonePositionTimelineJSON = BonePositionKeyframeJSON[];
 
 export class BoneRotationKeyframe extends CurveKeyframe {
-  public rotation: Rotation = new Rotation();
+  public readonly rotation: Rotation = new Rotation();
   public load(json: BoneRotationKeyframeJSON): this {
     super.load(json);
     this.rotation.deg = loadFloat(json, "angle", 0);
@@ -1767,7 +1767,7 @@ export class BoneRotationTimeline extends Timeline<BoneRotationKeyframe> {
 export type BoneRotationTimelineJSON = BoneRotationKeyframeJSON[];
 
 export class BoneScaleKeyframe extends CurveKeyframe {
-  public scale: Scale = new Scale();
+  public readonly scale: Scale = new Scale();
   public load(json: BoneScaleKeyframeJSON): this {
     super.load(json);
     this.scale.x = loadFloat(json, "x", 1);
@@ -1790,7 +1790,7 @@ export class BoneScaleTimeline extends Timeline<BoneScaleKeyframe> {
 export type BoneScaleTimelineJSON = BoneScaleKeyframeJSON[];
 
 export class BoneShearKeyframe extends CurveKeyframe {
-  public shear: Shear = new Shear();
+  public readonly shear: Shear = new Shear();
   public load(json: BoneShearKeyframeJSON): this {
     super.load(json);
     this.shear.x.deg = loadFloat(json, "x", 0);
@@ -1813,7 +1813,7 @@ export class BoneShearTimeline extends Timeline<BoneShearKeyframe> {
 export type BoneShearTimelineJSON = BoneShearKeyframeJSON[];
 
 export class BoneTimeline {
-  public range: Range = new Range();
+  public readonly range: Range = new Range();
   public position_timeline?: BonePositionTimeline;
   public rotation_timeline?: BoneRotationTimeline;
   public scale_timeline?: BoneScaleTimeline;
@@ -1841,7 +1841,7 @@ export interface BoneTimelineJSON {
 }
 
 export class SlotColorKeyframe extends CurveKeyframe {
-  public color: Color = new Color();
+  public readonly color: Color = new Color();
   public load(json: SlotColorKeyframeJSON): this {
     super.load(json);
     this.color.load(json.color);
@@ -1883,7 +1883,7 @@ export class SlotAttachmentTimeline extends Timeline<SlotAttachmentKeyframe> {
 export type SlotAttachmentTimelineJSON = SlotAttachmentKeyframeJSON[];
 
 export class SlotTimeline {
-  public range: Range = new Range();
+  public readonly range: Range = new Range();
   public color_timeline?: SlotColorTimeline;
   public attachment_timeline?: SlotAttachmentTimeline;
 
@@ -1904,7 +1904,7 @@ export interface SlotTimelineJSON {
 
 export class EventKeyframe extends Keyframe {
   public name: string = "";
-  public event: Event = new Event();
+  public readonly event: Event = new Event();
   public load(json: EventKeyframeJSON): this {
     super.load(json);
     this.name = loadString(json, "name", "");
@@ -2084,7 +2084,7 @@ export class PtcPositionTimeline extends Timeline<PtcPositionKeyframe> {
 export type PtcPositionTimelineJSON = PtcPositionKeyframeJSON[];
 
 export class PtcRotationKeyframe extends CurveKeyframe {
-  public rotation: Rotation = new Rotation();
+  public readonly rotation: Rotation = new Rotation();
   public load(json: PtcRotationKeyframeJSON): this {
     super.load(json);
     this.rotation.deg = loadFloat(json, "rotation", 0);
@@ -2112,7 +2112,7 @@ export interface PtcTimelineJSON {
 }
 
 export class PtcTimeline {
-  public range: Range = new Range();
+  public readonly range: Range = new Range();
   public ptc_mix_timeline?: PtcMixTimeline;
   public ptc_spacing_timeline?: PtcSpacingTimeline;
   public ptc_position_timeline?: PtcPositionTimeline;
@@ -2157,7 +2157,7 @@ export class FfdTimeline extends Timeline<FfdKeyframe> {
 export type FfdTimelineJSON = FfdKeyframeJSON[];
 
 export class FfdAttachment {
-  public ffd_timeline: FfdTimeline = new FfdTimeline();
+  public readonly ffd_timeline: FfdTimeline = new FfdTimeline();
 
   public load(json: FfdAttachmentJSON): this {
     this.ffd_timeline.load(json);
@@ -2168,7 +2168,7 @@ export class FfdAttachment {
 export interface FfdAttachmentJSON extends FfdTimelineJSON {}
 
 export class FfdSlot {
-  public ffd_attachments: SpineMap<string, FfdAttachment> = new SpineMap<string, FfdAttachment>();
+  public readonly ffd_attachments: SpineMap<string, FfdAttachment> = new SpineMap<string, FfdAttachment>();
 
   public load(json: FfdSlotJSON): this {
     this.ffd_attachments.clear();
@@ -2194,7 +2194,7 @@ export class FfdSlot {
 export type FfdSlotJSON = {[key: string]: FfdAttachmentJSON};
 
 export class FfdSkin {
-  public ffd_slots: SpineMap<string, FfdSlot> = new SpineMap<string, FfdSlot>();
+  public readonly ffd_slots: SpineMap<string, FfdSlot> = new SpineMap<string, FfdSlot>();
 
   public load(json: FfdSkinJSON): this {
     this.ffd_slots.clear();
@@ -2223,15 +2223,15 @@ export type FfdSkinJSON = {[key: string]: FfdSlotJSON};
 
 export class Animation {
   // public name: string = "";
-  public range: Range = new Range();
-  public bone_timeline_map: SpineMap<string, BoneTimeline> = new SpineMap<string, BoneTimeline>();
-  public slot_timeline_map: SpineMap<string, SlotTimeline> = new SpineMap<string, SlotTimeline>();
+  public readonly range: Range = new Range();
+  public readonly bone_timeline_map: SpineMap<string, BoneTimeline> = new SpineMap<string, BoneTimeline>();
+  public readonly slot_timeline_map: SpineMap<string, SlotTimeline> = new SpineMap<string, SlotTimeline>();
   public event_timeline?: EventTimeline;
   public order_timeline?: OrderTimeline;
-  public ikc_timeline_map: SpineMap<string, IkcTimeline> = new SpineMap<string, IkcTimeline>();
-  public xfc_timeline_map: SpineMap<string, XfcTimeline> = new SpineMap<string, XfcTimeline>();
-  public ptc_timeline_map: SpineMap<string, PtcTimeline> = new SpineMap<string, PtcTimeline>();
-  public ffd_skins: SpineMap<string, FfdSkin> = new SpineMap<string, FfdSkin>();
+  public readonly ikc_timeline_map: SpineMap<string, IkcTimeline> = new SpineMap<string, IkcTimeline>();
+  public readonly xfc_timeline_map: SpineMap<string, XfcTimeline> = new SpineMap<string, XfcTimeline>();
+  public readonly ptc_timeline_map: SpineMap<string, PtcTimeline> = new SpineMap<string, PtcTimeline>();
+  public readonly ffd_skins: SpineMap<string, FfdSkin> = new SpineMap<string, FfdSkin>();
 
   public load(json: AnimationJSON): this {
     this.range.reset();
@@ -2310,15 +2310,15 @@ export interface SkeletonJSON {
 
 export class Data {
   public name: string = "";
-  public skeleton: Skeleton = new Skeleton();
-  public bones: SpineMap<string, Bone> = new SpineMap<string, Bone>();
-  public ikcs: SpineMap<string, Ikc> = new SpineMap<string, Ikc>();
-  public xfcs: SpineMap<string, Xfc> = new SpineMap<string, Xfc>();
-  public ptcs: SpineMap<string, Ptc> = new SpineMap<string, Ptc>();
-  public slots: SpineMap<string, Slot> = new SpineMap<string, Slot>();
-  public skins: SpineMap<string, Skin> = new SpineMap<string, Skin>();
-  public events: SpineMap<string, Event> = new SpineMap<string, Event>();
-  public anims: SpineMap<string, Animation> = new SpineMap<string, Animation>();
+  public readonly skeleton: Skeleton = new Skeleton();
+  public readonly bones: SpineMap<string, Bone> = new SpineMap<string, Bone>();
+  public readonly ikcs: SpineMap<string, Ikc> = new SpineMap<string, Ikc>();
+  public readonly xfcs: SpineMap<string, Xfc> = new SpineMap<string, Xfc>();
+  public readonly ptcs: SpineMap<string, Ptc> = new SpineMap<string, Ptc>();
+  public readonly slots: SpineMap<string, Slot> = new SpineMap<string, Slot>();
+  public readonly skins: SpineMap<string, Skin> = new SpineMap<string, Skin>();
+  public readonly events: SpineMap<string, Event> = new SpineMap<string, Event>();
+  public readonly anims: SpineMap<string, Animation> = new SpineMap<string, Animation>();
 
   public free(): void {
     this.bones.clear();
@@ -2523,9 +2523,9 @@ export class Pose {
   public wrapped_min: boolean = false;
   public wrapped_max: boolean = false;
   public dirty: boolean = true;
-  public bones: SpineMap<string, Bone> = new SpineMap<string, Bone>();
-  public slots: SpineMap<string, Slot> = new SpineMap<string, Slot>();
-  public events: SpineMap<string, Event> = new SpineMap<string, Event>();
+  public readonly bones: SpineMap<string, Bone> = new SpineMap<string, Bone>();
+  public readonly slots: SpineMap<string, Slot> = new SpineMap<string, Slot>();
+  public readonly events: SpineMap<string, Event> = new SpineMap<string, Event>();
 
   constructor(data: Data) {
     this.data = data;
