@@ -4,6 +4,13 @@ import { RenderCtx2D } from "./render-ctx2d";
 import { RenderWebGL } from "./render-webgl";
 import { mat4x4Identity, mat4x4Ortho, mat4x4Translate, mat4x4Scale } from "./render-webgl";
 
+interface File {
+  path: string;
+  json: string;
+  atlas?: string;
+  zoom?: number;
+}
+
 export function start(): void {
   document.body.style.margin = "0px";
   document.body.style.border = "0px";
@@ -82,9 +89,9 @@ export function start(): void {
   controls.appendChild(makeCheckboxControl("2D Debug Data", enable_render_debug_data, (checked: boolean): void => { enable_render_debug_data = checked; }));
   controls.appendChild(makeCheckboxControl("2D Debug Pose", enable_render_debug_pose, (checked: boolean): void => { enable_render_debug_pose = checked; }));
 
-  let spine_data: Spine.Data = new Spine.Data();
-  let spine_pose: Spine.Pose = new Spine.Pose(spine_data);
-  let spine_pose_next: Spine.Pose = new Spine.Pose(spine_data);
+  const spine_data: Spine.Data = new Spine.Data();
+  const spine_pose: Spine.Pose = new Spine.Pose(spine_data);
+  const spine_pose_next: Spine.Pose = new Spine.Pose(spine_data);
   let atlas_data: Atlas.Data | null = null;
 
   let anim_time: number = 0;
@@ -101,167 +108,90 @@ export function start(): void {
 
   controls.appendChild(makeRangeControl("Alpha", alpha, 0.0, 1.0, 0.01, (value: string): void => { alpha = parseFloat(value); }));
 
-  function loadFile(file: any, callback: () => void): void {
+  async function loadFile(file: File): Promise<void> {
     render_ctx2d.dropData(spine_data, atlas_data);
     render_webgl.dropData(spine_data, atlas_data);
+
     spine_pose.free();
     spine_pose_next.free();
     spine_data.free();
-    atlas_data = null;
+    if (atlas_data !== null) {
+      atlas_data.free();
+      atlas_data = null;
+    }
 
     const images: Spine.Map<string, HTMLImageElement> = new Spine.Map<string, HTMLImageElement>();
 
-    let counter: number = 0;
-    const counter_inc = (): void => { counter++; };
-    const counter_dec = (): void => {
-      if (--counter === 0) {
-        render_ctx2d.loadData(spine_data, atlas_data, images);
-        render_webgl.loadData(spine_data, atlas_data, images);
-        callback();
-      }
-    };
+    const json_url: string = file.path + "/" + file.json;
+    const json_text: string = await loadText(json_url);
+    spine_data.load(JSON.parse(json_text));
 
-    const file_path: string = file.path;
-    const file_json_url: string = file_path + file.json_url;
-    const file_atlas_url: string = (file.atlas_url) ? (file_path + file.atlas_url) : ("");
-
-    counter_inc();
-    loadText(file_json_url, (err: string | null, json_text: string | null): void => {
-      if (err) { console.log("error loading:", file_json_url); }
-      if (!err && json_text) {
-        spine_data.load(JSON.parse(json_text));
+    if (file.atlas) {
+      // load atlas page images
+      const atlas_url: string = file.path + "/" + file.atlas;
+      const atlas_text: string = await loadText(atlas_url);
+      atlas_data = new Atlas.Data().import(atlas_text);
+      const dir_path: string = atlas_url.slice(0, atlas_url.lastIndexOf("/"));
+      for (const page of atlas_data.pages) {
+        const image_key: string = page.name;
+        const image_url: string = dir_path + "/" + image_key;
+        const image: HTMLImageElement = await loadImage(image_url);
+        page.w = page.w || image.width;
+        page.h = page.h || image.height;
+        images.set(image_key, image);
       }
-      counter_inc();
-      loadText(file_atlas_url, (err: string | null, atlas_text: string | null): void => {
-        if (!err && atlas_text) {
-          // load atlas page images
-          atlas_data = new Atlas.Data().import(atlas_text);
-          const dir_path: string = file_atlas_url.slice(0, file_atlas_url.lastIndexOf("/"));
-          atlas_data.pages.forEach((page: Atlas.Page): void => {
-            const image_key: string = page.name;
-            const image_url: string = dir_path + "/" + image_key;
-            counter_inc();
-            images.set(image_key, loadImage(image_url, (err: string | null, image: HTMLImageElement | null): void => {
-              if (err) console.log("error loading:", image_url);
-              page.w = page.w || image && image.width || 0;
-              page.h = page.h || image && image.height || 0;
-              counter_dec();
-            }));
-          });
-        } else {
-          // load attachment images
-          spine_data.iterateSkins((skin_key: string, skin: Spine.Skin): void => {
-            skin.iterateAttachments((slot_key: string, skin_slot: Spine.SkinSlot, attachment_key: string, attachment: Spine.Attachment): void => {
-              if (!attachment) { return; }
-              switch (attachment.type) {
-                case "region":
-                case "mesh":
-                case "weightedmesh":
-                  const image_key: string = attachment_key;
-                  const image_url: string = file_path + spine_data.skeleton.images + image_key + ".png";
-                  counter_inc();
-                  images.set(image_key, loadImage(image_url, (err: string | null, image: HTMLImageElement | null): void => {
-                    if (err) console.log("error loading:", image_url);
-                    counter_dec();
-                  }));
-                  break;
-              }
-            });
-          });
-        }
-        counter_dec();
+    } else {
+      // load attachment images
+      const attachments: Map<string, Spine.Attachment> = new Map();
+      spine_data.iterateSkins((skin_key: string, skin: Spine.Skin): void => {
+        skin.iterateAttachments((slot_key: string, skin_slot: Spine.SkinSlot, attachment_key: string, attachment: Spine.Attachment): void => {
+          attachments.set(attachment_key, attachment);
+        });
       });
-      counter_dec();
-    });
+      for (const [attachment_key, attachment] of attachments) {
+        if (!attachment) { return; }
+        switch (attachment.type) {
+          case "region":
+          case "mesh":
+          case "weightedmesh":
+            const image_key: string = attachment_key;
+            const image_url: string = file.path + "/" + spine_data.skeleton.images + image_key + ".png";
+            const image: HTMLImageElement = await loadImage(image_url);
+            images.set(image_key, image);
+            break;
+        }
+      }
+    }
+
+    render_ctx2d.loadData(spine_data, atlas_data, images);
+    render_webgl.loadData(spine_data, atlas_data, images);
   }
 
-  const files: any[] = [];
-
-  function addFile(path: string, json_url: string, atlas_url: string = "", camera_zoom: number = 1, anim_keys?: string[]): void {
-    const file: any = {};
-    file.path = path;
-    file.json_url = json_url;
-    file.atlas_url = atlas_url;
-    file.camera_zoom = camera_zoom;
-    file.anim_keys = anim_keys;
-    files.push(file);
-  }
-
-  ///addFile("Mario/", "export/Mario.json", "export/Mario.atlas");
-
-  addFile("Splatoon-FanArt/", "Data/splatoon.json", "Data/splatoon.atlas.txt", 0.5);
-  addFile("ExplorerQ/", "ExplorerQ.json");
-
-  addFile("examples/tank/", "export/tank-pro.json", "export/tank.atlas", 0.25);
-  // addFile("examples/goblins/", "images/pack.json", "images/pack.atlas");
-  addFile("examples/goblins/", "export/goblins-pro.json", "export/goblins.atlas");
-  addFile("examples/goblins/", "export/goblins-ess.json", "export/goblins.atlas");
-  addFile("examples/raptor/", "export/raptor-pro.json", "export/raptor.atlas", 0.5);
-  addFile("examples/vine/", "export/vine-pro.json", "export/vine.atlas", 0.5);
-  addFile("examples/owl/", "export/owl-pro.json", "export/owl.atlas", 0.5);
-  addFile("examples/spinosaurus/", "export/spinosaurus-ess.json", undefined, 0.5);
-  addFile("examples/windmill/", "export/windmill-ess.json", "export/windmill.atlas", 0.5);
-  addFile("examples/alien/", "export/alien-pro.json", "export/alien.atlas");
-  addFile("examples/alien/", "export/alien-ess.json", "export/alien.atlas");
-  addFile("examples/coin/", "export/coin-pro.json", "export/coin.atlas", 0.5);
-  addFile("examples/speedy/", "export/speedy-ess.json", "export/speedy.atlas");
-  addFile("examples/dragon/", "export/dragon-ess.json", "export/dragon.atlas");
-  addFile("examples/powerup/", "export/powerup-pro.json", "export/powerup.atlas");
-  addFile("examples/powerup/", "export/powerup-ess.json", "export/powerup.atlas");
-  // addFile("examples/export/", "atlas-0.5-pma.json", "atlas-0.5-pma.atlas");
-  // addFile("examples/export/", "atlas-1.0-pma.json", "atlas-1.0-pma.atlas");
-  // addFile("examples/export/", "json.json", "json.atlas");
-  // addFile("examples/export/", "atlas-0.5.json", "atlas-0.5.atlas");
-  // addFile("examples/export/", "binary.json", "binary.atlas");
-  // addFile("examples/export/", "atlas-1.0.json", "atlas-1.0.atlas");
-  addFile("examples/hero/", "export/hero-ess.json", "export/hero.atlas");
-  addFile("examples/hero/", "export/hero-pro.json", "export/hero.atlas");
-  addFile("examples/stretchyman/", "export/stretchyman-pro.json", "export/stretchyman.atlas", 0.5);
-  addFile("examples/stretchyman/", "export/stretchyman-stretchy-ik-pro.json", "export/stretchyman.atlas", 0.5);
-  addFile("examples/spineboy/", "export/spineboy-pro.json", "export/spineboy.atlas", 0.5);
-  addFile("examples/spineboy/", "export/spineboy-ess.json", "export/spineboy.atlas", 0.5);
-
-  ///const esoteric: string = "https://raw.githubusercontent.com/EsotericSoftware/spine-runtimes/master/";
-
-  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Spineboy/", "spineboy.json", "spineboy.atlas.txt", 0.5);
-
-  ///addFile(esoteric + "examples/alien/", "export/alien.json", "export/alien.atlas", 0.5);
-  ///addFile(esoteric + "examples/dragon/", "export/dragon.json", "export/dragon.atlas", 0.5);
-  ///addFile(esoteric + "examples/goblins/", "export/goblins.json", "export/goblins.atlas");
-  ///addFile(esoteric + "examples/goblins/", "export/goblins-mesh.json", "export/goblins.atlas");
-  ///addFile(esoteric + "examples/hero/", "export/hero.json", "export/hero.atlas");
-  ///addFile(esoteric + "examples/hero/", "export/hero-mesh.json", "export/hero.atlas");
-  ///addFile(esoteric + "examples/powerup/", "export/powerup.json", "export/powerup.atlas");
-  ///addFile(esoteric + "examples/raptor/", "export/raptor.json", "export/raptor.atlas", 0.5);
-  ///addFile(esoteric + "examples/speedy/", "export/speedy.json", "export/speedy.atlas");
-  ///addFile(esoteric + "examples/spineboy/", "export/spineboy.json", "export/spineboy.atlas", 0.5);
-  ///addFile(esoteric + "examples/spineboy/", "export/spineboy-mesh.json", "export/spineboy.atlas", 0.5);
-  ///addFile(esoteric + "examples/spineboy/", "export/spineboy-hover.json", "export/spineboy.atlas", 0.5);
-  ///addFile(esoteric + "examples/spineboy-old/", "export/spineboy-old.json", "export/spineboy-old.atlas");
-  ///addFile(esoteric + "examples/spinosaurus/", "export/spinosaurus.json");
-  ///addFile(esoteric + "examples/stretchyman/", "export/stretchyman.json", "export/stretchyman.atlas");
-  ///addFile(esoteric + "examples/tank/", "export/tank.json", "export/tank.atlas", 0.5);
-  ///addFile(esoteric + "examples/test/", "export/test.json", "export/test.atlas", 0.5);
-  ///addFile(esoteric + "examples/vine/", "export/vine.json", "export/vine.atlas", 0.5);
-  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Dragon/", "dragon.json", "dragon.atlas.txt");
-  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Eyes/", "eyes.json", "eyes.atlas.txt");
-  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/FootSoldier/", "FootSoldier.json", "FS_White.atlas.txt");
-  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Gauge/", "Gauge.json", "Gauge.atlas.txt");
-  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Goblins/", "goblins.json", "goblins.atlas.txt");
-  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Hero/", "hero-mesh.json", "hero-mesh.atlas.txt");
-  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Raggedy Spineboy/", "Raggedy Spineboy.json", "Raggedy Spineboy.atlas.txt");
-  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Raptor/", "raptor.json", "raptor.atlas.txt", 0.5);
-  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Spineboy/", "spineboy.json", "spineboy.atlas.txt", 0.5);
-  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Spineunitygirl/", "Doi.json", "Doi.atlas.txt");
-  ///addFile(esoteric + "spine-unity/Assets/Examples/Spine/Strechyman/", "stretchyman.json", "stretchyman-diffuse-pma.atlas.txt");
-
-  ///files = [];
-  ///addFile("test-ikc/", "export/skeleton.json");
-  ///addFile("examples/hero/", "export/hero-mesh.json", "export/hero-mesh.atlas", 1.0, [ "Headturn" ]);
-  ///addFile("examples/raptor/", "export/raptor.json", "export/raptor.atlas", 0.5, [ "walk" ]);
-  ///addFile("examples/stretchyman/", "export/stretchyman.json", "export/stretchyman.atlas", 0.5);
-  ///addFile("examples/tank/", "export/tank.json", "export/tank.atlas", 0.5);
-  ///addFile("examples/vine/", "export/vine.json", "export/vine.atlas", 0.5);
+  const files: File[] = [
+    { path: "Splatoon-FanArt", json: "Data/splatoon.json", atlas: "Data/splatoon.atlas.txt", zoom: 0.5 },
+    { path: "ExplorerQ", json: "ExplorerQ.json" },
+    { path: "examples/tank", json: "export/tank-pro.json", atlas: "export/tank.atlas", zoom: 0.25 },
+    { path: "examples/goblins", json: "export/goblins-pro.json", atlas: "export/goblins.atlas" },
+    { path: "examples/goblins", json: "export/goblins-ess.json", atlas: "export/goblins.atlas" },
+    { path: "examples/raptor", json: "export/raptor-pro.json", atlas: "export/raptor.atlas", zoom: 0.5 },
+    { path: "examples/vine", json: "export/vine-pro.json", atlas: "export/vine.atlas", zoom: 0.5 },
+    { path: "examples/owl", json: "export/owl-pro.json", atlas: "export/owl.atlas", zoom: 0.5 },
+    { path: "examples/spinosaurus", json: "export/spinosaurus-ess.json", atlas: undefined, zoom: 0.5 },
+    { path: "examples/windmill", json: "export/windmill-ess.json", atlas: "export/windmill.atlas", zoom: 0.5 },
+    { path: "examples/alien", json: "export/alien-pro.json", atlas: "export/alien.atlas" },
+    { path: "examples/alien", json: "export/alien-ess.json", atlas: "export/alien.atlas" },
+    { path: "examples/coin", json: "export/coin-pro.json", atlas: "export/coin.atlas", zoom: 0.5 },
+    { path: "examples/speedy", json: "export/speedy-ess.json", atlas: "export/speedy.atlas" },
+    { path: "examples/dragon", json: "export/dragon-ess.json", atlas: "export/dragon.atlas" },
+    { path: "examples/powerup", json: "export/powerup-pro.json", atlas: "export/powerup.atlas" },
+    { path: "examples/powerup", json: "export/powerup-ess.json", atlas: "export/powerup.atlas" },
+    { path: "examples/hero", json: "export/hero-ess.json", atlas: "export/hero.atlas" },
+    { path: "examples/hero", json: "export/hero-pro.json", atlas: "export/hero.atlas" },
+    { path: "examples/stretchyman", json: "export/stretchyman-pro.json", atlas: "export/stretchyman.atlas", zoom: 0.5 },
+    { path: "examples/stretchyman", json: "export/stretchyman-stretchy-ik-pro.json", atlas: "export/stretchyman.atlas", zoom: 0.5 },
+    { path: "examples/spineboy", json: "export/spineboy-pro.json", atlas: "export/spineboy.atlas", zoom: 0.5 },
+    { path: "examples/spineboy", json: "export/spineboy-ess.json", atlas: "export/spineboy.atlas", zoom: 0.5 },
+  ];
 
   let file_index: number = 0;
   let skin_index: number = 0;
@@ -274,22 +204,19 @@ export function start(): void {
     updateSkin();
     anim_index = 0;
     updateAnim();
-    camera_zoom = file.camera_zoom || 1;
+    camera_zoom = file.zoom || 1;
   }
 
   function updateSkin() {
-    //const skin_keys: string[] = spine_data.skins._keys;
-    //const skin_key: string = skin_keys[skin_index];
     const skin_key: string = spine_data.skins.key(skin_index);
     spine_pose.setSkin(skin_key);
     spine_pose_next.setSkin(skin_key);
   }
 
   function updateAnim() {
-    const anim_keys: string[] = file.anim_keys || spine_data.anims._keys;
-    const anim_key: string = anim_keys[anim_index];
+    const anim_key: string = spine_data.anims.key(anim_index);
     spine_pose.setAnim(anim_key);
-    const anim_key_next: string = anim_keys[(anim_index + 1) % anim_keys.length];
+    const anim_key_next: string = spine_data.anims.key((anim_index + 1) % spine_data.anims.size);
     spine_pose_next.setAnim(anim_key_next);
     spine_pose.setTime(anim_time = 0);
     spine_pose_next.setTime(anim_time);
@@ -297,13 +224,9 @@ export function start(): void {
     anim_length_next = spine_pose_next.curAnimLength() || 1000;
   }
 
-  let file: any = files[file_index];
+  let file = files[file_index];
   messages.innerHTML = "loading";
-  loading = true;
-  loadFile(file, (): void => {
-    loading = false;
-    updateFile();
-  });
+  loading = true; loadFile(file).then(() => { loading = false; updateFile(); });
 
   let prev_time: number = 0;
 
@@ -320,11 +243,9 @@ export function start(): void {
       anim_time += dt * anim_rate;
 
       if (anim_time >= (anim_length * anim_repeat)) {
-        const anim_keys: string[] = file.anim_keys || spine_data.anims._keys;
-        if (++anim_index >= anim_keys.length) {
+        if (++anim_index >= spine_data.anims.size) {
           anim_index = 0;
-          const skin_keys: string[] = spine_data.skins._keys;
-          if (++skin_index >= skin_keys.length) {
+          if (++skin_index >= spine_data.skins.size) {
             skin_index = 0;
             if (files.length > 1) {
               if (++file_index >= files.length) {
@@ -332,11 +253,7 @@ export function start(): void {
               }
               file = files[file_index];
               messages.innerHTML = "loading";
-              loading = true;
-              loadFile(file, (): void => {
-                loading = false;
-                updateFile();
-              });
+              loading = true; loadFile(file).then(() => { loading = false; updateFile(); });
               return;
             }
           }
@@ -345,13 +262,10 @@ export function start(): void {
         updateAnim();
       }
 
-      //const skin_keys: string[] = spine_data.skins._keys;
-      //const skin_key: string = skin_keys[skin_index];
       const skin_key: string = spine_data.skins.key(skin_index);
-      const anim_keys: string[] = file.anim_keys || spine_data.anims._keys;
-      const anim_key: string = anim_keys[anim_index];
-      const anim_key_next: string = anim_keys[(anim_index + 1) % anim_keys.length];
-      messages.innerHTML = "skin: " + skin_key + ", anim: " + anim_key + ", next anim: " + anim_key_next + "<br>" + file.path + file.json_url;
+      const anim_key: string = spine_data.anims.key(anim_index);
+      const anim_key_next: string = spine_data.anims.key((anim_index + 1) % spine_data.anims.size);
+      messages.innerHTML = "skin: " + skin_key + ", anim: " + anim_key + ", next anim: " + anim_key_next + "<br>" + file.path + "/" + file.json;
     }
 
     if (ctx) {
@@ -469,33 +383,31 @@ function makeRangeControl(text: string, init: number, min: number, max: number, 
   return control;
 }
 
-function loadText(url: string, callback: (error: string | null, text: string | null) => void): XMLHttpRequest {
-  const req: XMLHttpRequest = new XMLHttpRequest();
-  if (url) {
+function loadText(url: string): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    const req: XMLHttpRequest = new XMLHttpRequest();
     req.open("GET", url, true);
     req.responseType = "text";
-    req.addEventListener("error", (): void => { callback("error", null); });
-    req.addEventListener("abort", (): void => { callback("abort", null); });
+    req.addEventListener("error", (): void => { reject("error"); });
+    req.addEventListener("abort", (): void => { reject("abort"); });
     req.addEventListener("load", (): void => {
       if (req.status === 200) {
-        callback(null, req.response);
+        resolve(req.response)
       } else {
-        callback(req.response, null);
+        reject(req.response);
       }
     });
     req.send();
-  } else {
-    callback("error", null);
-  }
-  return req;
+  });
 }
 
-function loadImage(url: string, callback: (error: string | null, image: HTMLImageElement | null) => void): HTMLImageElement {
-  const image: HTMLImageElement = new Image();
-  image.crossOrigin = "Anonymous";
-  image.addEventListener("error", (): void => { callback("error", null); });
-  image.addEventListener("abort", (): void => { callback("abort", null); });
-  image.addEventListener("load", (): void => { callback(null, image); });
-  image.src = url;
-  return image;
+function loadImage(url: string): Promise<HTMLImageElement> {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image: HTMLImageElement = new Image();
+    image.crossOrigin = "Anonymous";
+    image.addEventListener("error", (): void => { reject("error"); });
+    image.addEventListener("abort", (): void => { reject("abort"); });
+    image.addEventListener("load", (): void => { resolve(image); });
+    image.src = url;
+  });
 }

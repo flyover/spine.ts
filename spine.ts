@@ -35,7 +35,7 @@ export let EPSILON: number = 1e-6;
 export { SpineMap as Map };
 
 class SpineMap<K, V> {
-  public _keys: K[] = [];
+  private _keys: K[] = [];
   private _map: Map<K, V>;
 
   constructor(...args: any[]) {
@@ -43,6 +43,14 @@ class SpineMap<K, V> {
     this._map.forEach((value: V, key: K): void => {
       this._keys.push(key);
     });
+  }
+
+  public get keys(): K[] {
+    return this._keys;
+  }
+
+  public get size(): number {
+    return this._map.size;
   }
 
   public clear(): void {
@@ -2951,18 +2959,18 @@ export class Pose {
       }
     });
 
-    this.data.slots._keys.forEach((key: string, index: number): void => { this.slots._keys[index] = key; });
+    this.data.slots.keys.forEach((key: string, index: number): void => { this.slots.keys[index] = key; });
 
     const order_timeline: OrderTimeline | undefined = anim && anim.order_timeline;
     if (order_timeline) {
       Timeline.evaluate(order_timeline, this.time, (keyframe0: OrderKeyframe, keyframe1: OrderKeyframe, k: number): void => {
         keyframe0.slot_offsets.forEach((slot_offset: SlotOffset): void => {
-          const slot_index: number = this.slots._keys.indexOf(slot_offset.slot_key);
+          const slot_index: number = this.slots.keys.indexOf(slot_offset.slot_key);
           if (slot_index !== -1) {
             // delete old position
-            this.slots._keys.splice(slot_index, 1);
+            this.slots.keys.splice(slot_index, 1);
             // insert new position
-            this.slots._keys.splice(slot_index + slot_offset.offset, 0, slot_offset.slot_key);
+            this.slots.keys.splice(slot_index + slot_offset.offset, 0, slot_offset.slot_key);
           }
         });
       });
