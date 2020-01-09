@@ -1,8 +1,8 @@
-import * as Spine from "../spine";
-import * as Atlas from "./atlas";
-import { RenderCtx2D } from "./render-ctx2d";
-import { RenderWebGL } from "./render-webgl";
-import { mat4x4Identity, mat4x4Ortho, mat4x4Translate, mat4x4Scale } from "./render-webgl";
+import * as Spine from "@spine";
+import * as Atlas from "./atlas.js";
+import { RenderCtx2D } from "./render-ctx2d.js";
+import { RenderWebGL } from "./render-webgl.js";
+import { mat4x4Identity, mat4x4Ortho, mat4x4Translate, mat4x4Scale } from "./render-webgl.js";
 
 interface File {
   path: string;

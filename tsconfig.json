@@ -8,8 +8,7 @@
     "noImplicitThis": true,
     "noUnusedLocals": true,
     "noUnusedParameters": false,
-    "inlineSourceMap": true,
-    "outDir": "dist"
+    "inlineSourceMap": true
   },
   "files": [
     "index.ts"

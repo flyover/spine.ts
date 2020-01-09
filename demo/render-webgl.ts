@@ -1,5 +1,5 @@
-import * as Spine from "../spine";
-import * as Atlas from "./atlas";
+import * as Spine from "@spine";
+import * as Atlas from "./atlas.js";
 
 export class RenderWebGL {
   public gl: WebGLRenderingContext;
