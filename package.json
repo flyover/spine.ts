@@ -2,17 +2,21 @@
   "name": "@flyover/spine",
   "version": "1.0.0",
   "description": "spine.ts",
-  "main": "index.js",
+  "main": "./build/index.js",
   "types": "index.ts",
   "dependencies": {
-    "@types/systemjs": "^0.20.6",
-    "plugin-typescript": "^8.0.0",
-    "systemjs": "^0.21.6",
-    "typescript": "^3.5.2"
+    "@types/systemjs": "^6.1.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "http-server": "^0.12.3",
+    "plugin-typescript": "^8.0.0",
+    "systemjs": "^6.6.1",
+    "typescript": "^4.0.2"
+  },
   "scripts": {
     "build": "tsc",
+    "watch": "tsc --watch",
+    "start": "http-server -c-1 -o",
     "build-demo": "tsc -p demo",
     "watch-demo": "tsc -p demo --watch",
     "test": "echo \"Error: no test specified\" && exit 1"

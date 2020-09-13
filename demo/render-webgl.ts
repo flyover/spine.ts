@@ -169,7 +169,8 @@ export class RenderWebGL {
         const image_key: string = page.name;
         this.textures.set(image_key, glMakeTexture(gl, images.get(image_key), min_filter, mag_filter, wrap_s, wrap_t));
       });
-    } else {
+    }
+    else {
       const gl: WebGLRenderingContext = this.gl;
       spine_data.iterateSkins((skin_key: string, skin: Spine.Skin): void => {
         skin.iterateAttachments((slot_key: string, skin_slot: Spine.SkinSlot, attachment_key: string, attachment: Spine.Attachment): void => {
@@ -624,7 +625,7 @@ class RenderVertex {
   public type!: number; // FLOAT, BYTE, UNSIGNED_BYTE, SHORT, UNSIGNED_SHORT, INT, UNSIGNED_INT
   public size!: number; // size in elements per vertex
   public count!: number; // number of vertices
-  public typed_array!: RenderVertexType;
+  public data!: RenderVertexType;
   public buffer: WebGLBuffer | null = null;
   public buffer_type!: number; // ARRAY_BUFFER or ELEMENT_ARRAY_BUFFER
   public buffer_draw!: number; // STREAM_DRAW, STATIC_DRAW or DYNAMIC_DRAW
@@ -735,7 +736,8 @@ export function mat3x3ApplyAtlasSiteTexcoord(m: Float32Array, site: Atlas.Site |
     if (site.rotate === -1) {
       mat3x3Translate(m, 0, site.w); // bottom-left corner
       mat3x3RotateCosSin(m, 0, -1); // -90 degrees
-    } else if (site.rotate === 1) {
+    }
+    else if (site.rotate === 1) {
       mat3x3Translate(m, site.h, 0); // top-right corner
       mat3x3RotateCosSin(m, 0, 1); // 90 degrees
     }
@@ -834,7 +836,8 @@ export function mat4x4ApplyAtlasSiteTexcoord(m: Float32Array, site: Atlas.Site |
     if (site.rotate === -1) {
       mat4x4Translate(m, 0, site.w); // bottom-left corner
       mat4x4RotateCosSinZ(m, 0, -1); // -90 degrees
-    } else if (site.rotate === 1) {
+    }
+    else if (site.rotate === 1) {
       mat4x4Translate(m, site.h, 0); // top-right corner
       mat4x4RotateCosSinZ(m, 0, 1); // 90 degrees
     }
@@ -854,7 +857,7 @@ export function mat4x4ApplyAtlasSitePosition(m: Float32Array, site: Atlas.Site |
 
 export function glCompileShader(gl: WebGLRenderingContext, src: string[], type: number): WebGLShader | null {
   let shader: WebGLShader | null = gl.createShader(type);
-  if (shader === null) { return null; }
+  if (shader === null) { throw new Error(); }
   gl.shaderSource(shader, src.join("\n"));
   gl.compileShader(shader);
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
@@ -867,9 +870,10 @@ export function glCompileShader(gl: WebGLRenderingContext, src: string[], type: 
 }
 
 export function glLinkProgram(gl: WebGLRenderingContext, vs: WebGLShader | null, fs: WebGLShader | null): WebGLProgram | null {
-  if (vs === null || fs === null) { return null; }
   let program: WebGLProgram | null = gl.createProgram();
-  if (program === null) { return null; }
+  if (program === null) { throw new Error(); }
+  if (vs === null) { throw new Error(); }
+  if (fs === null) { throw new Error(); }
   gl.attachShader(program, vs);
   gl.attachShader(program, fs);
   gl.linkProgram(program);
@@ -884,7 +888,7 @@ export function glLinkProgram(gl: WebGLRenderingContext, vs: WebGLShader | null,
 }
 
 export function glGetUniforms(gl: WebGLRenderingContext, program: WebGLProgram | null, uniforms: Map<string, WebGLUniformLocation> = new Map<string, WebGLUniformLocation>()): Map<string, WebGLUniformLocation> {
-  if (program === null) { return uniforms; }
+  if (program === null) { throw new Error(); }
   const count: number = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
   for (let index: number = 0; index < count; ++index) {
     const uniform: WebGLActiveInfo | null = gl.getActiveUniform(program, index);
@@ -897,7 +901,7 @@ export function glGetUniforms(gl: WebGLRenderingContext, program: WebGLProgram |
 }
 
 export function glGetAttribs(gl: WebGLRenderingContext, program: WebGLProgram | null, attribs: Map<string, number> = new Map<string, number>()): Map<string, number> {
-  if (program === null) { return attribs; }
+  if (program === null) { throw new Error(); }
   const count: number = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
   for (let index: number = 0; index < count; ++index) {
     const attrib: WebGLActiveInfo | null = gl.getActiveAttrib(program, index);
@@ -932,24 +936,24 @@ export function glDropShader(gl: WebGLRenderingContext, shader: RenderShader): v
   shader.program = null;
 }
 
-export function glMakeVertex(gl: WebGLRenderingContext, typed_array: RenderVertexType, size: number, buffer_type: number, buffer_draw: number): RenderVertex {
+export function glMakeVertex(gl: WebGLRenderingContext, data: RenderVertexType, size: number, buffer_type: number, buffer_draw: number): RenderVertex {
   const vertex: RenderVertex = new RenderVertex();
-  if (typed_array instanceof Float32Array) { vertex.type = gl.FLOAT; }
-  else if (typed_array instanceof Int8Array) { vertex.type = gl.BYTE; }
-  else if (typed_array instanceof Uint8Array) { vertex.type = gl.UNSIGNED_BYTE; }
-  else if (typed_array instanceof Int16Array) { vertex.type = gl.SHORT; }
-  else if (typed_array instanceof Uint16Array) { vertex.type = gl.UNSIGNED_SHORT; }
-  else if (typed_array instanceof Int32Array) { vertex.type = gl.INT; }
-  else if (typed_array instanceof Uint32Array) { vertex.type = gl.UNSIGNED_INT; }
+  if (data instanceof Float32Array) { vertex.type = gl.FLOAT; }
+  else if (data instanceof Int8Array) { vertex.type = gl.BYTE; }
+  else if (data instanceof Uint8Array) { vertex.type = gl.UNSIGNED_BYTE; }
+  else if (data instanceof Int16Array) { vertex.type = gl.SHORT; }
+  else if (data instanceof Uint16Array) { vertex.type = gl.UNSIGNED_SHORT; }
+  else if (data instanceof Int32Array) { vertex.type = gl.INT; }
+  else if (data instanceof Uint32Array) { vertex.type = gl.UNSIGNED_INT; }
   else { vertex.type = gl.NONE; throw new Error(); }
   vertex.size = size;
-  vertex.count = typed_array.length / vertex.size;
-  vertex.typed_array = typed_array;
+  vertex.count = data.length / vertex.size;
+  vertex.data = data;
   vertex.buffer = gl.createBuffer();
   vertex.buffer_type = buffer_type;
   vertex.buffer_draw = buffer_draw;
   gl.bindBuffer(vertex.buffer_type, vertex.buffer);
-  gl.bufferData(vertex.buffer_type, vertex.typed_array, vertex.buffer_draw);
+  gl.bufferData(vertex.buffer_type, vertex.data, vertex.buffer_draw);
   return vertex;
 }
 
@@ -986,7 +990,7 @@ export function glDropTexture(gl: WebGLRenderingContext, texture: RenderTexture)
 export function glSetupAttribute(gl: WebGLRenderingContext, shader: RenderShader, format: string, vertex: RenderVertex, count: number = 0): void {
   gl.bindBuffer(vertex.buffer_type, vertex.buffer);
   if (count > 0) {
-    const sizeof_vertex: number = vertex.typed_array.BYTES_PER_ELEMENT * vertex.size; // in bytes
+    const sizeof_vertex: number = vertex.data.BYTES_PER_ELEMENT * vertex.size; // in bytes
     const stride: number = sizeof_vertex * count;
     for (let index: number = 0; index < count; ++index) {
       const offset: number = sizeof_vertex * index;
@@ -994,7 +998,8 @@ export function glSetupAttribute(gl: WebGLRenderingContext, shader: RenderShader
       gl.vertexAttribPointer(attrib, vertex.size, vertex.type, false, stride, offset);
       gl.enableVertexAttribArray(attrib);
     }
-  } else {
+  }
+  else {
     const attrib: number = shader.attribs.get(format) || 0;
     gl.vertexAttribPointer(attrib, vertex.size, vertex.type, false, 0, 0);
     gl.enableVertexAttribArray(attrib);
@@ -1007,7 +1012,8 @@ export function glResetAttribute(gl: WebGLRenderingContext, shader: RenderShader
       const attrib: number = shader.attribs.get(format.replace(/{index}/g, index.toString())) || 0;
       gl.disableVertexAttribArray(attrib);
     }
-  } else {
+  }
+  else {
     const attrib: number = shader.attribs.get(format) || 0;
     gl.disableVertexAttribArray(attrib);
   }

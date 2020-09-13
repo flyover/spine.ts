@@ -450,7 +450,8 @@ class RenderWeightedMeshAttachment implements RenderAttachment {
         vertex_blend_position[vertex_index * 2 + 0] = blend_position_x;
         vertex_blend_position[vertex_index * 2 + 1] = blend_position_y;
       }
-    } else {
+    }
+    else {
       const vertex_blend_position: Float32Array = this.vertex_blend_position;
       const position: Spine.Vector = new Spine.Vector();
       for (let vertex_index = 0, index = 0; vertex_index < this.vertex_count; ++vertex_index) {

@@ -53,6 +53,12 @@ class SpineMap<K, V> {
     return this._map.size;
   }
 
+  public [Symbol.iterator](): IterableIterator<[K, V]> {
+    const map = new Map<K, V>();
+    this.forEach((value: V, key: K): void => { map.set(key, value); });
+    return map[Symbol.iterator]();
+  }
+
   public clear(): void {
     this._keys.length = 0;
     this._map.clear();
@@ -90,9 +96,10 @@ class SpineMap<K, V> {
     return this.set(this._keys[index], value);
   }
 
-  public delete(key: K): void {
+  public delete(key: K): boolean {
     this._keys.splice(this._keys.indexOf(key), 1);
     this._map.delete(key);
+    return true;
   }
 
   public deleteByIndex(index: number): void {

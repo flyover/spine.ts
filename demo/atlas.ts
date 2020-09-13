@@ -67,54 +67,67 @@ export class Data {
       if (trim(line).length === 0) {
         page = null;
         site = null;
-      } else if ((match = line.match(/^size: (.*),(.*)$/))) {
+      }
+      else if ((match = line.match(/^size: (.*),(.*)$/))) {
         if (!page) throw new Error();
         page.w = parseInt(match[1], 10);
         page.h = parseInt(match[2], 10);
-      } else if ((match = line.match(/^format: (.*)$/))) {
+      }
+      else if ((match = line.match(/^format: (.*)$/))) {
         if (!page) throw new Error();
         page.format = match[1];
-      } else if ((match = line.match(/^filter: (.*),(.*)$/))) {
+      }
+      else if ((match = line.match(/^filter: (.*),(.*)$/))) {
         if (!page) throw new Error();
         page.min_filter = match[1];
         page.mag_filter = match[2];
-      } else if ((match = line.match(/^repeat: (.*)$/))) {
+      }
+      else if ((match = line.match(/^repeat: (.*)$/))) {
         if (!page) throw new Error();
         const repeat: string = match[1];
         page.wrap_s = ((repeat === "x") || (repeat === "xy")) ? ("Repeat") : ("ClampToEdge");
         page.wrap_t = ((repeat === "y") || (repeat === "xy")) ? ("Repeat") : ("ClampToEdge");
-      } else if ((match = line.match(/^orig: (.*)[,| x] (.*)$/))) {
+      }
+      else if ((match = line.match(/^orig: (.*)[,| x] (.*)$/))) {
         const original_w: number = parseInt(match[1], 10);
         const original_h: number = parseInt(match[2], 10);
         console.log("page:orig", original_w, original_h);
-      } else if (page === null) {
+      }
+      else if (page === null) {
         page = new Page();
         page.name = line;
         this.pages.push(page);
-      } else {
+      }
+      else {
         if ((match = line.match(/^ {2}rotate: (.*)$/))) {
           if (!site) throw new Error();
           site.rotate = (match[1] === "true") ? -1 : 0; // -90 degrees
-        } else if ((match = line.match(/^ {2}xy: (.*), (.*)$/))) {
+        }
+        else if ((match = line.match(/^ {2}xy: (.*), (.*)$/))) {
           if (!site) throw new Error();
           site.x = parseInt(match[1], 10);
           site.y = parseInt(match[2], 10);
-        } else if ((match = line.match(/^ {2}size: (.*), (.*)$/))) {
+        }
+        else if ((match = line.match(/^ {2}size: (.*), (.*)$/))) {
           if (!site) throw new Error();
           site.w = parseInt(match[1], 10);
           site.h = parseInt(match[2], 10);
-        } else if ((match = line.match(/^ {2}orig: (.*), (.*)$/))) {
+        }
+        else if ((match = line.match(/^ {2}orig: (.*), (.*)$/))) {
           if (!site) throw new Error();
           site.original_w = parseInt(match[1], 10);
           site.original_h = parseInt(match[2], 10);
-        } else if ((match = line.match(/^ {2}offset: (.*), (.*)$/))) {
+        }
+        else if ((match = line.match(/^ {2}offset: (.*), (.*)$/))) {
           if (!site) throw new Error();
           site.offset_x = parseInt(match[1], 10);
           site.offset_y = parseInt(match[2], 10);
-        } else if ((match = line.match(/^ {2}index: (.*)$/))) {
+        }
+        else if ((match = line.match(/^ {2}index: (.*)$/))) {
           if (!site) throw new Error();
           site.index = parseInt(match[1], 10);
-        } else {
+        }
+        else {
           if (site) {
             site.original_w = site.original_w || site.w;
             site.original_h = site.original_h || site.h;

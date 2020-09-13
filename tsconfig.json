@@ -8,7 +8,11 @@
     "noImplicitThis": true,
     "noUnusedLocals": true,
     "noUnusedParameters": false,
-    "inlineSourceMap": true
+    "inlineSourceMap": true,
+    "outDir": "./build",
+    "declaration": true,
+    "declarationDir": "./build",
+    "declarationMap": true
   },
   "files": [
     "index.ts"

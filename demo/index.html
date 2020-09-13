@@ -7,15 +7,15 @@
 		<style>body { background-image: url("bg.png"); background-repeat: repeat; }</style>
 		<script type="systemjs-importmap">
 			{
-				"imports": {
-					"@spine": "../index.js"
-			  	}
+			  "imports": {
+				"@spine": "../build/spine.js"
+			  }
 			}
-		  </script>
-		<script src="https://unpkg.com/systemjs@6.1.7/dist/system.js"></script>
+		</script>
+		<script src="https://unpkg.com/systemjs@6.6.1/dist/system.js"></script>
 		<script type="text/javascript">
 		function boot(event) {
-			System.import("./main.js").then(function(module) {
+			System.import("./build/main.js").then(function(module) {
 				module.start();
 			}).catch(function (error) {
 				console.error(error);
