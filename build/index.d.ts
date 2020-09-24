@@ -1,2 +1,2 @@
 export * from "./spine.js";
-//# sourceMappingURL=index.d.ts.map
+export * as Atlas from "./demo/atlas.js";

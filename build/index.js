@@ -1,10 +1,13 @@
-System.register(["./spine.js"], function (exports_1, context_1) {
+System.register(["./spine.js", "./demo/atlas.js"], function (exports_1, context_1) {
     "use strict";
     var __moduleName = context_1 && context_1.id;
+    var exportedNames_1 = {
+        "Atlas": true
+    };
     function exportStar_1(m) {
         var exports = {};
         for (var n in m) {
-            if (n !== "default") exports[n] = m[n];
+            if (n !== "default" && !exportedNames_1.hasOwnProperty(n)) exports[n] = m[n];
         }
         exports_1(exports);
     }
@@ -12,10 +15,13 @@ System.register(["./spine.js"], function (exports_1, context_1) {
         setters: [
             function (spine_js_1_1) {
                 exportStar_1(spine_js_1_1);
+            },
+            function (Atlas_1) {
+                exports_1("Atlas", Atlas_1);
             }
         ],
         execute: function () {
         }
     };
 });
-//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiaW5kZXguanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyIuLi9pbmRleC50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiIn0=
+//# sourceMappingURL=index.js.map

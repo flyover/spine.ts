@@ -99,4 +99,3 @@ export declare function glSetupAttribute(gl: WebGLRenderingContext, shader: Rend
 export declare function glResetAttribute(gl: WebGLRenderingContext, shader: RenderShader, format: string, vertex: RenderVertex, count?: number): void;
 export declare function glResetAttributes(gl: WebGLRenderingContext, shader: RenderShader): void;
 export {};
-//# sourceMappingURL=render-webgl.d.ts.map

@@ -9,14 +9,12 @@
         "strictNullChecks": true,
         "noUnusedLocals": true,
         "noUnusedParameters": false,
-        "inlineSourceMap": true,
         "outDir": "./build",
         "declaration": true,
-        "declarationDir": "./build",
-        "declarationMap": true,
+        "sourceMap": true,
         "baseUrl": ".",
         "paths": {
-            "@spine": [ "../build/spine" ]
+            "@spine": [ "node_modules/@flyover/spine/build/spine" ]
         }
     },
     "files": [

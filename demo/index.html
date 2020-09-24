@@ -5,23 +5,24 @@
 		<meta charset="utf-8" />
 		<title>Spine TypeScript Demo</title>
 		<style>body { background-image: url("bg.png"); background-repeat: repeat; }</style>
-		<script type="systemjs-importmap">
-			{
-			  "imports": {
-				"@spine": "../build/spine.js"
-			  }
-			}
-		</script>
-		<script src="https://unpkg.com/systemjs@6.6.1/dist/system.js"></script>
+		<!-- <script src="https://raw.githack.com/flyover/system.ts/master/build/system.js"></script> -->
+		<script src="https://flyover.github.io/system.ts/build/system.js"></script>
+		<!-- <script src="node_modules/@flyover/system/build/system.js"></script> -->
 		<script type="text/javascript">
+		window.addEventListener('load', boot);
 		function boot(event) {
+			window.removeEventListener('load', boot);
+			const spine_url = location.hostname !== "flyover.github.io" ?
+				// "https://raw.githack.com/flyover/spine.ts/master/build/spine.js" :
+				"https://flyover.github.io/spine.ts/build/spine.js" :
+				"node_modules/@flyover/spine/build/spine.js";
+			System.config({ map: { imports: { "@spine": spine_url } } });
 			System.import("./build/main.js").then(function(module) {
 				module.start();
 			}).catch(function (error) {
 				console.error(error);
 			});
 		}
-		window.addEventListener('load', boot);
 		</script>
 	</head>
 	<body>

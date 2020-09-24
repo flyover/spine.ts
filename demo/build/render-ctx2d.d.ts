@@ -30,4 +30,3 @@ interface RenderAttachment {
     drawDebugData(spine_pose: Spine.Pose, atlas_data: Atlas.Data | null, slot: Spine.Slot, attachment_key: string, attachment: Spine.Attachment): void;
 }
 export {};
-//# sourceMappingURL=render-ctx2d.d.ts.map

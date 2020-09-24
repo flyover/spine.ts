@@ -1,2 +1,2 @@
 export * from "./spine.js";
-//export * from "./demo/atlas.js"
+export * as Atlas from "./demo/atlas.js";

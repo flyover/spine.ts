@@ -946,4 +946,3 @@ export declare class Pose {
     iterateEvents(callback: (event_key: string, event: Event) => void): void;
     forEachEvent(callback: (event: Event, event_key: string) => void): void;
 }
-//# sourceMappingURL=spine.d.ts.map
