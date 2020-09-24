@@ -5,15 +5,13 @@
 		<meta charset="utf-8" />
 		<title>Spine TypeScript Demo</title>
 		<style>body { background-image: url("bg.png"); background-repeat: repeat; }</style>
-		<!-- <script src="https://raw.githack.com/flyover/system.ts/master/build/system.js"></script> -->
 		<script src="https://flyover.github.io/system.ts/build/system.js"></script>
 		<!-- <script src="node_modules/@flyover/system/build/system.js"></script> -->
 		<script type="text/javascript">
 		window.addEventListener('load', boot);
 		function boot(event) {
 			window.removeEventListener('load', boot);
-			const spine_url = location.hostname !== "flyover.github.io" ?
-				// "https://raw.githack.com/flyover/spine.ts/master/build/spine.js" :
+			const spine_url = location.hostname === "flyover.github.io" ?
 				"https://flyover.github.io/spine.ts/build/spine.js" :
 				"node_modules/@flyover/spine/build/spine.js";
 			System.config({ map: { imports: { "@spine": spine_url } } });
