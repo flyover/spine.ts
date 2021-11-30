@@ -1,7 +1,9 @@
 System.register(["./spine.js", "./demo/atlas.js"], function (exports_1, context_1) {
     "use strict";
+    var version;
     var __moduleName = context_1 && context_1.id;
     var exportedNames_1 = {
+        "version": true,
         "Atlas": true
     };
     function exportStar_1(m) {
@@ -21,6 +23,7 @@ System.register(["./spine.js", "./demo/atlas.js"], function (exports_1, context_
             }
         ],
         execute: function () {
+            exports_1("version", version = "1.0.0");
         }
     };
 });
